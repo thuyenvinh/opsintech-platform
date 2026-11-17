@@ -135,7 +135,7 @@ services:
     volumes:
       - ./config.yaml:/app/backend/config.yaml:ro
       - ${OPSINTECH_HOME:-./backend/.opsintech}:/app/backend/.opsintech
-      - ./skills:/app/skills:ro
+      - ./skills:/app/skills
       - /var/run/docker.sock:/var/run/docker.sock
     working_dir: /app
     environment:

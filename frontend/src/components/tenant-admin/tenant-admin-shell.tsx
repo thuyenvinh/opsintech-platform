@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, Boxes, Building2, Radio, ShieldAlert, ShieldCheck, Users, Wrench } from "lucide-react";
+import { Bot, Boxes, Building2, Radio, ShieldAlert, ShieldCheck, Terminal, Users, Wrench } from "lucide-react";
 
 import { BackofficeShellLayout } from "@/components/backoffice/backoffice-shell-layout";
 import { tr } from "@/core/i18n";
@@ -31,6 +31,7 @@ export function TenantAdminShell({
     { href: "/tenant-admin/agents", label: t.tenantAdmin.shell.nav.agents, icon: Bot },
     { href: "/tenant-admin/alerts", label: t.tenantAdmin.shell.nav.alerts, icon: ShieldAlert },
     { href: "/tenant-admin/im", label: tr(locale, "渠道管理", "IM Channels", "Kênh liên lạc (IM)"), icon: Radio },
+    { href: "/tenant-admin/terminal-policy", label: tr(locale, "终端策略", "Terminal Policy", "Chính sách terminal"), icon: Terminal },
   ];
 
   // Filter nav items by workspace type

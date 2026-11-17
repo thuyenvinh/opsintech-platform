@@ -11,9 +11,15 @@ import {
   Upload,
   RotateCcw,
   AlertTriangle,
+  Lock,
 } from 'lucide-react';
 import { useEffect } from 'react';
 import { fetchAuthApi } from '@/core/api/auth-client';
+import {
+  getTerminalTenantPolicy,
+  type TerminalPolicyAction,
+  type TerminalTenantPolicy,
+} from '@/core/terminal-policy/api';
 import {
   DEFAULT_SECURITY_CONFIG,
   type SecurityConfig,
@@ -30,10 +36,18 @@ interface SecuritySettingsPanelProps {
   onClose: () => void;
 }
 
+const EMPTY_TENANT_POLICY: TerminalTenantPolicy = {
+  security_config: {},
+  auto_approval: {},
+};
+
+const MAX_COMMAND_LENGTH_OPTIONS = [1000, 5000, 10000, 50000];
+
 export function SecuritySettingsPanel({ open, onClose }: SecuritySettingsPanelProps) {
   const { locale } = useI18n();
   const [securityConfig, setSecurityConfig] = useState<SecurityConfig>(DEFAULT_SECURITY_CONFIG);
   const [autoSettings, setAutoSettings] = useState<AutoApprovalSettings>(DEFAULT_AUTO_APPROVAL);
+  const [tenantPolicy, setTenantPolicy] = useState<TerminalTenantPolicy>(EMPTY_TENANT_POLICY);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -54,10 +68,42 @@ export function SecuritySettingsPanel({ open, onClose }: SecuritySettingsPanelPr
         })
         .catch((err) => console.error('Failed to load security settings', err))
         .finally(() => setLoading(false));
+
+      getTerminalTenantPolicy()
+        .then(setTenantPolicy)
+        .catch((err) => console.error('Failed to load tenant terminal policy', err));
     }
   }, [open]);
 
   if (!open) return null;
+
+  // Keys the workspace admin pinned. Only pins that actually remove a choice
+  // lock the control: a pinned-on switch can only be loosened from here, while
+  // a pinned-off auto-approval action can only be loosened. Anything the member
+  // can still tighten stays editable.
+  const pinnedSecurity = tenantPolicy.security_config ?? {};
+  const pinnedAuto = tenantPolicy.auto_approval ?? {};
+  const pinnedActions = pinnedAuto.actions ?? {};
+  const lockCommandSecurity = pinnedSecurity.enableCommandSecurity === true;
+  const lockStrictMode = pinnedSecurity.enableStrictMode === true;
+  const lockAutoApproval = pinnedAuto.enabled === false;
+  const isActionLocked = (action: TerminalPolicyAction) => pinnedActions[action] === false;
+  const maxLengthCeiling = pinnedSecurity.maxCommandLength;
+  const effectiveMaxLength =
+    maxLengthCeiling === undefined
+      ? securityConfig.maxCommandLength
+      : Math.min(securityConfig.maxCommandLength, maxLengthCeiling);
+  const pinnedBlacklist = pinnedSecurity.blacklistPatterns ?? [];
+  const pinnedWhitelist = pinnedSecurity.whitelistPatterns;
+  const hasTenantPolicy =
+    Object.keys(pinnedSecurity).length > 0 || Object.keys(pinnedAuto).length > 0;
+
+  const lockHint = (
+    <p className="flex items-center gap-1 text-xs text-zinc-500 mt-0.5">
+      <Lock className="w-3 h-3 shrink-0" />
+      {tr(locale, '由工作区策略锁定', 'Locked by workspace policy', 'Bị khóa bởi chính sách workspace')}
+    </p>
+  );
 
   const saveSettings = async (cfg: SecurityConfig, auto: AutoApprovalSettings) => {
     try {
@@ -190,6 +236,29 @@ export function SecuritySettingsPanel({ open, onClose }: SecuritySettingsPanelPr
             </div>
           </div>
 
+          {hasTenantPolicy && (
+            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+              <div className="flex items-start gap-2">
+                <Lock className="w-4 h-4 text-zinc-500 mt-0.5 shrink-0" />
+                <div className="space-y-1.5 text-xs text-zinc-600">
+                  <p>
+                    {tr(locale, '工作区管理员已为终端设置了安全下限。被锁定的项只能由管理员放松，其余项你仍可以调得更严格。', 'Your workspace admin has set a security floor for the terminal. Locked rows can only be loosened by an admin; everything else you can still make stricter.', 'Quản trị viên workspace đã đặt mức sàn bảo mật cho terminal. Các mục bị khóa chỉ quản trị viên mới nới lỏng được; các mục khác bạn vẫn có thể siết chặt hơn.')}
+                  </p>
+                  {pinnedBlacklist.length > 0 && (
+                    <p>
+                      {tr(locale, `强制黑名单（无法移除）：${pinnedBlacklist.join('、')}`, `Mandatory blacklist (cannot be removed): ${pinnedBlacklist.join(', ')}`, `Danh sách đen bắt buộc (không thể xóa): ${pinnedBlacklist.join(', ')}`)}
+                    </p>
+                  )}
+                  {pinnedWhitelist !== undefined && (
+                    <p>
+                      {tr(locale, `严格模式白名单上限：${pinnedWhitelist.join('、') || '（空）'}`, `Strict-mode whitelist ceiling: ${pinnedWhitelist.join(', ') || '(empty)'}`, `Giới hạn danh sách trắng chế độ nghiêm ngặt: ${pinnedWhitelist.join(', ') || '(trống)'}`)}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ============================================
               Section 1: Command Security
               ============================================ */}
@@ -203,10 +272,12 @@ export function SecuritySettingsPanel({ open, onClose }: SecuritySettingsPanelPr
                 <div>
                   <span className="text-sm font-medium text-zinc-800">{tr(locale, '启用命令安全检查', 'Enable Command Security Check', 'Bật kiểm tra bảo mật lệnh')}</span>
                   <p className="text-xs text-zinc-400 mt-0.5">{tr(locale, '在执行命令前进行安全验证', 'Validate commands before execution', 'Xác thực an toàn trước khi thực thi lệnh')}</p>
+                  {lockCommandSecurity && lockHint}
                 </div>
                 <Switch
-                  checked={securityConfig.enableCommandSecurity}
+                  checked={lockCommandSecurity ? true : securityConfig.enableCommandSecurity}
                   onCheckedChange={(v) => updateSecurity({ enableCommandSecurity: v })}
+                  disabled={lockCommandSecurity}
                 />
               </div>
 
@@ -214,10 +285,12 @@ export function SecuritySettingsPanel({ open, onClose }: SecuritySettingsPanelPr
                 <div>
                   <span className="text-sm font-medium text-zinc-800">{tr(locale, '严格模式', 'Strict Mode', 'Chế độ nghiêm ngặt')}</span>
                   <p className="text-xs text-zinc-400 mt-0.5">{tr(locale, '仅允许白名单中的命令执行', 'Only allow whitelisted commands', 'Chỉ cho phép các lệnh trong danh sách trắng')}</p>
+                  {lockStrictMode && lockHint}
                 </div>
                 <Switch
-                  checked={securityConfig.enableStrictMode}
+                  checked={lockStrictMode ? true : securityConfig.enableStrictMode}
                   onCheckedChange={(v) => updateSecurity({ enableStrictMode: v })}
+                  disabled={lockStrictMode}
                 />
               </div>
 
@@ -251,18 +324,25 @@ export function SecuritySettingsPanel({ open, onClose }: SecuritySettingsPanelPr
                 <div>
                   <span className="text-sm font-medium text-zinc-800">{tr(locale, '最大命令长度', 'Max Command Length', 'Độ dài lệnh tối đa')}</span>
                   <p className="text-xs text-zinc-400 mt-0.5">
-                    {tr(locale, `当前: ${securityConfig.maxCommandLength} 字符`, `Current: ${securityConfig.maxCommandLength} chars`, `Hiện tại: ${securityConfig.maxCommandLength} ký tự`)}
+                    {tr(locale, `当前: ${effectiveMaxLength} 字符`, `Current: ${effectiveMaxLength} chars`, `Hiện tại: ${effectiveMaxLength} ký tự`)}
                   </p>
+                  {maxLengthCeiling !== undefined && (
+                    <p className="flex items-center gap-1 text-xs text-zinc-500 mt-0.5">
+                      <Lock className="w-3 h-3 shrink-0" />
+                      {tr(locale, `工作区上限 ${maxLengthCeiling}，只能选更小的值`, `Workspace ceiling is ${maxLengthCeiling}; only smaller values are available`, `Giới hạn workspace là ${maxLengthCeiling}; chỉ có thể chọn giá trị nhỏ hơn`)}
+                    </p>
+                  )}
                 </div>
                 <select
-                  value={securityConfig.maxCommandLength}
+                  value={effectiveMaxLength}
                   onChange={(e) => updateSecurity({ maxCommandLength: parseInt(e.target.value) })}
                   className="text-xs border border-zinc-200 rounded px-2 py-1"
                 >
-                  <option value="1000">1,000</option>
-                  <option value="5000">5,000</option>
-                  <option value="10000">10,000</option>
-                  <option value="50000">50,000</option>
+                  {MAX_COMMAND_LENGTH_OPTIONS.filter(
+                    (n) => maxLengthCeiling === undefined || n <= maxLengthCeiling,
+                  ).map((n) => (
+                    <option key={n} value={n}>{n.toLocaleString()}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -290,53 +370,78 @@ export function SecuritySettingsPanel({ open, onClose }: SecuritySettingsPanelPr
                 <div>
                   <span className="text-sm font-medium text-zinc-800">{tr(locale, '启用自动审批', 'Enable Auto-Approval', 'Bật tự động phê duyệt')}</span>
                   <p className="text-xs text-zinc-400 mt-0.5">{tr(locale, '符合策略的命令自动执行', 'Automatically execute policy-compliant commands', 'Tự động thực thi các lệnh hợp lệ theo chính sách')}</p>
+                  {lockAutoApproval && (
+                    <p className="flex items-center gap-1 text-xs text-zinc-500 mt-0.5">
+                      <Lock className="w-3 h-3 shrink-0" />
+                      {tr(locale, '工作区策略已关闭自动审批，命令仍需你逐条确认', 'Workspace policy keeps auto-approval off; every command still needs your confirmation', 'Chính sách workspace tắt tự động phê duyệt; mọi lệnh vẫn cần bạn xác nhận')}
+                    </p>
+                  )}
                 </div>
                 <Switch
-                  checked={autoSettings.enabled}
+                  checked={lockAutoApproval ? false : autoSettings.enabled}
                   onCheckedChange={(v) => updateAuto({ enabled: v })}
+                  disabled={lockAutoApproval}
                 />
               </div>
 
-              {autoSettings.enabled && (
+              {!lockAutoApproval && autoSettings.enabled && (
                 <>
                   <div className="flex items-center justify-between pl-4">
-                    <span className="text-sm text-zinc-700">{tr(locale, '自动读取文件', 'Auto-read files', 'Tự động đọc tệp')}</span>
+                    <div>
+                      <span className="text-sm text-zinc-700">{tr(locale, '自动读取文件', 'Auto-read files', 'Tự động đọc tệp')}</span>
+                      {isActionLocked('readFiles') && lockHint}
+                    </div>
                     <Switch
-                      checked={autoSettings.actions.readFiles}
+                      checked={isActionLocked('readFiles') ? false : autoSettings.actions.readFiles}
                       onCheckedChange={(v) => updateAuto({ actions: { ...autoSettings.actions, readFiles: v } })}
+                      disabled={isActionLocked('readFiles')}
                     />
                   </div>
                   <div className="flex items-center justify-between pl-4">
-                    <span className="text-sm text-zinc-700">{tr(locale, '自动编辑文件', 'Auto-edit files', 'Tự động sửa tệp')}</span>
+                    <div>
+                      <span className="text-sm text-zinc-700">{tr(locale, '自动编辑文件', 'Auto-edit files', 'Tự động sửa tệp')}</span>
+                      {isActionLocked('editFiles') && lockHint}
+                    </div>
                     <Switch
-                      checked={autoSettings.actions.editFiles}
+                      checked={isActionLocked('editFiles') ? false : autoSettings.actions.editFiles}
                       onCheckedChange={(v) => updateAuto({ actions: { ...autoSettings.actions, editFiles: v } })}
+                      disabled={isActionLocked('editFiles')}
                     />
                   </div>
                   <div className="flex items-center justify-between pl-4">
-                    <span className="text-sm text-zinc-700">{tr(locale, '自动执行安全命令', 'Auto-execute safe commands', 'Tự động chạy lệnh an toàn')}</span>
+                    <div>
+                      <span className="text-sm text-zinc-700">{tr(locale, '自动执行安全命令', 'Auto-execute safe commands', 'Tự động chạy lệnh an toàn')}</span>
+                      {isActionLocked('executeSafeCommands') && lockHint}
+                    </div>
                     <Switch
-                      checked={autoSettings.actions.executeSafeCommands}
+                      checked={isActionLocked('executeSafeCommands') ? false : autoSettings.actions.executeSafeCommands}
                       onCheckedChange={(v) => updateAuto({ actions: { ...autoSettings.actions, executeSafeCommands: v } })}
+                      disabled={isActionLocked('executeSafeCommands')}
                     />
                   </div>
                   <div className="flex items-center justify-between pl-4">
                     <div>
                       <span className="text-sm text-zinc-700">{tr(locale, '自动执行所有命令', 'Auto-execute ALL commands', 'Tự động chạy MỌI lệnh')}</span>
                       <p className="text-xs text-red-500 mt-0.5">{tr(locale, '⚠️ 包括危险命令，极度危险', '⚠️ Includes dangerous commands, extremely risky', '⚠️ Bao gồm cả lệnh nguy hiểm, cực kỳ rủi ro')}</p>
+                      {isActionLocked('executeAllCommands') && lockHint}
                     </div>
                     <Switch
-                      checked={autoSettings.actions.executeAllCommands}
+                      checked={isActionLocked('executeAllCommands') ? false : autoSettings.actions.executeAllCommands}
                       onCheckedChange={(v) => updateAuto({ actions: { ...autoSettings.actions, executeAllCommands: v } })}
+                      disabled={isActionLocked('executeAllCommands')}
                     />
                   </div>
                   <div className="flex items-center justify-between pl-4">
-                    <span className="text-sm text-zinc-700">{tr(locale, '首次批准后自动执行只读命令', 'Auto-run read-only commands after first approval', 'Tự động chạy lệnh chỉ đọc sau lần duyệt đầu')}</span>
+                    <div>
+                      <span className="text-sm text-zinc-700">{tr(locale, '首次批准后自动执行只读命令', 'Auto-run read-only commands after first approval', 'Tự động chạy lệnh chỉ đọc sau lần duyệt đầu')}</span>
+                      {isActionLocked('autoExecuteReadOnlyCommands') && lockHint}
+                    </div>
                     <Switch
-                      checked={autoSettings.actions.autoExecuteReadOnlyCommands}
+                      checked={isActionLocked('autoExecuteReadOnlyCommands') ? false : autoSettings.actions.autoExecuteReadOnlyCommands}
                       onCheckedChange={(v) =>
                         updateAuto({ actions: { ...autoSettings.actions, autoExecuteReadOnlyCommands: v } })
                       }
+                      disabled={isActionLocked('autoExecuteReadOnlyCommands')}
                     />
                   </div>
                   <div className="flex items-center justify-between pl-4">

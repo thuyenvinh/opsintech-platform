@@ -81,6 +81,130 @@ DEFAULT_AUTO_APPROVAL = {
     "enableNotifications": True,
 }
 
+# Keys the tenant policy may pin, and the direction each one is combined in.
+# A tenant pin is a ceiling: the member may only move the effective value in the
+# stricter direction, never the looser one.
+TENANT_UNION_KEYS = ("blacklistPatterns", "dangerousCommands")
+TENANT_INTERSECTION_KEYS = ("whitelistPatterns",)
+TENANT_OR_KEYS = ("enableCommandSecurity", "enableStrictMode")
+TENANT_MIN_KEYS = ("maxCommandLength",)
+TENANT_NESTED_PIN_KEYS = ("securityPolicy",)
+TENANT_AUTO_APPROVAL_MIN_KEYS = ("maxRequests",)
+
+
+def _as_dict(value: Any) -> dict:
+    return value if isinstance(value, dict) else {}
+
+
+def _as_list(value: Any) -> list:
+    return value if isinstance(value, list) else []
+
+
+def _union(tenant_items: Any, user_items: Any) -> list:
+    merged = list(_as_list(tenant_items))
+    seen = set(merged)
+    for item in _as_list(user_items):
+        if item not in seen:
+            merged.append(item)
+            seen.add(item)
+    return merged
+
+
+def _intersection(tenant_items: Any, user_items: Any) -> list:
+    allowed = set(_as_list(user_items))
+    return [item for item in _as_list(tenant_items) if item in allowed]
+
+
+def _stricter_min(tenant_value: Any, user_value: Any) -> Any:
+    if isinstance(tenant_value, (int, float)) and isinstance(user_value, (int, float)):
+        return min(tenant_value, user_value)
+    return tenant_value
+
+
+def _merge_over_defaults(defaults: dict, user: dict, nested_key: str) -> dict:
+    merged = {
+        key: list(value) if isinstance(value, list) else value
+        for key, value in {**defaults, **user}.items()
+    }
+    merged[nested_key] = {
+        **_as_dict(defaults.get(nested_key)),
+        **_as_dict(user.get(nested_key)),
+    }
+    return merged
+
+
+def _combine_security_key(key: str, tenant_value: Any, user_value: Any) -> Any:
+    if key in TENANT_UNION_KEYS:
+        return _union(tenant_value, user_value)
+    if key in TENANT_INTERSECTION_KEYS:
+        return _intersection(tenant_value, user_value)
+    if key in TENANT_OR_KEYS:
+        return bool(tenant_value) or bool(user_value)
+    if key in TENANT_MIN_KEYS:
+        return _stricter_min(tenant_value, user_value)
+    if key in TENANT_NESTED_PIN_KEYS:
+        return {**_as_dict(user_value), **_as_dict(tenant_value)}
+    return tenant_value
+
+
+def _combine_auto_approval_key(key: str, tenant_value: Any, user_value: Any) -> Any:
+    if key == "enabled":
+        return bool(tenant_value) and bool(user_value)
+    if key == "actions":
+        user_actions = _as_dict(user_value)
+        actions = dict(user_actions)
+        for action, pinned in _as_dict(tenant_value).items():
+            if action in user_actions:
+                actions[action] = bool(pinned) and bool(user_actions[action])
+            else:
+                actions[action] = bool(pinned)
+        return actions
+    if key in TENANT_AUTO_APPROVAL_MIN_KEYS:
+        return _stricter_min(tenant_value, user_value)
+    return tenant_value
+
+
+def resolve_effective_policy(tenant_policy: dict, user_settings: dict) -> tuple[dict, dict]:
+    """Resolve the policy actually enforced for one member of one tenant.
+
+    Both arguments are the raw stored config blobs, shaped
+    ``{"security_config": {...}, "auto_approval": {...}}`` — ``tenant_policy``
+    from ``tenant_terminal_policies.config``, ``user_settings`` from
+    ``terminal_security_settings.config``.
+
+    The user value is first merged over the platform defaults, which is exactly
+    what the call sites used to do on their own. Every key the tenant pins is
+    then combined with that value in the stricter direction; keys the tenant
+    leaves out keep the user value, or the default when the user has none. An
+    empty ``tenant_policy`` therefore reproduces the pre-policy behaviour.
+    """
+    tenant_policy = _as_dict(tenant_policy)
+    user_settings = _as_dict(user_settings)
+
+    security_config = _merge_over_defaults(
+        DEFAULT_SECURITY_CONFIG,
+        _as_dict(user_settings.get("security_config")),
+        "securityPolicy",
+    )
+    auto_approval = _merge_over_defaults(
+        DEFAULT_AUTO_APPROVAL,
+        _as_dict(user_settings.get("auto_approval")),
+        "actions",
+    )
+
+    for key, tenant_value in _as_dict(tenant_policy.get("security_config")).items():
+        security_config[key] = _combine_security_key(
+            key, tenant_value, security_config.get(key)
+        )
+
+    for key, tenant_value in _as_dict(tenant_policy.get("auto_approval")).items():
+        auto_approval[key] = _combine_auto_approval_key(
+            key, tenant_value, auto_approval.get(key)
+        )
+
+    return security_config, auto_approval
+
+
 DANGEROUS_COMMANDS_SEVERITY = {
     # Critical
     "rm": {"severity": "critical", "reason": "删除文件/目录，可能导致数据丢失"},

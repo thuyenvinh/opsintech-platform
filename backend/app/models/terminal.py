@@ -100,3 +100,24 @@ class TerminalSecuritySettings(SQLModel, table=True):
     # Stores both security_config and auto_approval in JSON format
     config: dict[str, Any] = Field(default={}, sa_column=Column(JSON))
 
+
+class TenantTerminalPolicy(SQLModel, table=True):
+    """Tenant-wide ceiling for terminal security and auto-approval settings.
+
+    One row per tenant. Only the keys the tenant admin pins are stored; a member
+    may make their own settings stricter than the pinned values, never looser.
+    """
+
+    __tablename__ = "tenant_terminal_policies"
+
+    tenant_id: str = Field(primary_key=True)
+
+    # Same shape as TerminalSecuritySettings.config, holding only pinned keys
+    config: dict[str, Any] = Field(default={}, sa_column=Column(JSON))
+    updated_by: str | None = Field(default=None)
+
+    updated_at: datetime = Field(
+        default_factory=_utcnow,
+        sa_column=Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()),
+    )
+

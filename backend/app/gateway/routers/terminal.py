@@ -1,7 +1,10 @@
 import asyncio
+import ipaddress
 import json
 import logging
+import socket
 import uuid
+from urllib.parse import urlsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
@@ -12,14 +15,32 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.gateway.authorization import require_tenant_context
 from app.gateway.i18n import tr
+from app.gateway.permissions import require_cap
 from app.models.assets import Keychain, LocalAsset
-from app.models.terminal import ChatSession, TerminalSecuritySettings, CommandAuditLog
+from app.models.terminal import ChatSession, TenantTerminalPolicy, TerminalSecuritySettings, CommandAuditLog
 from app.services.terminal.session import build_ssh_command, session_manager
 from deerflow.database.session import get_session
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def _graph_thread_id(tenant_id: str, user_id: str, session_id: str) -> str:
+    """Namespace the client-supplied session id with the caller's identity.
+
+    The client picks ``session_id``, so two users can present the same value. On
+    a shared LangGraph thread one of them could append to the other's message
+    history and have it streamed back, or resume their pending approval. Worse,
+    /invoke writes tenant_id and user_id into the state, so the second caller
+    would also take over ownership and defeat the check in /approve.
+
+    Deriving the thread id server-side makes that impossible rather than merely
+    checked. The client-facing ``session_id`` is unchanged: it still travels in
+    the SSE payloads and in the chat-session rows.
+    """
+    return f"{tenant_id}:{user_id}:{session_id}"
+
 
 class ExecuteCommandRequest(BaseModel):
     session_id: str
@@ -279,38 +300,126 @@ async def delete_chat_session(task_id: str, request: Request, db: AsyncSession =
     raise HTTPException(status_code=404, detail="Session not found")
 
 
-@router.post("/web-fetch")
-async def web_fetch_proxy(req: WebFetchRequest):
-    """Fetch a URL from the server side and return cleaned text content.
-    Uses curl internally to avoid CORS issues.
-    """
-    import asyncio
+MAX_WEB_FETCH_REDIRECTS = 3
+WEB_FETCH_META_MARKER = "__OPSIN_FETCH_META__"
 
-    url = req.url.strip()
-    if not url.startswith(("http://", "https://")):
+
+async def resolve_public_fetch_target(url: str) -> tuple[str, str, int]:
+    """Validate one fetch hop and pin it to a resolved, globally routable address.
+
+    Returns ``(host, ip, port)``. The gateway shares a Docker network with
+    postgres and the provisioner and can reach the cloud metadata endpoint, so
+    anything that does not resolve to a public address is an internal service
+    and is refused. The resolved address is handed to curl via ``--resolve``,
+    which also closes the gap between this check and curl's own lookup.
+    """
+    parsed = urlsplit(url)
+    if parsed.scheme not in ("http", "https"):
         raise HTTPException(status_code=400, detail="Invalid URL scheme")
 
-    # Use curl with timeout to fetch the URL
-    cmd = [
-        "curl", "-sL", "--max-time", "15",
-        "-H", "User-Agent: Mozilla/5.0 (compatible; OpsinTech/1.0)",
-        url
-    ]
+    host = parsed.hostname
+    if not host:
+        raise HTTPException(status_code=400, detail="URL has no host")
 
     try:
-        proc = await asyncio.create_subprocess_exec(
-            *cmd,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=20)
+        port = parsed.port or (443 if parsed.scheme == "https" else 80)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid URL port")
+
+    loop = asyncio.get_running_loop()
+    try:
+        infos = await loop.getaddrinfo(host, port, proto=socket.IPPROTO_TCP)
+    except socket.gaierror:
+        raise HTTPException(status_code=400, detail=f"Cannot resolve host '{host}'")
+    if not infos:
+        raise HTTPException(status_code=400, detail=f"Cannot resolve host '{host}'")
+
+    resolved = []
+    for info in infos:
+        try:
+            address = ipaddress.ip_address(info[4][0])
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Unsupported address for host '{host}'")
+        resolved.append(getattr(address, "ipv4_mapped", None) or address)
+
+    for address in resolved:
+        if not address.is_global or address.is_multicast or address.is_reserved:
+            logger.warning(
+                f"[web_fetch] refused internal target: url={url} resolved={address}"
+            )
+            raise HTTPException(
+                status_code=400,
+                detail=f"Refusing to fetch an internal address ({address})",
+            )
+
+    return host, str(resolved[0]), port
+
+
+@router.post(
+    "/web-fetch",
+    dependencies=[Depends(require_cap("terminal.execute"))],
+)
+async def web_fetch_proxy(req: WebFetchRequest, request: Request):
+    """Fetch a URL from the server side and return cleaned text content.
+    Uses curl internally to avoid CORS issues.
+
+    Redirects are followed here rather than by curl, so every hop goes through
+    the same internal-address check as the URL the caller supplied.
+    """
+    require_tenant_context(request)
+
+    url = req.url.strip()
+    content = None
+
+    for _ in range(MAX_WEB_FETCH_REDIRECTS + 1):
+        host, ip, port = await resolve_public_fetch_target(url)
+        pinned = f"[{ip}]" if ":" in ip else ip
+
+        # No -L: a redirect comes back as a 3xx and is revalidated below.
+        cmd = [
+            "curl", "-s", "--max-time", "15",
+            "--proto", "=http,https",
+            "--resolve", f"{host}:{port}:{pinned}",
+            "-w", f"\n{WEB_FETCH_META_MARKER}%{{http_code}}\t%{{redirect_url}}",
+            "-H", "User-Agent: Mozilla/5.0 (compatible; OpsinTech/1.0)",
+            url
+        ]
+
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=20)
+        except TimeoutError:
+            return {"ok": False, "error": "Request timed out", "content": ""}
+        except Exception as e:
+            return {"ok": False, "error": str(e), "content": ""}
+
         if proc.returncode != 0:
             return {
                 "ok": False,
                 "error": f"curl failed: {stderr.decode('utf-8', errors='replace')[:200]}",
                 "content": "",
             }
-        content = stdout.decode("utf-8", errors="replace")
+
+        body, _, meta = stdout.decode("utf-8", errors="replace").rpartition(
+            f"\n{WEB_FETCH_META_MARKER}"
+        )
+        status_code, _, redirect_url = meta.partition("\t")
+        redirect_url = redirect_url.strip()
+        if redirect_url and status_code.strip().startswith("3"):
+            url = redirect_url
+            continue
+
+        content = body
+        break
+
+    if content is None:
+        return {"ok": False, "error": "Too many redirects", "content": ""}
+
+    try:
         # Basic HTML-to-text: strip tags
         import re
         text = re.sub(r'<script[^>]*>.*?</script>', '', content, flags=re.DOTALL | re.IGNORECASE)
@@ -323,8 +432,6 @@ async def web_fetch_proxy(req: WebFetchRequest):
             "content": text[:10000],
             "original_length": len(content),
         }
-    except TimeoutError:
-        return {"ok": False, "error": "Request timed out", "content": ""}
     except Exception as e:
         return {"ok": False, "error": str(e), "content": ""}
 
@@ -372,9 +479,16 @@ async def get_security_settings(request: Request, db: AsyncSession = Depends(get
     }
 
 
-@router.put("/security-settings")
+@router.put(
+    "/security-settings",
+    dependencies=[Depends(require_cap("terminal.settings.own.write"))],
+)
 async def update_security_settings(req: SecuritySettingsUpdateRequest, request: Request, db: AsyncSession = Depends(get_session)):
-    """Create or update security and auto-approval settings for the current user and tenant."""
+    """Create or update security and auto-approval settings for the current user and tenant.
+
+    The stored value is the user's request, not the effective policy: the tenant
+    ceiling is applied at execution time by ``resolve_effective_policy``.
+    """
     tenant_id = require_tenant_context(request)
     user_id = getattr(request.state, "user_id", "unknown_user")
 
@@ -406,7 +520,10 @@ async def update_security_settings(req: SecuritySettingsUpdateRequest, request: 
     return {"ok": True}
 
 
-@router.post("/security-settings/reset")
+@router.post(
+    "/security-settings/reset",
+    dependencies=[Depends(require_cap("terminal.settings.own.write"))],
+)
 async def reset_security_settings(request: Request, db: AsyncSession = Depends(get_session)):
     """Reset security and auto-approval settings to default for the current user and tenant."""
     tenant_id = require_tenant_context(request)
@@ -429,6 +546,88 @@ async def reset_security_settings(request: Request, db: AsyncSession = Depends(g
         "security_config": DEFAULT_SECURITY_CONFIG,
         "auto_approval": DEFAULT_AUTO_APPROVAL,
     }
+
+
+class TenantPolicyUpdateRequest(BaseModel):
+    security_config: dict = {}
+    auto_approval: dict = {}
+
+
+@router.get("/tenant-policy")
+async def get_tenant_policy(request: Request, db: AsyncSession = Depends(get_session)):
+    """Get the tenant-wide terminal policy ceiling.
+
+    Readable by any member: the per-user settings UI needs to know which keys
+    the tenant has pinned. Only pinned keys are returned, so the set of keys
+    present is the set of keys the member can no longer loosen.
+    """
+    tenant_id = require_tenant_context(request)
+
+    query = sa_select(TenantTerminalPolicy).where(
+        TenantTerminalPolicy.tenant_id == tenant_id
+    )
+    result = await db.execute(query)
+    policy = result.scalars().first()
+
+    if not policy:
+        return {
+            "security_config": {},
+            "auto_approval": {},
+            "updated_by": None,
+            "updated_at": None,
+        }
+
+    config = policy.config or {}
+    return {
+        "security_config": config.get("security_config", {}),
+        "auto_approval": config.get("auto_approval", {}),
+        "updated_by": policy.updated_by,
+        "updated_at": policy.updated_at,
+    }
+
+
+@router.put(
+    "/tenant-policy",
+    dependencies=[Depends(require_cap("tenant.terminal_policy.write"))],
+)
+async def update_tenant_policy(req: TenantPolicyUpdateRequest, request: Request, db: AsyncSession = Depends(get_session)):
+    """Create or replace the tenant-wide terminal policy ceiling.
+
+    Send only the keys the tenant pins. An empty policy removes the ceiling and
+    restores purely per-user settings.
+    """
+    tenant_id = require_tenant_context(request)
+    user_id = getattr(request.state, "user_id", "unknown_user")
+
+    query = sa_select(TenantTerminalPolicy).where(
+        TenantTerminalPolicy.tenant_id == tenant_id
+    )
+    result = await db.execute(query)
+    policy = result.scalars().first()
+
+    config_data = {
+        "security_config": req.security_config,
+        "auto_approval": req.auto_approval,
+    }
+
+    if policy:
+        policy.config = config_data
+        policy.updated_by = user_id
+        db.add(policy)
+    else:
+        policy = TenantTerminalPolicy(
+            tenant_id=tenant_id,
+            config=config_data,
+            updated_by=user_id,
+        )
+        db.add(policy)
+
+    await db.commit()
+    logger.info(
+        f"[tenant-policy] tenant={tenant_id} updated_by={user_id} "
+        f"pinned_security={sorted(req.security_config)} pinned_auto_approval={sorted(req.auto_approval)}"
+    )
+    return {"ok": True}
 
 
 @router.get("/audit-logs")
@@ -520,7 +719,10 @@ async def agent_invoke(req: AgentInvokeRequest, request: Request):
     async def event_stream():
         try:
             # Build the initial state
-            config = {"configurable": {"thread_id": req.session_id}, "recursion_limit": 100}
+            config = {
+                "configurable": {"thread_id": _graph_thread_id(tenant_id, user_id, req.session_id)},
+                "recursion_limit": 100,
+            }
             state_input: TerminalState = {
                 "session_id": req.session_id,
                 "terminal_session_id": req.terminal_session_id or "",
@@ -679,7 +881,10 @@ class AgentApproveRequest(BaseModel):
     approved: bool
 
 
-@router.post("/approve")
+@router.post(
+    "/approve",
+    dependencies=[Depends(require_cap("terminal.execute"))],
+)
 async def agent_approve(req: AgentApproveRequest, request: Request):
     """Resume the agent graph after user approves/rejects a tool call via Human-in-the-Loop."""
     from app.agent.terminal_graph import terminal_graph
@@ -687,10 +892,32 @@ async def agent_approve(req: AgentApproveRequest, request: Request):
     import json as json_mod
     import uuid
 
+    tenant_id = require_tenant_context(request)
+    user_id = getattr(request.state, "user_id", "system")
+
+    config = {
+        "configurable": {"thread_id": _graph_thread_id(tenant_id, user_id, req.session_id)},
+        "recursion_limit": 100,
+    }
+
+    # Approving is resuming someone's terminal session, so only the caller who
+    # started the thread may do it. /invoke stamps tenant_id and user_id into
+    # the checkpointed state from server-side request state, so that is the
+    # owner record. 404 rather than 403, so the response does not confirm that
+    # a given session id exists.
+    owner_state = terminal_graph.get_state(config)
+    owner_values = getattr(owner_state, "values", None) if owner_state else None
+    if not owner_values:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if owner_values.get("tenant_id") != tenant_id or owner_values.get("user_id") != user_id:
+        logger.warning(
+            f"[agent_approve] rejected approval of a session owned by someone else: "
+            f"session={req.session_id} caller={tenant_id}/{user_id}"
+        )
+        raise HTTPException(status_code=404, detail="Session not found")
+
     async def event_stream():
         try:
-            config = {"configurable": {"thread_id": req.session_id}, "recursion_limit": 100}
-
             # Resume the graph with the approval decision
             approval_cmd = Command(resume={
                 "approved": req.approved,

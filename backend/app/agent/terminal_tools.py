@@ -7,6 +7,7 @@ They share the same TerminalSessionManager singleton for SSH PTY connections.
 
 import asyncio
 import logging
+import shlex
 import time
 from typing import Optional
 
@@ -237,14 +238,22 @@ async def execute_command(command: str, host_index: int = -1) -> str:
     user_id = _terminal_context.get("user_id", "unknown")
     mode = _get_mode()
 
-    from app.models.terminal import TerminalSecuritySettings
-    from app.services.terminal.security import DEFAULT_SECURITY_CONFIG, DEFAULT_AUTO_APPROVAL, security_service
+    from app.models.terminal import TenantTerminalPolicy, TerminalSecuritySettings
+    from app.services.terminal.security import resolve_effective_policy, security_service
 
-    security_config = DEFAULT_SECURITY_CONFIG
-    auto_approval = DEFAULT_AUTO_APPROVAL
+    tenant_policy: dict = {}
+    user_settings: dict = {}
 
     session_factory = get_session_factory()
     async with session_factory() as db:
+        policy_query = sa_select(TenantTerminalPolicy).where(
+            TenantTerminalPolicy.tenant_id == tenant_id
+        )
+        policy_result = await db.execute(policy_query)
+        policy_obj = policy_result.scalars().first()
+        if policy_obj and policy_obj.config:
+            tenant_policy = policy_obj.config
+
         query = sa_select(TerminalSecuritySettings).where(
             TerminalSecuritySettings.tenant_id == tenant_id,
             TerminalSecuritySettings.user_id == user_id
@@ -252,16 +261,15 @@ async def execute_command(command: str, host_index: int = -1) -> str:
         result = await db.execute(query)
         settings_obj = result.scalars().first()
         if settings_obj and settings_obj.config:
-            config_data = settings_obj.config
-            security_config = {**DEFAULT_SECURITY_CONFIG, **config_data.get("security_config", {})}
-            default_policy = DEFAULT_SECURITY_CONFIG.get("securityPolicy", {})
-            saved_policy = config_data.get("security_config", {}).get("securityPolicy", {})
-            security_config["securityPolicy"] = {**default_policy, **saved_policy}
+            user_settings = settings_obj.config
 
-            auto_approval = {**DEFAULT_AUTO_APPROVAL, **config_data.get("auto_approval", {})}
-            default_actions = DEFAULT_AUTO_APPROVAL.get("actions", {})
-            saved_actions = config_data.get("auto_approval", {}).get("actions", {})
-            auto_approval["actions"] = {**default_actions, **saved_actions}
+    security_config, auto_approval = resolve_effective_policy(tenant_policy, user_settings)
+    if tenant_policy:
+        logger.info(
+            f"[execute_command] tenant policy applied for tenant={tenant_id}: "
+            f"security={sorted(tenant_policy.get('security_config', {}))} "
+            f"auto_approval={sorted(tenant_policy.get('auto_approval', {}))}"
+        )
 
     # Evaluate command safety
     sec_result = security_service.evaluate_command(command, mode, security_config, auto_approval)
@@ -308,8 +316,7 @@ async def read_file(path: str, max_lines: int = 200, host_index: int = -1) -> st
         max_lines: Maximum number of lines to read (default 200).
         host_index: Index of the host (0-based) from the connected assets list. Default -1 (targets ALL connected hosts).
     """
-    import shlex
-    cmd = f"cat '{path}' 2>/dev/null | head -n {max_lines}"
+    cmd = f"cat {shlex.quote(path)} 2>/dev/null | head -n {int(max_lines)}"
     
     async def op(session):
         result = await _execute_cmd_raw(cmd, session)
@@ -329,8 +336,9 @@ async def write_file(path: str, content: str, host_index: int = -1) -> str:
         content: The complete file content to write.
         host_index: Index of the host (0-based) from the connected assets list. Default -1 (targets ALL connected hosts).
     """
-    escaped = content.replace("'", "'\\''")
-    cmd = f"cat > '{path}' << 'OPSINTECH_EOF'\n{escaped}\nOPSINTECH_EOF"
+    # The heredoc delimiter is quoted, so the body is written literally. Escaping
+    # single quotes here would land '\'' in the file instead of ' and corrupt it.
+    cmd = f"cat > {shlex.quote(path)} << 'OPSINTECH_EOF'\n{content}\nOPSINTECH_EOF"
     
     async def op(session):
         result = await _execute_cmd_raw(cmd, session)
@@ -353,9 +361,12 @@ async def grep_search(pattern: str, path: str = ".", max_results: int = 50, max_
         max_size_mb: Maximum file size in MB to search (default 10). Skips files larger than this.
         host_index: Index of the host (0-based) from the connected assets list. Default -1 (targets ALL connected hosts).
     """
-    import shlex
-    max_size_bytes = max_size_mb * 1024 * 1024
-    cmd = f"find '{path}' -type f -size -{max_size_bytes}c -exec grep -rn --color=never '{pattern}' {{}} + 2>/dev/null | head -n {max_results}"
+    max_size_bytes = int(max_size_mb) * 1024 * 1024
+    cmd = (
+        f"find {shlex.quote(path)} -type f -size -{max_size_bytes}c "
+        f"-exec grep -rn --color=never -e {shlex.quote(pattern)} {{}} + "
+        f"2>/dev/null | head -n {int(max_results)}"
+    )
     
     async def op(session):
         result = await _execute_cmd_raw(cmd, session)
@@ -376,7 +387,10 @@ async def web_fetch(url: str, host_index: int = -1) -> str:
     """
     if not url.startswith(("http://", "https://")):
         return "Error: URL must start with http:// or https://"
-    cmd = f"curl -sL --max-time 15 -H 'User-Agent: OpsinTech/1.0' '{url}' 2>/dev/null | head -c 10000"
+    cmd = (
+        "curl -sL --max-time 15 -H 'User-Agent: OpsinTech/1.0' "
+        f"{shlex.quote(url)} 2>/dev/null | head -c 10000"
+    )
     
     async def op(session):
         result = await _execute_cmd_raw(cmd, session)

@@ -369,15 +369,23 @@ class TerminalAgentNodes:
         tenant_id = state.get("tenant_id", "default")
         user_id = state.get("user_id", "unknown")
 
-        # Load user security settings from database
-        from app.models.terminal import TerminalSecuritySettings
-        from app.services.terminal.security import DEFAULT_SECURITY_CONFIG, DEFAULT_AUTO_APPROVAL
+        # Load the tenant policy ceiling and the user's own settings from database
+        from app.models.terminal import TenantTerminalPolicy, TerminalSecuritySettings
+        from app.services.terminal.security import resolve_effective_policy
 
-        security_config = DEFAULT_SECURITY_CONFIG
-        auto_approval = DEFAULT_AUTO_APPROVAL
+        tenant_policy: dict = {}
+        user_settings: dict = {}
 
         session_factory = get_session_factory()
         async with session_factory() as db:
+            policy_query = sa_select(TenantTerminalPolicy).where(
+                TenantTerminalPolicy.tenant_id == tenant_id
+            )
+            policy_result = await db.execute(policy_query)
+            policy_obj = policy_result.scalars().first()
+            if policy_obj and policy_obj.config:
+                tenant_policy = policy_obj.config
+
             query = sa_select(TerminalSecuritySettings).where(
                 TerminalSecuritySettings.tenant_id == tenant_id,
                 TerminalSecuritySettings.user_id == user_id
@@ -385,16 +393,15 @@ class TerminalAgentNodes:
             result = await db.execute(query)
             settings_obj = result.scalars().first()
             if settings_obj and settings_obj.config:
-                config_data = settings_obj.config
-                security_config = {**DEFAULT_SECURITY_CONFIG, **config_data.get("security_config", {})}
-                default_policy = DEFAULT_SECURITY_CONFIG.get("securityPolicy", {})
-                saved_policy = config_data.get("security_config", {}).get("securityPolicy", {})
-                security_config["securityPolicy"] = {**default_policy, **saved_policy}
+                user_settings = settings_obj.config
 
-                auto_approval = {**DEFAULT_AUTO_APPROVAL, **config_data.get("auto_approval", {})}
-                default_actions = DEFAULT_AUTO_APPROVAL.get("actions", {})
-                saved_actions = config_data.get("auto_approval", {}).get("actions", {})
-                auto_approval["actions"] = {**default_actions, **saved_actions}
+        security_config, auto_approval = resolve_effective_policy(tenant_policy, user_settings)
+        if tenant_policy:
+            logger.info(
+                f"[security_node] tenant policy applied for tenant={tenant_id}: "
+                f"security={sorted(tenant_policy.get('security_config', {}))} "
+                f"auto_approval={sorted(tenant_policy.get('auto_approval', {}))}"
+            )
 
         selected_assets = state.get("selected_assets", [])
 

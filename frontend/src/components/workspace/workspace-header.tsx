@@ -3,21 +3,22 @@
 import Link from "next/link";
 
 import { useSidebar } from "@/components/ui/sidebar";
+import { getPlatformName } from "@/core/config";
 import { env } from "@/env";
 import { cn } from "@/lib/utils";
 
-function OpsinTechMark({ className }: { className?: string }) {
+function OpsinTechMark({ className, platformName }: { className?: string; platformName: string }) {
   return (
     <div
       className={cn(
         "flex h-6 w-6 items-center justify-center shrink-0",
         className,
       )}
-      aria-label="OpsinTech"
+      aria-label={platformName}
     >
       <img 
         src="/images/opsintech.svg" 
-        alt="OpsinTech Logo" 
+        alt={`${platformName} Logo`} 
         className="h-full w-full object-contain" 
       />
     </div>
@@ -26,6 +27,7 @@ function OpsinTechMark({ className }: { className?: string }) {
 
 export function WorkspaceHeader({ className }: { className?: string }) {
   const { state } = useSidebar();
+  const platformName = getPlatformName();
   return (
     <>
       <div
@@ -36,22 +38,22 @@ export function WorkspaceHeader({ className }: { className?: string }) {
       >
         {state === "collapsed" ? (
           <div className="flex w-full items-center justify-center">
-            <OpsinTechMark className="transition-transform hover:scale-105" />
+            <OpsinTechMark className="transition-transform hover:scale-105" platformName={platformName} />
           </div>
         ) : (
           <div className="flex items-center px-1">
             {env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY === "true" ? (
               <Link href="/" className="text-foreground ml-1 flex items-center gap-2.5 transition-opacity hover:opacity-80">
-                <OpsinTechMark />
+                <OpsinTechMark platformName={platformName} />
                 <span className="truncate text-sm font-semibold tracking-tight">
-                  OpsinTech Platform
+                  {platformName}
                 </span>
               </Link>
             ) : (
               <div className="text-foreground ml-1 flex items-center gap-2.5 cursor-default">
-                <OpsinTechMark />
+                <OpsinTechMark platformName={platformName} />
                 <span className="truncate text-sm font-semibold tracking-tight">
-                  OpsinTech Platform
+                  {platformName}
                 </span>
               </div>
             )}

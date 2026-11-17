@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAvailableModels } from '@/core/models/hooks';
+import { getPlatformName } from '@/core/config';
 import { Input } from '@/components/ui/input';
 import {
   Tooltip,
@@ -530,7 +531,7 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center mb-4 shadow-sm shadow-blue-500/20 text-white">
               <Sparkles className="w-6 h-6" />
             </div>
-            <p className="text-sm font-medium text-zinc-700 mb-1">OpsinTech Assistant</p>
+            <p className="text-sm font-medium text-zinc-700 mb-1">{getPlatformName()} Assistant</p>
             <p className="text-xs text-zinc-500 text-center max-w-[240px]">
               {mode === 'cmd' 
                 ? tr(locale, '输入你的需求，系统会生成命令，由你确认后在终端中执行。', 'Describe your goal; the system generates commands for you to confirm and run.', 'Nhập yêu cầu của bạn, hệ thống sẽ tạo lệnh để bạn xác nhận và chạy trên Terminal.')

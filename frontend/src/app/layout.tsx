@@ -5,11 +5,12 @@ import { type Metadata } from "next";
 
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/theme-provider";
+import { getPlatformName } from "@/core/config";
 import { I18nProvider } from "@/core/i18n/context";
 import { detectLocaleServer } from "@/core/i18n/server";
 
 export const metadata: Metadata = {
-  title: "OpsinTech",
+  title: getPlatformName(),
   description: "A LangChain-based framework for building super agents.",
 };
 

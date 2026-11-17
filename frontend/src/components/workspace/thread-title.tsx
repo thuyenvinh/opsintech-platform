@@ -4,6 +4,7 @@ import type { BaseStream } from "@langchain/langgraph-sdk";
 import { Pencil } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { getPlatformName } from "@/core/config";
 import { useI18n } from "@/core/i18n/hooks";
 import { useRenameThread } from "@/core/threads/hooks";
 import type { AgentThreadState } from "@/core/threads";
@@ -58,10 +59,11 @@ export function ThreadTitle({
     } else if (isNewThread) {
       _title = t.pages.newChat;
     }
+    const platformName = getPlatformName();
     if (thread.isThreadLoading) {
-      document.title = `Loading... - ${t.pages.appName}`;
+      document.title = `Loading... - ${platformName}`;
     } else {
-      document.title = `${_title} - ${t.pages.appName}`;
+      document.title = `${_title} - ${platformName}`;
     }
   }, [
     optimisticTitle,

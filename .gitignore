@@ -59,3 +59,32 @@ data/
 config.postgres.yaml
 website/
 solutions/
+
+# Local scratch / one-off patch scripts (repo root + service roots only)
+/patch_*.py
+/patch_*.js
+/fix_*.py
+/scratch_*.py
+/test_*.py
+/test_*.js
+/*.patch
+/backend/scratch_*.py
+/backend/test_*.py
+/frontend/patch*.py
+/frontend/test*.js
+/frontend/test*.mjs
+
+# Test/build caches
+.pytest_cache/
+*.tsbuildinfo
+
+# Local databases (real data lives under .opsintech/)
+*.db
+*.sqlite
+*.sqlite3
+
+# Agent/skill runtime output
+backend/projects/
+
+# Leftover editor/CLI state
+.antigravitycli/

@@ -105,7 +105,8 @@ export default function FileCenterPage() {
     }
     const newStack = folderStack.slice(0, -1);
     setFolderStack(newStack);
-    setCurrentFolderId(newStack[newStack.length - 1].id);
+    const parentFolder = newStack[newStack.length - 1];
+    setCurrentFolderId(parentFolder ? parentFolder.id : null);
   };
 
   const navigateToRoot = () => {
@@ -415,7 +416,7 @@ export default function FileCenterPage() {
         {/* Upload progress */}
         {uploadingFiles.length > 0 && (
           <div className="fixed bottom-6 right-6 z-50 w-72 rounded-xl border bg-card p-4 shadow-lg animate-in slide-in-from-bottom-4 duration-300">
-            <p className="text-sm font-medium mb-2">{t.common.uploadingFiles}</p>
+            <p className="text-sm font-medium mb-2">{t.uploads.uploadingFiles}</p>
             {uploadingFiles.map((name) => (
               <div key={name} className="flex items-center gap-2 text-xs text-muted-foreground py-1">
                 <Loader2 className="size-3 animate-spin" />

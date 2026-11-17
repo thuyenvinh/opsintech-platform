@@ -7,7 +7,7 @@ export interface ChatSession {
   id: string;
   title: string;
   modelName: string;
-  mode: 'cmd' | 'agent';
+  mode: 'cmd' | 'agent' | 'sandbox';
   assetId?: string;
   assetIp?: string;
   messages: ChatMessage[];

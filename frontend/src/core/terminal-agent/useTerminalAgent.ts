@@ -8,7 +8,7 @@ export interface TerminalAgentOptions {
   assetId?: string;
   assetIp?: string;
   selectedAssets?: { id: string; ip: string; name?: string }[];  // Multi-host in Agent mode
-  mode: 'cmd' | 'agent';
+  mode: 'cmd' | 'agent' | 'sandbox';
   onExecuteCommand: (command: string) => Promise<string>;
   onSendInput?: (input: string) => void;
   onCancelCommand?: () => void;
@@ -272,7 +272,7 @@ export function useTerminalAgent({
                       }
                       // Agent mode: tools auto-execute by default (show 'auto-executing' state)
                       // Command mode: tools need confirmation (show Run/Reject via 'input-available')
-                      const defaultState = mode === 'agent' ? 'auto-executing' : 'input-available';
+                      const defaultState = (mode === 'agent' || mode === 'sandbox') ? 'auto-executing' : 'input-available';
                       return { ...p, state: defaultState, input: finalInput };
                     }
                     return p;
@@ -420,7 +420,7 @@ export function useTerminalAgent({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             session_id: taskId,
-            terminal_session_id: mode === 'agent' ? '' : (terminalSessionId || ''),
+            terminal_session_id: (mode === 'agent' || mode === 'sandbox') ? '' : (terminalSessionId || ''),
             model_name: modelName,
             asset_id: assetId || '',
             selected_assets: selectedAssets || [],

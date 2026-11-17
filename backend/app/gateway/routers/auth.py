@@ -405,7 +405,7 @@ def get_bootstrap_status() -> BootstrapStatusResponse:
         row = conn.execute(
             text(
                 "SELECT u.id FROM \"user\" u "
-                "WHERE u.\"isBootstrapAdmin\" = 1 AND u.status = 'active' "
+                "WHERE u.\"isBootstrapAdmin\" = TRUE AND u.status = 'active' "
                 "AND NOT EXISTS (SELECT 1 FROM account a WHERE a.\"userId\" = u.id) "
                 "LIMIT 1"
             ),
@@ -483,8 +483,8 @@ def setup_bootstrap_admin(body: SetupBootstrapAdminRequest) -> SetupBootstrapAdm
 
         conn.execute(
             text(
-                "UPDATE \"user\" SET email = :email, \"emailVerified\" = 1, "
-                "\"mustChangePassword\" = 0, \"isBootstrapAdmin\" = 0, \"updatedAt\" = :ua WHERE id = :uid"
+                "UPDATE \"user\" SET email = :email, \"emailVerified\" = TRUE, "
+                "\"mustChangePassword\" = FALSE, \"isBootstrapAdmin\" = FALSE, \"updatedAt\" = :ua WHERE id = :uid"
             ),
             {"email": email, "ua": now, "uid": body.user_id},
         )

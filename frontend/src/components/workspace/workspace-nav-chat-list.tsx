@@ -8,6 +8,7 @@ import {
   ShieldAlertIcon,
   ShieldCheckIcon,
   BotIcon,
+  SparklesIcon,
   FolderIcon,
   TerminalSquare,
 } from "lucide-react";
@@ -16,6 +17,7 @@ import { usePathname } from "next/navigation";
 
 import { useActiveAnnouncements } from "@/core/announcements";
 import { useSession } from "@/core/auth/hooks";
+import { tr } from "@/core/i18n";
 import { useI18n } from "@/core/i18n/hooks";
 import { canAccessAdminPage } from "@/core/permissions/roles";
 import { useCurrentTenant } from "@/core/tenants";
@@ -77,9 +79,15 @@ export function WorkspaceNavChatList() {
       active: pathname.startsWith("/workspace/incidents"),
     },
     {
+      name: tr(locale, "智能体管理", "Agents", "Quản lý Agent"),
+      href: "/workspace/agents",
+      icon: BotIcon,
+      active: pathname.startsWith("/workspace/agents"),
+    },
+    {
       name: t.sidebarNav.skillsPlaza,
       href: "/workspace/skills",
-      icon: BotIcon,
+      icon: SparklesIcon,
       active: pathname.startsWith("/workspace/skills"),
     },
     {

@@ -99,19 +99,19 @@ export function SubtaskCard({
 
   return (
     <ChainOfThought
-      className={cn("flex w-full flex-col gap-0.5 pl-9 transition-all duration-300", className)}
+      className={cn("flex w-full flex-col gap-0.5 pl-9", className)}
       open={!collapsed}
     >
       <div className="flex w-full flex-col overflow-hidden">
         <div className="flex w-fit items-center justify-start">
           <Button
-            className="w-fit flex items-center justify-start gap-3 h-auto py-1 px-2 -ml-2 rounded-[8px] text-left hover:bg-black/5 dark:hover:bg-white/5 opacity-80 hover:opacity-100"
+            className="w-fit flex items-center justify-start gap-3 h-auto py-1 px-2 -ml-2 rounded-lg text-left hover:bg-black/5 dark:hover:bg-white/5 opacity-80 hover:opacity-100"
             variant="ghost"
             onClick={() => setCollapsed(!collapsed)}
           >
             <div className="flex items-center gap-2 flex-1 min-w-0">
               {icon}
-              <span className="text-[10px] font-medium truncate max-w-[400px]">
+              <span className="text-xs font-medium truncate max-w-[400px]">
                 {task.status === "in_progress" ? (
                   <Shimmer duration={3} spread={3}>
                     {task.description}
@@ -126,7 +126,7 @@ export function SubtaskCard({
               {durationLabel && (
                 <span
                   className={cn(
-                    "text-muted-foreground text-[10px] font-mono",
+                    "text-muted-foreground text-xs font-mono",
                     task.status === "failed" ? "text-red-500/70" : "",
                     task.status === "timed_out" ? "text-amber-500/70" : "",
                   )}

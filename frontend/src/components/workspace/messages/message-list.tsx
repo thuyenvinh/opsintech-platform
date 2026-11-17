@@ -1,6 +1,6 @@
 import type { Message } from "@langchain/langgraph-sdk";
 import type { BaseStream } from "@langchain/langgraph-sdk/react";
-import { SparklesIcon } from "lucide-react";
+import { ListChecksIcon } from "lucide-react";
 import { useEffect, useMemo } from "react";
 
 import {
@@ -107,7 +107,6 @@ function StreamingInlineStatus({
 
   return (
     <div className={cn("flex items-center gap-2 px-4 py-2 animate-in fade-in", className)}>
-      <SparklesIcon className="size-3.5 text-primary animate-pulse" />
       <span className="text-xs text-muted-foreground">{statusText}</span>
       <StreamingIndicator size="sm" />
     </div>
@@ -311,7 +310,7 @@ export function MessageList({
                   key={"subtask-fallback-" + group.id}
                   className="ml-9 mb-3 flex items-center gap-2 text-muted-foreground text-xs py-1"
                 >
-                  <SparklesIcon className="size-3.5 shrink-0 opacity-60" />
+                  <ListChecksIcon className="size-4 shrink-0" />
                   <span>
                     {t.subtasks?.in_progress ?? "Running subtasks..."}
                   </span>
@@ -349,7 +348,7 @@ export function MessageList({
           if (activeTaskIds.size === 0) return null;
           return (
             <div className="flex flex-col gap-1 mb-3 ml-9">
-              <div className="text-muted-foreground flex items-center gap-1.5 pt-1 pb-1 pl-9 text-[11px] font-semibold uppercase tracking-widest">
+              <div className="text-muted-foreground flex items-center gap-1.5 pt-1 pb-1 pl-9 text-xs font-medium">
                 {t.subtasks.executing(activeTaskIds.size)}
               </div>
               {Array.from(activeTaskIds).map((taskId) => (

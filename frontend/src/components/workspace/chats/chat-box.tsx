@@ -167,7 +167,7 @@ const ChatBox: React.FC<{ children: React.ReactNode; threadId: string }> = ({
       />
       <ResizablePanel
         className={cn(
-          "transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
+          "transition-opacity duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
           !artifactsOpen && "opacity-0",
         )}
         id="artifacts"

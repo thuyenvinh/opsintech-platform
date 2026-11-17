@@ -159,7 +159,7 @@ export function MessageGroup({
       {aboveLastToolCallSteps.length > 0 && (
         <Button
           key="above"
-          className="w-fit flex items-center justify-start gap-2 h-auto py-1 px-2 -ml-2 rounded-[8px] text-left hover:bg-black/5 dark:hover:bg-white/5 opacity-80 hover:opacity-100"
+          className="w-fit flex items-center justify-start gap-2 h-auto py-1 px-2 -ml-2 rounded-lg text-left hover:bg-black/5 dark:hover:bg-white/5 opacity-80 hover:opacity-100"
           variant="ghost"
           onClick={() => setShowAbove(!showAbove)}
         >
@@ -169,7 +169,7 @@ export function MessageGroup({
               showAbove ? "rotate-180" : "",
             )}
           />
-          <span className="opacity-60 text-[10px] font-medium">
+          <span className="opacity-60 text-xs font-medium">
             {showAbove
               ? t.toolCalls.lessSteps
               : t.toolCalls.moreSteps(aboveLastToolCallSteps.length)}
@@ -275,7 +275,7 @@ function BashStep({
       {isLong && (
         <button
           type="button"
-          className="text-muted-foreground hover:text-foreground text-[10px] mt-1 transition-colors"
+          className="text-muted-foreground hover:text-foreground text-xs mt-1 transition-colors"
           onClick={() => setExpanded(!expanded)}
         >
           {expanded ? `▲ ${t.messageGroup.collapseAll}` : `▼ ${t.messageGroup.expandAll}`}

@@ -2,6 +2,7 @@
 
 import type { ChatStatus } from "ai";
 import {
+  BotIcon,
   CheckIcon,
   Download,
   FileJson,
@@ -53,7 +54,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { fetchAuthApi } from "@/core/api/auth-client";
+import { useAgents } from "@/core/agents";
 import { getBackendBaseURL } from "@/core/config";
+import { tr } from "@/core/i18n";
 import { useI18n } from "@/core/i18n/hooks";
 import { useAvailableModels } from "@/core/models/hooks";
 import type { AvailableSkillResponse } from "@/core/skills/type";
@@ -207,6 +210,7 @@ export function InputBox({
     mode: "flash" | "thinking" | "pro" | "ultra" | undefined;
     reasoning_effort?: "minimal" | "low" | "medium" | "high";
     skill_name?: string;
+    agent_name?: string;
   };
   extraHeader?: React.ReactNode;
   isNewThread?: boolean;
@@ -220,6 +224,7 @@ export function InputBox({
       mode: "flash" | "thinking" | "pro" | "ultra" | undefined;
       reasoning_effort?: "minimal" | "low" | "medium" | "high";
       skill_name?: string;
+      agent_name?: string;
     },
   ) => void;
   onSubmit?: (message: PromptInputMessage) => void;
@@ -230,6 +235,11 @@ export function InputBox({
   const [skillSettings, setSkillSettings] = useState<SkillSettings>(DEFAULT_SKILL_SETTINGS);
   const searchParams = useSearchParams();
   const { models: availableModels } = useAvailableModels();
+  const { agents: availableAgents } = useAgents();
+  const enabledAgents = useMemo(
+    () => availableAgents.filter((agent) => agent.enabled),
+    [availableAgents],
+  );
   const models = useMemo(() => {
     const seen = new Set<string>();
     return availableModels.filter((model) => {
@@ -972,6 +982,95 @@ export function InputBox({
 
           {/* 竖线分隔 - 在推理级别和 skill 图标之间 */}
           <div className="bg-border h-4 w-px" />
+
+          {/* Agent 选择器 */}
+          {enabledAgents.length > 0 && (
+            <>
+              <PromptInputActionMenu>
+                <PromptInputActionMenuTrigger className="gap-1! px-2!">
+                  <BotIcon className={cn("size-3.5", context.agent_name && "text-primary")} />
+                  <span className={cn("text-xs font-normal max-w-[120px] truncate", context.agent_name && "text-primary font-medium")}>
+                    {context.agent_name || tr(locale, "默认助手", "Default Agent", "Trợ lý mặc định")}
+                  </span>
+                </PromptInputActionMenuTrigger>
+                <PromptInputActionMenuContent className="w-72">
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel className="text-muted-foreground text-xs">
+                      {tr(locale, "选择智能体", "Select Agent", "Chọn Trợ lý (Agent)")}
+                    </DropdownMenuLabel>
+                    <PromptInputActionMenuItem
+                      className={cn(
+                        !context.agent_name
+                          ? "text-accent-foreground"
+                          : "text-muted-foreground/65",
+                      )}
+                      onSelect={() => {
+                        onContextChange?.({
+                          ...context,
+                          agent_name: undefined,
+                        });
+                      }}
+                    >
+                      <div className="flex flex-col gap-0.5">
+                        <div className="font-medium text-xs">
+                          {tr(locale, "默认助手", "Default Agent", "Trợ lý mặc định")}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground">
+                          {tr(locale, "使用系统通用主助手", "Use standard lead assistant", "Sử dụng trợ lý chính mặc định")}
+                        </div>
+                      </div>
+                      {!context.agent_name ? (
+                        <CheckIcon className="ml-auto size-4" />
+                      ) : (
+                        <div className="ml-auto size-4" />
+                      )}
+                    </PromptInputActionMenuItem>
+                    <DropdownMenuSeparator />
+                    {enabledAgents.map((agent) => {
+                      const isSelected = context.agent_name === agent.name;
+                      return (
+                        <PromptInputActionMenuItem
+                          key={agent.name}
+                          className={cn(
+                            isSelected
+                              ? "text-accent-foreground"
+                              : "text-muted-foreground/80",
+                          )}
+                          onSelect={() => {
+                            onContextChange?.({
+                              ...context,
+                              agent_name: agent.name,
+                              ...(agent.model && models.some((m) => m.name === agent.model)
+                                ? { model_name: agent.model }
+                                : {}),
+                            });
+                          }}
+                        >
+                          <div className="flex flex-col gap-0.5 min-w-0 pr-2">
+                            <div className="font-medium text-xs truncate flex items-center gap-1.5">
+                              <BotIcon className="size-3.5 shrink-0 text-primary" />
+                              <span className="truncate">{agent.name}</span>
+                            </div>
+                            {agent.description && (
+                              <div className="text-[11px] text-muted-foreground line-clamp-1">
+                                {agent.description}
+                              </div>
+                            )}
+                          </div>
+                          {isSelected ? (
+                            <CheckIcon className="ml-auto size-4 shrink-0" />
+                          ) : (
+                            <div className="ml-auto size-4 shrink-0" />
+                          )}
+                        </PromptInputActionMenuItem>
+                      );
+                    })}
+                  </DropdownMenuGroup>
+                </PromptInputActionMenuContent>
+              </PromptInputActionMenu>
+              <div className="bg-border h-4 w-px" />
+            </>
+          )}
 
           {/* Skill 图标区域 - 图标之间不需要分隔线 */}
           {/* Skill 按钮组 - 统一紧凑样式 */}

@@ -39,7 +39,12 @@ export function getPublicAppURL() {
 }
 
 export const DEFAULT_PLATFORM_NAME = "OpsinTech Platform";
+export const DEFAULT_PLATFORM_LOGO = "/images/opsintech.svg";
 
 export function getPlatformName() {
   return env.NEXT_PUBLIC_PLATFORM_NAME?.trim() || DEFAULT_PLATFORM_NAME;
+}
+
+export function getPlatformLogo() {
+  return env.NEXT_PUBLIC_PLATFORM_LOGO?.trim() || DEFAULT_PLATFORM_LOGO;
 }

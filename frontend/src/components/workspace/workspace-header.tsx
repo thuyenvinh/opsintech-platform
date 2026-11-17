@@ -3,11 +3,11 @@
 import Link from "next/link";
 
 import { useSidebar } from "@/components/ui/sidebar";
-import { getPlatformName } from "@/core/config";
+import { getPlatformLogo, getPlatformName } from "@/core/config";
 import { env } from "@/env";
 import { cn } from "@/lib/utils";
 
-function OpsinTechMark({ className, platformName }: { className?: string; platformName: string }) {
+function OpsinTechMark({ className, platformName, platformLogo }: { className?: string; platformName: string; platformLogo: string }) {
   return (
     <div
       className={cn(
@@ -17,7 +17,7 @@ function OpsinTechMark({ className, platformName }: { className?: string; platfo
       aria-label={platformName}
     >
       <img 
-        src="/images/opsintech.svg" 
+        src={platformLogo} 
         alt={`${platformName} Logo`} 
         className="h-full w-full object-contain" 
       />
@@ -28,6 +28,7 @@ function OpsinTechMark({ className, platformName }: { className?: string; platfo
 export function WorkspaceHeader({ className }: { className?: string }) {
   const { state } = useSidebar();
   const platformName = getPlatformName();
+  const platformLogo = getPlatformLogo();
   return (
     <>
       <div
@@ -38,20 +39,20 @@ export function WorkspaceHeader({ className }: { className?: string }) {
       >
         {state === "collapsed" ? (
           <div className="flex w-full items-center justify-center">
-            <OpsinTechMark className="transition-transform hover:scale-105" platformName={platformName} />
+            <OpsinTechMark className="transition-transform hover:scale-105" platformName={platformName} platformLogo={platformLogo} />
           </div>
         ) : (
           <div className="flex items-center px-1">
             {env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY === "true" ? (
               <Link href="/" className="text-foreground ml-1 flex items-center gap-2.5 transition-opacity hover:opacity-80">
-                <OpsinTechMark platformName={platformName} />
+                <OpsinTechMark platformName={platformName} platformLogo={platformLogo} />
                 <span className="truncate text-sm font-semibold tracking-tight">
                   {platformName}
                 </span>
               </Link>
             ) : (
               <div className="text-foreground ml-1 flex items-center gap-2.5 cursor-default">
-                <OpsinTechMark platformName={platformName} />
+                <OpsinTechMark platformName={platformName} platformLogo={platformLogo} />
                 <span className="truncate text-sm font-semibold tracking-tight">
                   {platformName}
                 </span>

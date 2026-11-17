@@ -24,6 +24,7 @@ export const env = createEnv({
     NEXT_PUBLIC_PUBLIC_APP_URL: z.string().optional(),
     NEXT_PUBLIC_STATIC_WEBSITE_ONLY: z.string().optional(),
     NEXT_PUBLIC_PLATFORM_NAME: z.string().optional(),
+    NEXT_PUBLIC_PLATFORM_LOGO: z.string().optional(),
   },
 
   /**
@@ -39,6 +40,7 @@ export const env = createEnv({
     NEXT_PUBLIC_STATIC_WEBSITE_ONLY:
       process.env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY,
     NEXT_PUBLIC_PLATFORM_NAME: process.env.NEXT_PUBLIC_PLATFORM_NAME,
+    NEXT_PUBLIC_PLATFORM_LOGO: process.env.NEXT_PUBLIC_PLATFORM_LOGO,
     GITHUB_OAUTH_TOKEN: process.env.GITHUB_OAUTH_TOKEN,
   },
   /**

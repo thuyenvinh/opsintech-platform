@@ -45,7 +45,7 @@ export function WorkspaceNavChatList() {
       : locale === "ko"
       ? "파일 센터"
       : locale === "vi"
-      ? "Trung tâm tệp"
+      ? "Quản lý file"
       : "File Center";
 
   const terminalLabel =

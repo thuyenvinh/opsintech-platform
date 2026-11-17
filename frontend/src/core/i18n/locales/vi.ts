@@ -201,7 +201,7 @@ export const vi: Translations = {
   // Sidebar Navigation
   sidebarNav: {
     overview: "Tổng quan",
-    smartWorkbench: "Bàn làm việc thông minh",
+    smartWorkbench: "Bàn làm việc",
     agents: "Trợ lý AI",
     announcements: "Thông báo",
     auditGovernance: "Kiểm toán & Quản trị",
@@ -443,7 +443,7 @@ export const vi: Translations = {
 
   // Chat Header
   chatHeader: {
-    smartWorkbench: "Bàn làm việc thông minh",
+    smartWorkbench: "Bàn làm việc",
     newSession: "Phiên mới",
     selectModel: "Chọn mô hình",
     noModel: "Chưa có mô hình",

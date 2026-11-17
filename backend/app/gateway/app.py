@@ -4,10 +4,11 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 
 from app.gateway.bootstrap_admin import bootstrap_admin
 from app.gateway.config import get_gateway_config
+from app.gateway.i18n import reset_current_lang, set_current_lang
 from app.gateway.routers import (
     admin,
     agents,
@@ -301,6 +302,16 @@ This gateway provides custom endpoints for models, MCP configuration, skills, an
 
     # Summarization settings API (tenant-admin)
     app.include_router(summarization.router)
+
+    @app.middleware("http")
+    async def locale_context_middleware(request: Request, call_next):
+        raw_locale = request.cookies.get("locale") or request.headers.get("accept-language", "")
+        first_lang = raw_locale.split(",")[0].split(";")[0].strip() if raw_locale else ""
+        token = set_current_lang(first_lang or "vi")
+        try:
+            return await call_next(request)
+        finally:
+            reset_current_lang(token)
 
     @app.get("/health", tags=["health"])
     async def health_check() -> dict:

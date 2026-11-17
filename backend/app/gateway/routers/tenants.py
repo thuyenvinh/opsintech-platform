@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from app.gateway.audit import record_audit_event
 from app.gateway.auth_repository import AuthUserRepository
 from app.gateway.authorization import require_tenant_admin
+from app.gateway.i18n import tr
 from deerflow.database.tenant_service import (
     add_tenant_member,
     get_membership,
@@ -76,7 +77,14 @@ async def get_current_tenant(request: Request) -> CurrentTenantResponse:
 
     rows = await list_user_tenants(user_id)
     if not rows:
-        raise HTTPException(status_code=403, detail="当前账号未加入任何租户，请联系管理员将你加入租户后再登录。")
+        raise HTTPException(
+            status_code=403,
+            detail=tr(
+                "当前账号未加入任何租户，请联系管理员将你加入租户后再登录。",
+                "Your account is not a member of any tenant. Please contact an administrator to add you to a tenant before signing in.",
+                "Tài khoản hiện tại chưa thuộc tenant nào. Vui lòng liên hệ quản trị viên để được thêm vào tenant trước khi đăng nhập.",
+            ),
+        )
 
     memberships_by_tenant = {tenant.id: membership for tenant, membership in rows}
     current_tenant_id = await get_current_tenant_id(user_id)

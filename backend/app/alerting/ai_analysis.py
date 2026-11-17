@@ -26,6 +26,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.gateway.i18n import tr
 from app.models.alerting import Incident, IncidentAction, IncidentContextSnapshot
 
 logger = logging.getLogger(__name__)
@@ -109,13 +110,25 @@ async def run_analysis(
 
     except asyncio.TimeoutError:
         logger.error("ai_analysis: timed out after %ds for incident=%s", LLM_TIMEOUT_SECONDS, incident.incident_key)
-        incident.ai_summary = "AI 解读超时，请稍后重试"
+        lang = "zh" if any("\u4e00" <= c <= "\u9fff" for c in (incident.title or "")) else None
+        incident.ai_summary = tr(
+            "AI 解读超时，请稍后重试",
+            "AI analysis timed out, please retry later",
+            "Phân tích AI quá thời gian chờ, vui lòng thử lại sau",
+            lang=lang,
+        )
         session.add(incident)
         await session.commit()
 
     except Exception:
         logger.exception("ai_analysis: failed for incident=%s", incident.incident_key)
-        incident.ai_summary = "AI 解读生成失败，请稍后重试"
+        lang = "zh" if any("\u4e00" <= c <= "\u9fff" for c in (incident.title or "")) else None
+        incident.ai_summary = tr(
+            "AI 解读生成失败，请稍后重试",
+            "AI analysis failed, please retry later",
+            "Tạo phân tích AI thất bại, vui lòng thử lại sau",
+            lang=lang,
+        )
         session.add(incident)
         await session.commit()
 

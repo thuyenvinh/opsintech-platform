@@ -13,6 +13,7 @@ from sqlmodel import delete, select
 from app.gateway.audit import read_audit_events, record_audit_event
 from app.gateway.auth_repository import AuthUserRepository
 from app.gateway.authorization import require_admin_base, require_platform_admin, require_tenant_admin
+from app.gateway.i18n import tr
 from deerflow.config.paths import get_paths
 from deerflow.database.models import Tenant, TenantMcpServer, TenantMembership, TenantModelConfig, TenantSkill, UserConfig
 from deerflow.database.secrets_crypto import decrypt_app_payload, decrypt_model_settings, encrypt_app_payload
@@ -782,7 +783,14 @@ async def admin_create_tenant(req: Request, body: AdminCreateTenantRequest):
     if owner is None:
         raise HTTPException(status_code=404, detail="owner_user_id not found")
     if str(owner.get("role") or "").strip().lower() == "admin":
-        raise HTTPException(status_code=400, detail="平台 admin 用户不能作为租户初始用户")
+        raise HTTPException(
+            status_code=400,
+            detail=tr(
+                "平台 admin 用户不能作为租户初始用户",
+                "Platform admin users cannot be set as the initial tenant user",
+                "Người dùng admin nền tảng không thể làm người dùng khởi tạo của tenant",
+            ),
+        )
 
     tenant = await create_tenant(name=body.name, owner_user_id=owner_user_id, slug=body.slug, tenant_type=body.tenant_type)
 
@@ -1055,7 +1063,14 @@ async def admin_reset_tenant_admin(req: Request, tenant_id: str, body: AdminRese
     if target_user is None:
         raise HTTPException(status_code=404, detail="user_id not found")
     if str(target_user.get("role") or "").strip().lower() == "admin":
-        raise HTTPException(status_code=400, detail="平台 admin 用户不能作为租户管理员")
+        raise HTTPException(
+            status_code=400,
+            detail=tr(
+                "平台 admin 用户不能作为租户管理员",
+                "Platform admin users cannot be assigned as a tenant admin",
+                "Người dùng admin nền tảng không thể được chỉ định làm quản trị viên tenant",
+            ),
+        )
 
     prior_active_admin_user_ids = [
         member.user_id

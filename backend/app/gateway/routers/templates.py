@@ -5,6 +5,8 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException, Query, Request, UploadFile, File, Form
 from pydantic import BaseModel
 
+from app.gateway.i18n import tr
+
 router = APIRouter(prefix="/api/templates", tags=["templates"])
 
 ALLOWED_EXTENSIONS = {".pptx", ".ppt"}
@@ -68,7 +70,14 @@ async def upload_template(
 
     ext = Path(file.filename or "template.pptx").suffix.lower()
     if ext not in ALLOWED_EXTENSIONS:
-        raise HTTPException(status_code=400, detail=f"只允许上传 PPTX/PPT 文件，不支持 {ext}")
+        raise HTTPException(
+            status_code=400,
+            detail=tr(
+                f"只允许上传 PPTX/PPT 文件，不支持 {ext}",
+                f"Only PPTX/PPT files are allowed; {ext} is not supported",
+                f"Chỉ cho phép tải lên tệp PPTX/PPT, không hỗ trợ {ext}",
+            ),
+        )
 
     templates_dir = _templates_dir(user_id, thread_id, tenant_id)
 

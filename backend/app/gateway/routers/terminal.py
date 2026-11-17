@@ -11,6 +11,7 @@ from sqlalchemy import select as sa_select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.gateway.authorization import require_tenant_context
+from app.gateway.i18n import tr
 from app.models.assets import Keychain, LocalAsset
 from app.models.terminal import ChatSession, TerminalSecuritySettings, CommandAuditLog
 from app.services.terminal.session import build_ssh_command, session_manager
@@ -199,7 +200,7 @@ async def save_chat_session(req: ChatSessionRequest, request: Request, db: Async
             tenant_id=tenant_id,
             user_id=user_id,
             terminal_session_id=req.task_id,
-            title=req.title or "未命名会话",
+            title=req.title or tr("未命名会话", "Untitled Session", "Phiên chưa đặt tên"),
             model_name=req.model_name,
             messages=req.messages,
             todos=[],

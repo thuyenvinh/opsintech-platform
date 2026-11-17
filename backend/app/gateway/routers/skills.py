@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from pydantic import BaseModel, Field
 
 from app.gateway.authorization import require_tenant_admin, require_tenant_context
+from app.gateway.i18n import tr
 from app.gateway.path_utils import resolve_thread_virtual_path
 from deerflow.database.user_config_service import (
     create_tenant_shared_skill,
@@ -1201,12 +1202,26 @@ async def summarize_diagnosis(
                 output_text = "\n".join(parts)
 
         if not output_text:
-            raise HTTPException(status_code=500, detail="AI 返回了空内容，请重试")
+            raise HTTPException(
+                status_code=500,
+                detail=tr(
+                    "AI 返回了空内容，请重试",
+                    "AI returned empty content, please try again",
+                    "AI trả về nội dung trống, vui lòng thử lại",
+                ),
+            )
 
         # Parse JSON metadata from the first code block
         json_match = re.search(r'```(?:json)?\s*\n?(.*?)\n?```', output_text, re.DOTALL)
         if not json_match:
-            raise HTTPException(status_code=500, detail="AI 未返回有效的 JSON 元数据，请重试")
+            raise HTTPException(
+                status_code=500,
+                detail=tr(
+                    "AI 未返回有效的 JSON 元数据，请重试",
+                    "AI did not return valid JSON metadata, please try again",
+                    "AI không trả về siêu dữ liệu JSON hợp lệ, vui lòng thử lại",
+                ),
+            )
         json_text = json_match.group(1).strip()
 
         # Parse instructions from the second code block (markdown)
@@ -1228,7 +1243,14 @@ async def summarize_diagnosis(
         )
     except _json.JSONDecodeError as e:
         logger.error(f"Failed to parse LLM JSON response: {e}\nRaw output: {output_text[:500] if 'output_text' in dir() else 'N/A'}")
-        raise HTTPException(status_code=500, detail="AI 返回格式异常，请重试")
+        raise HTTPException(
+            status_code=500,
+            detail=tr(
+                "AI 返回格式异常，请重试",
+                "AI returned an invalid format, please try again",
+                "Định dạng phản hồi của AI không hợp lệ, vui lòng thử lại",
+            ),
+        )
     except HTTPException:
         raise
     except Exception as e:

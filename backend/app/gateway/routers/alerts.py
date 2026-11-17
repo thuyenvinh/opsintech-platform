@@ -13,6 +13,7 @@ from app.alerting.ai_analysis import DEFAULT_AUTO_SEVERITIES
 from app.alerting.ingest import process_alert
 from app.alerting.incident_manager import suppress_incident
 from app.gateway.authorization import require_tenant_context, require_tenant_admin
+from app.gateway.i18n import tr
 from app.models.alerting import AlertRule, AlertingSettings, AlertSource, ChangeEvent, Incident, IncidentSignalLink, RawAlert, Signal
 from deerflow.database.session import get_session, get_session_factory
 
@@ -601,7 +602,11 @@ async def get_incident_timeline(
             select(Signal).where(Signal.id.in_(signal_ids)).order_by(Signal.occurred_at.asc())
         )
         for s in sig_result.scalars().all():
-            status_label = "告警触发" if s.status == "firing" else "告警恢复"
+            status_label = (
+                tr("告警触发", "Alert Firing", "Cảnh báo kích hoạt")
+                if s.status == "firing"
+                else tr("告警恢复", "Alert Resolved", "Cảnh báo đã khôi phục")
+            )
 
             # Fetch raw_payload from linked RawAlert if available
             raw_payload = None
@@ -632,7 +637,7 @@ async def get_incident_timeline(
         events.append(TimelineEvent(
             type="ai_analysis",
             timestamp=incident.updated_at.isoformat(),
-            title="AI 智能解读完成",
+            title=tr("AI 智能解读完成", "AI Analysis Completed", "Phân tích AI hoàn tất"),
             detail=incident.ai_summary[:200] if incident.ai_summary else None,
             actor="system",
             metadata={"ai_impact": incident.ai_impact, "ai_suggestion": incident.ai_suggestion},
@@ -641,16 +646,23 @@ async def get_incident_timeline(
     # 3. Diagnosis events
     if incident.diagnosis_status:
         status_labels = {
-            "running": "Agent 诊断进行中",
-            "completed": "Agent 诊断已完成",
-            "failed": "Agent 诊断失败",
-            "cancelled": "Agent 诊断已取消",
-            "partial": "Agent 部分诊断完成",
+            "running": tr("Agent 诊断进行中", "Agent Diagnosis Running", "Agent đang chẩn đoán"),
+            "completed": tr("Agent 诊断已完成", "Agent Diagnosis Completed", "Agent chẩn đoán hoàn tất"),
+            "failed": tr("Agent 诊断失败", "Agent Diagnosis Failed", "Agent chẩn đoán thất bại"),
+            "cancelled": tr("Agent 诊断已取消", "Agent Diagnosis Cancelled", "Agent chẩn đoán đã bị hủy"),
+            "partial": tr("Agent 部分诊断完成", "Agent Diagnosis Partially Completed", "Agent chẩn đoán hoàn tất một phần"),
         }
         events.append(TimelineEvent(
             type="diagnosis",
             timestamp=incident.updated_at.isoformat(),
-            title=status_labels.get(incident.diagnosis_status, f"Agent 诊断: {incident.diagnosis_status}"),
+            title=status_labels.get(
+                incident.diagnosis_status,
+                tr(
+                    f"Agent 诊断: {incident.diagnosis_status}",
+                    f"Agent Diagnosis: {incident.diagnosis_status}",
+                    f"Chẩn đoán Agent: {incident.diagnosis_status}",
+                ),
+            ),
             detail=incident.diagnosis_result[:300] if incident.diagnosis_result else incident.diagnosis_error,
             actor=incident.agent_id or "system",
             metadata={
@@ -669,23 +681,25 @@ async def get_incident_timeline(
         ).order_by(IncidentAction.created_at.asc())
     )
     action_labels = {
-        "suppressed": "标记为误报 (Suppressed)",
-        "unsuppressed": "撤销误报标记",
-        "claimed": "认领告警",
-        "assigned": "指派告警",
-        "manual_resolved": "手动标记已恢复",
-        "ticket_created": "创建外部工单",
+        "suppressed": tr("标记为误报 (Suppressed)", "Marked as False Positive (Suppressed)", "Đánh dấu báo động giả (Suppressed)"),
+        "unsuppressed": tr("撤销误报标记", "Unsuppressed", "Hủy đánh dấu báo động giả"),
+        "claimed": tr("认领告警", "Alert Claimed", "Nhận xử lý cảnh báo"),
+        "assigned": tr("指派告警", "Alert Assigned", "Phân công cảnh báo"),
+        "manual_resolved": tr("手动标记已恢复", "Manually Marked Resolved", "Đánh dấu đã khôi phục thủ công"),
+        "ticket_created": tr("创建外部工单", "External Ticket Created", "Đã tạo phiếu xử lý bên ngoài"),
     }
     for a in actions_result.scalars().all():
         label = action_labels.get(a.action_type, a.action_type)
         detail = None
         if a.action_type == "assigned":
-            detail = f"指派给 {a.action_payload.get('owner_user_id', 'unknown')}"
+            owner_id = a.action_payload.get("owner_user_id", "unknown")
+            detail = tr(f"指派给 {owner_id}", f"Assigned to {owner_id}", f"Phân công cho {owner_id}")
         elif a.action_type == "ticket_created":
-            detail = f"工单: {a.action_payload.get('ticket_id', 'unknown')}"
+            ticket_id = a.action_payload.get("ticket_id", "unknown")
+            detail = tr(f"工单: {ticket_id}", f"Ticket: {ticket_id}", f"Phiếu: {ticket_id}")
         elif a.action_type == "manual_resolved":
             note = a.action_payload.get("resolution_note")
-            detail = f"恢复备注: {note}" if note else None
+            detail = tr(f"恢复备注: {note}", f"Resolution note: {note}", f"Ghi chú khôi phục: {note}") if note else None
         events.append(TimelineEvent(
             type="action",
             timestamp=a.created_at.isoformat(),
@@ -700,8 +714,8 @@ async def get_incident_timeline(
         events.append(TimelineEvent(
             type="status_change",
             timestamp=incident.resolved_at.isoformat(),
-            title="告警已恢复",
-            detail=f"Incident 状态变更为 resolved",
+            title=tr("告警已恢复", "Alert Resolved", "Cảnh báo đã khôi phục"),
+            detail=tr("Incident 状态变更为 resolved", "Incident status changed to resolved", "Trạng thái sự cố chuyển sang resolved"),
             actor="system",
             metadata={"previous_status": "firing", "new_status": "resolved"},
         ))
@@ -1361,7 +1375,11 @@ async def _run_diagnosis_background_task(
             fresh = await write_session.get(Incident, incident_id)
             if fresh and fresh.diagnosis_status == "running":
                 fresh.diagnosis_status = "cancelled"
-                fresh.diagnosis_error = "诊断任务被手动终止"
+                fresh.diagnosis_error = tr(
+                    "诊断任务被手动终止",
+                    "Diagnosis task was manually terminated",
+                    "Tác vụ chẩn đoán đã bị dừng thủ công",
+                )
                 write_session.add(fresh)
                 await write_session.commit()
 
@@ -1369,7 +1387,11 @@ async def _run_diagnosis_background_task(
         from langgraph.errors import GraphRecursionError
         
         if isinstance(e, GraphRecursionError):
-            err_msg = "诊断步骤过多，已自动终止。请尝试缩小排查范围后重新诊断。"
+            err_msg = tr(
+                "诊断步骤过多，已自动终止。请尝试缩小排查范围后重新诊断。",
+                "Too many diagnosis steps; automatically terminated. Please narrow the investigation scope and retry.",
+                "Quá nhiều bước chẩn đoán, đã tự động dừng. Vui lòng thu hẹp phạm vi kiểm tra và thử lại.",
+            )
         else:
             err_msg = str(e)
 
@@ -1608,7 +1630,11 @@ async def cancel_diagnosis(
 
     # Update incident status
     incident.diagnosis_status = "cancelled"
-    incident.diagnosis_error = "诊断已被用户取消"
+    incident.diagnosis_error = tr(
+        "诊断已被用户取消",
+        "Diagnosis cancelled by user",
+        "Chẩn đoán đã bị người dùng hủy",
+    )
     session.add(incident)
     await session.commit()
     await session.refresh(incident)
@@ -1702,11 +1728,32 @@ async def _validate_diagnosis_agent(
     )
     agent = result.scalars().first()
     if agent is None:
-        raise HTTPException(status_code=400, detail=f"诊断 Agent ({agent_id}) 不存在或不属于该租户")
+        raise HTTPException(
+            status_code=400,
+            detail=tr(
+                f"诊断 Agent ({agent_id}) 不存在或不属于该租户",
+                f"Diagnosis Agent ({agent_id}) does not exist or does not belong to this tenant",
+                f"Agent chẩn đoán ({agent_id}) không tồn tại hoặc không thuộc tenant này",
+            ),
+        )
     if agent.user_id != "tenant-shared":
-        raise HTTPException(status_code=400, detail=f"只能使用租户共享 Agent 作为诊断 Agent。Agent '{agent.name}' 是私有 Agent。")
+        raise HTTPException(
+            status_code=400,
+            detail=tr(
+                f"只能使用租户共享 Agent 作为诊断 Agent。Agent '{agent.name}' 是私有 Agent。",
+                f"Only tenant-shared Agents can be used as diagnosis Agents. Agent '{agent.name}' is a private Agent.",
+                f"Chỉ có thể sử dụng Agent dùng chung của tenant làm Agent chẩn đoán. Agent '{agent.name}' là Agent riêng tư.",
+            ),
+        )
     if not agent.enabled:
-        raise HTTPException(status_code=400, detail=f"诊断 Agent '{agent.name}' 已被禁用，请先启用。")
+        raise HTTPException(
+            status_code=400,
+            detail=tr(
+                f"诊断 Agent '{agent.name}' 已被禁用，请先启用。",
+                f"Diagnosis Agent '{agent.name}' is disabled; please enable it first.",
+                f"Agent chẩn đoán '{agent.name}' đã bị vô hiệu hóa, vui lòng bật lại trước.",
+            ),
+        )
 
 
 class AlertSourceCreate(BaseModel):

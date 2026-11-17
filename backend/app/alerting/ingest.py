@@ -25,6 +25,7 @@ from app.alerting.dedup import compute_payload_hash
 from app.alerting.incident_manager import create_signal, find_or_create_incident
 from app.alerting.providers import get_provider
 from app.alerting.rule_engine import evaluate_rules, get_aggregation_config
+from app.gateway.i18n import tr
 from app.models.alerting import AlertRule, AlertSource, Incident, IncidentSignalLink, RawAlert, Signal
 
 logger = logging.getLogger(__name__)
@@ -364,7 +365,13 @@ def _schedule_agent_diagnosis(incident, tenant_id: str, diagnosis_agent_id: str)
                     fresh = await err_session.get(Incident, incident.id)
                     if fresh:
                         fresh.diagnosis_status = "failed"
-                        fresh.diagnosis_error = "自动诊断执行失败，请手动发起深度诊断"
+                        lang = "zh" if any("\u4e00" <= c <= "\u9fff" for c in (incident.title or "")) else None
+                        fresh.diagnosis_error = tr(
+                            "自动诊断执行失败，请手动发起深度诊断",
+                            "Auto-diagnosis failed, please trigger deep diagnosis manually",
+                            "Chẩn đoán tự động thất bại, vui lòng chạy chẩn đoán sâu thủ công",
+                            lang=lang,
+                        )
                         err_session.add(fresh)
                         await err_session.commit()
             except Exception:

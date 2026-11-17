@@ -8,11 +8,16 @@ import asyncio
 import logging
 from datetime import UTC, datetime
 
+from app.gateway.i18n import tr
 from app.models.alerting import AlertingSettings, Incident
 
 logger = logging.getLogger(__name__)
 
 _NOTIFICATION_DEBOUNCE_SECONDS = 3  # Wait for AI analysis before sending
+
+
+def _incident_lang(incident: Incident) -> str | None:
+    return "zh" if any("\u4e00" <= c <= "\u9fff" for c in (incident.title or "")) else None
 
 
 async def send_incident_created(incident: Incident) -> None:
@@ -131,28 +136,68 @@ _SEVERITY_COLORS = {
 
 def _build_created_card(incident: Incident) -> str:
     icon, label = _SEVERITY_COLORS.get(incident.severity, ("⚪", incident.severity.upper()))
+    lang = _incident_lang(incident)
 
     lines = [
         f"{icon} *[{label}] {incident.title or incident.incident_key}*",
         f"*Incident:* `{incident.incident_key}`",
-        f"*服务:* {incident.service or '?'}  ·  *环境:* {incident.environment or '?'}  ·  *信号数:* {incident.signal_count}",
+        tr(
+            f"*服务:* {incident.service or '?'}  ·  *环境:* {incident.environment or '?'}  ·  *信号数:* {incident.signal_count}",
+            f"*Service:* {incident.service or '?'}  ·  *Env:* {incident.environment or '?'}  ·  *Signals:* {incident.signal_count}",
+            f"*Dịch vụ:* {incident.service or '?'}  ·  *Môi trường:* {incident.environment or '?'}  ·  *Tín hiệu:* {incident.signal_count}",
+            lang=lang,
+        ),
     ]
 
     if incident.ai_summary:
-        lines.append(f"")
-        lines.append(f"📋 *AI 解读:* {incident.ai_summary[:200]}")
+        lines.append("")
+        lines.append(
+            tr(
+                f"📋 *AI 解读:* {incident.ai_summary[:200]}",
+                f"📋 *AI Summary:* {incident.ai_summary[:200]}",
+                f"📋 *Tóm tắt AI:* {incident.ai_summary[:200]}",
+                lang=lang,
+            )
+        )
 
     if incident.owner_team_id:
-        lines.append(f"*团队:* {incident.owner_team_id}")
+        lines.append(
+            tr(
+                f"*团队:* {incident.owner_team_id}",
+                f"*Team:* {incident.owner_team_id}",
+                f"*Nhóm:* {incident.owner_team_id}",
+                lang=lang,
+            )
+        )
 
     return "\n".join(lines)
 
 
 def _build_resolved_card(incident: Incident, duration_minutes: int) -> str:
-    dur = f"{duration_minutes} 分钟" if duration_minutes < 60 else f"{duration_minutes // 60} 小时 {duration_minutes % 60} 分钟"
-    return (
+    lang = _incident_lang(incident)
+    if duration_minutes < 60:
+        dur = tr(
+            f"{duration_minutes} 分钟",
+            f"{duration_minutes}m",
+            f"{duration_minutes} phút",
+            lang=lang,
+        )
+    else:
+        hours, mins = duration_minutes // 60, duration_minutes % 60
+        dur = tr(
+            f"{hours} 小时 {mins} 分钟",
+            f"{hours}h {mins}m",
+            f"{hours} giờ {mins} phút",
+            lang=lang,
+        )
+    return tr(
         f"✅ *已恢复* `{incident.incident_key}`\n"
-        f"*服务:* {incident.service or '?'}  ·  *环境:* {incident.environment or '?'}  ·  *持续:* {dur}"
+        f"*服务:* {incident.service or '?'}  ·  *环境:* {incident.environment or '?'}  ·  *持续:* {dur}",
+        f"✅ *Resolved* `{incident.incident_key}`\n"
+        f"*Service:* {incident.service or '?'}  ·  *Env:* {incident.environment or '?'}  ·  *Duration:* {dur}",
+        f"✅ *Đã xử lý* `{incident.incident_key}`\n"
+        f"*Dịch vụ:* {incident.service or '?'}  ·  *Môi trường:* {incident.environment or '?'}  ·  *Thời lượng:* {dur}",
+        lang=lang,
     )
 
 
@@ -190,9 +235,13 @@ async def _build_digest_card(tenant_id: str, period: str) -> str:
         )
         resolved = resolved_res.scalar() or 0
 
-    return (
+    return tr(
         f"📊 告警{period} · {today.strftime('%m/%d')}\n"
-        f"🔥 进行中: {firing}  ·  ✅ 今日恢复: {resolved}  ·  📋 今日新建: {created}"
+        f"🔥 进行中: {firing}  ·  ✅ 今日恢复: {resolved}  ·  📋 今日新建: {created}",
+        f"📊 Alert Digest ({period}) · {today.strftime('%m/%d')}\n"
+        f"🔥 Firing: {firing}  ·  ✅ Resolved Today: {resolved}  ·  📋 Created Today: {created}",
+        f"📊 Tổng hợp cảnh báo ({period}) · {today.strftime('%m/%d')}\n"
+        f"🔥 Đang diễn ra: {firing}  ·  ✅ Đã xử lý hôm nay: {resolved}  ·  📋 Tạo mới hôm nay: {created}",
     )
 
 

@@ -11,6 +11,7 @@ from app.gateway.auth_db import (
     column_exists,
     _row_to_dict,
 )
+from app.gateway.i18n import tr
 from deerflow.config.tenant_context import reset_tenant_context, set_tenant_context
 from deerflow.database.tenant_service import ensure_default_tenant_for_user, get_membership, list_user_tenants, normalize_tenant_role
 from deerflow.database.user_config_service import get_current_tenant_id, set_current_tenant_id
@@ -258,7 +259,13 @@ class AuthMiddleware(BaseHTTPMiddleware):
                             logger.error("Failed to auto-create tenant for user %s: %s", user_id, auto_create_error)
                             return JSONResponse(
                                 status_code=403,
-                                content={"detail": "当前账号未加入任何租户，请联系管理员将你加入租户后再登录。"},
+                                content={
+                                    "detail": tr(
+                                        "当前账号未加入任何租户，请联系管理员将你加入租户后再登录。",
+                                        "Your account is not a member of any tenant. Please contact an administrator to add you to a tenant before signing in.",
+                                        "Tài khoản hiện tại chưa thuộc tenant nào. Vui lòng liên hệ quản trị viên để được thêm vào tenant trước khi đăng nhập.",
+                                    )
+                                },
                             )
                     elif not detail:
                         detail = "Tenant access denied"

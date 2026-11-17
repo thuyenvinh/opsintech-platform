@@ -11,6 +11,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.gateway.authorization import require_tenant_context, _is_tenant_admin
+from app.gateway.i18n import tr
 from app.models.agents import CustomAgent
 from deerflow.config.agents_config import AgentConfig
 from deerflow.config.paths import get_paths
@@ -478,7 +479,11 @@ async def delete_agent(
         source_names = ", ".join(s.name for s in ref_sources)
         raise HTTPException(
             status_code=409,
-            detail=f"无法删除：告警源 ({source_names}) 正在使用此 Agent。请先在告警源中解除绑定后再删除。"
+            detail=tr(
+                f"无法删除：告警源 ({source_names}) 正在使用此 Agent。请先在告警源中解除绑定后再删除。",
+                f"Cannot delete: alert source(s) ({source_names}) are using this Agent. Please unbind it in the alert source(s) before deleting.",
+                f"Không thể xóa: nguồn cảnh báo ({source_names}) đang sử dụng Agent này. Vui lòng hủy liên kết trong nguồn cảnh báo trước khi xóa.",
+            ),
         )
 
     await session.delete(agent)

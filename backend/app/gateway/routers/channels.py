@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+
+from app.gateway.i18n import tr
+from app.gateway.permissions import require_cap
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +36,11 @@ class TestNotificationResponse(BaseModel):
 
 
 
-@router.get("/", response_model=ChannelStatusResponse)
+@router.get(
+    "/",
+    response_model=ChannelStatusResponse,
+    dependencies=[Depends(require_cap("tenant.channel.manage"))],
+)
 async def get_channels_status() -> ChannelStatusResponse:
     """Get the status of all IM channels."""
     from app.channels.service import get_channel_service
@@ -45,7 +52,11 @@ async def get_channels_status() -> ChannelStatusResponse:
     return ChannelStatusResponse(**status)
 
 
-@router.post("/{name}/restart", response_model=ChannelRestartResponse)
+@router.post(
+    "/{name}/restart",
+    response_model=ChannelRestartResponse,
+    dependencies=[Depends(require_cap("tenant.channel.manage"))],
+)
 async def restart_channel(name: str) -> ChannelRestartResponse:
     """Restart a specific IM channel."""
     from app.channels.service import get_channel_service
@@ -63,7 +74,11 @@ async def restart_channel(name: str) -> ChannelRestartResponse:
         return ChannelRestartResponse(success=False, message=f"Failed to restart channel {name}")
 
 
-@router.post("/test", response_model=TestNotificationResponse)
+@router.post(
+    "/test",
+    response_model=TestNotificationResponse,
+    dependencies=[Depends(require_cap("tenant.channel.manage"))],
+)
 async def test_channel_notification(body: TestNotificationRequest) -> TestNotificationResponse:
     """Send a test notification to a specific IM channel and chat ID."""
     from datetime import datetime
@@ -74,13 +89,26 @@ async def test_channel_notification(body: TestNotificationRequest) -> TestNotifi
     if service is None or not service.bus:
         raise HTTPException(status_code=503, detail="Channel service is not running")
 
-    text = (
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    text = tr(
         "🔔 **OpsInTech 告警通道连通性测试**\n\n"
         "这是一条自动生成的通道连通性测试消息。\n"
         "**测试状态**: 成功 ✅\n"
         f"**测试渠道**: {body.channel_name}\n"
         f"**推送群组**: {body.chat_id}\n"
-        f"**时间**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        f"**时间**: {timestamp}",
+        "🔔 **OpsInTech channel connectivity test**\n\n"
+        "This is an automatically generated channel connectivity test message.\n"
+        "**Status**: success ✅\n"
+        f"**Channel**: {body.channel_name}\n"
+        f"**Chat**: {body.chat_id}\n"
+        f"**Time**: {timestamp}",
+        "🔔 **Kiểm tra kết nối kênh OpsInTech**\n\n"
+        "Đây là tin nhắn kiểm tra kết nối kênh được tạo tự động.\n"
+        "**Trạng thái**: thành công ✅\n"
+        f"**Kênh**: {body.channel_name}\n"
+        f"**Nhóm nhận**: {body.chat_id}\n"
+        f"**Thời gian**: {timestamp}",
     )
 
     msg = OutboundMessage(
@@ -102,11 +130,11 @@ async def test_channel_notification(body: TestNotificationRequest) -> TestNotifi
 # Tenant IM Settings
 # ---------------------------------------------------------------------------
 
-from fastapi import Depends, Request
+from fastapi import Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.gateway.authorization import require_tenant_admin, require_tenant_context
+from app.gateway.authorization import require_tenant_context
 from app.models.alerting import AlertingSettings
 from deerflow.database.session import get_session
 
@@ -152,6 +180,7 @@ async def get_im_settings(
     "/settings",
     response_model=TenantImSettingsResponse,
     summary="Update tenant IM channel settings",
+    dependencies=[Depends(require_cap("tenant.channel.manage"))],
 )
 async def update_im_settings(
     body: TenantImSettingsUpdate,
@@ -160,7 +189,7 @@ async def update_im_settings(
 ) -> TenantImSettingsResponse:
     """Update only channel infrastructure (channels + chat_ids).
     Does NOT touch alerting-specific notification preferences."""
-    tenant_id = require_tenant_admin(request)
+    tenant_id = require_tenant_context(request)
 
     result = await session.exec(
         select(AlertingSettings).where(AlertingSettings.tenant_id == tenant_id)

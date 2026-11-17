@@ -1,9 +1,10 @@
 """Summarization settings API router for tenant-admin settings."""
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from app.gateway.authorization import require_tenant_context
+from app.gateway.permissions import require_cap
 from deerflow.config.summarization_config import (
     ContextSize,
     DEFAULT_ENABLED,
@@ -95,6 +96,7 @@ async def get_summarization_settings(request: Request) -> SummarizationSettingsR
     response_model=SummarizationSettingsResponse,
     summary="Update Summarization Settings",
     description="Update summarization (context compression) settings for the tenant.",
+    dependencies=[Depends(require_cap("tenant.summarization.write"))],
 )
 async def update_summarization_settings(
     request: Request,
@@ -103,7 +105,6 @@ async def update_summarization_settings(
     user_id = getattr(request.state, "user_id", None)
     if not user_id:
         raise HTTPException(status_code=401, detail="Missing user context")
-    require_tenant_context(request)
 
     config = get_summarization_config()
 
@@ -133,6 +134,10 @@ async def update_summarization_settings(
     if body.trim_tokens_to_summarize is not None:
         config.trim_tokens_to_summarize = body.trim_tokens_to_summarize
 
+    # NOTE: this only mutates a process-level global, so the change is neither
+    # persisted nor tenant-scoped. Persisting it per tenant needs a tenant-shared
+    # app-payload row in user_configs plus a reader for it in
+    # deerflow/database/user_config_store.py.
     set_summarization_config(config)
 
     return _build_response(config)

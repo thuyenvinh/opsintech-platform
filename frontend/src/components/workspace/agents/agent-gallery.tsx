@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { useAgents } from "@/core/agents";
 import { tr } from "@/core/i18n";
 import { useI18n } from "@/core/i18n/hooks";
+import { isTenantAdminRole } from "@/core/permissions/scope";
+import { useCurrentTenant } from "@/core/tenants/hooks";
 
 import { AgentCard } from "./agent-card";
 import { CreateAgentDialog } from "./create-agent-dialog";
@@ -21,8 +23,14 @@ export function AgentGallery() {
   const { agents, isLoading, refetch } = useAgents();
   const router = useRouter();
 
+  // Summarization is a tenant governance setting: PUT requires the
+  // tenant.summarization.write capability, so members never see the tab.
+  const { data: currentTenant } = useCurrentTenant();
+  const canManageSummarization = isTenantAdminRole(currentTenant?.role);
+
   // Tab state: "agents" | "summarization"
   const [activeTab, setActiveTab] = useState<"agents" | "summarization">("agents");
+  const effectiveTab = activeTab === "summarization" && !canManageSummarization ? "agents" : activeTab;
 
   // Filters State
   const [searchQuery, setSearchQuery] = useState("");
@@ -80,7 +88,7 @@ export function AgentGallery() {
         <button
           onClick={() => setActiveTab("agents")}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-[1px] ${
-            activeTab === "agents"
+            effectiveTab === "agents"
               ? "border-primary text-foreground"
               : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
@@ -88,28 +96,30 @@ export function AgentGallery() {
           <BotIcon className="inline-block h-4 w-4 mr-1.5" />
           {tr(locale, "智能体列表", "Agents", "Danh sách trợ lý")}
         </button>
-        <button
-          onClick={() => setActiveTab("summarization")}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-[1px] ${
-            activeTab === "summarization"
-              ? "border-primary text-foreground"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <Settings2Icon className="inline-block h-4 w-4 mr-1.5" />
-          {t.settings.sections.summarization}
-        </button>
+        {canManageSummarization && (
+          <button
+            onClick={() => setActiveTab("summarization")}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-[1px] ${
+              effectiveTab === "summarization"
+                ? "border-primary text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Settings2Icon className="inline-block h-4 w-4 mr-1.5" />
+            {t.settings.sections.summarization}
+          </button>
+        )}
       </div>
 
       {/* Summarization settings tab */}
-      {activeTab === "summarization" && (
+      {effectiveTab === "summarization" && (
         <div className="flex-1 overflow-y-auto min-h-0 pt-2">
           <SummarizationSettingsPage />
         </div>
       )}
 
       {/* Agent list tab */}
-      {activeTab === "agents" && (
+      {effectiveTab === "agents" && (
         <>
 
       {/* Filter and Search Bar directly below the header */}

@@ -24,7 +24,7 @@ services:
     build:
       context: ./provisioner
       dockerfile: Dockerfile
-    container_name: opsintech-provisioner
+    container_name: vnpt-provisioner
     volumes:
       - ~/.kube/config:/root/.kube/config:ro
     environment:
@@ -62,7 +62,7 @@ services:
   # - nginx.conf: includes provisioner route (provisioner mode)
   nginx:
     image: nginx:alpine
-    container_name: opsintech-nginx
+    container_name: vnpt-nginx
     ports:
       - "2026:2026"
     volumes:
@@ -84,7 +84,7 @@ services:
       args:
         PNPM_STORE_PATH: ${PNPM_STORE_PATH:-/root/.local/share/pnpm/store}
         NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org}
-    container_name: opsintech-frontend
+    container_name: vnpt-frontend
     command: sh -c "cd frontend && pnpm run dev > /app/logs/frontend.log 2>&1"
     volumes:
       - ../frontend/src:/app/frontend/src
@@ -111,7 +111,7 @@ services:
       context: ../
       dockerfile: backend/Dockerfile
       # cache_from disabled - requires manual setup: mkdir -p /tmp/docker-cache-gateway
-    container_name: opsintech-gateway
+    container_name: vnpt-gateway
     command: sh -c "cd backend && PYTHONPATH=. uv run uvicorn app.gateway.app:app --host 0.0.0.0 --port 8001 --reload --reload-include='*.yaml .env' > /app/logs/gateway.log 2>&1"
     volumes:
       - ../backend/:/app/backend/
@@ -159,7 +159,7 @@ services:
       context: ../
       dockerfile: backend/Dockerfile
       # cache_from disabled - requires manual setup: mkdir -p /tmp/docker-cache-langgraph
-    container_name: opsintech-langgraph
+    container_name: vnpt-langgraph
     command: sh -c "cd backend && uv run langgraph dev --no-browser --allow-blocking --host 0.0.0.0 --port 2024 > /app/logs/langgraph.log 2>&1"
     volumes:
       - ../backend/:/app/backend/

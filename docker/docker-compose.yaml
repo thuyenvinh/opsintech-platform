@@ -28,7 +28,7 @@ services:
     build:
       context: ../
       dockerfile: backend/Dockerfile
-    container_name: opsintech-db-init
+    container_name: vnpt-db-init
     command: sh -c "cd backend && PYTHONPATH=. uv run alembic upgrade head"
     volumes:
       - ${OPSINTECH_CONFIG_PATH}:/app/backend/config.yaml:ro
@@ -52,7 +52,7 @@ services:
   # ── PostgreSQL (optional, profile: postgres) ───────────────────────────────
   postgres:
     image: postgres:16-alpine
-    container_name: opsintech-postgres
+    container_name: vnpt-postgres
     profiles:
       - postgres
     environment:
@@ -79,7 +79,7 @@ services:
   # ── Reverse Proxy ──────────────────────────────────────────────────────────
   nginx:
     image: nginx:alpine
-    container_name: opsintech-nginx
+    container_name: vnpt-nginx
     ports:
       - "${PORT:-2026}:2026"
     volumes:
@@ -108,7 +108,7 @@ services:
       args:
         PNPM_STORE_PATH: ${PNPM_STORE_PATH:-/root/.local/share/pnpm/store}
         NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org}
-    container_name: opsintech-frontend
+    container_name: vnpt-frontend
     volumes:
       - ${OPSINTECH_CONFIG_PATH}:/app/config.yaml:ro
       - ${OPSINTECH_HOME}:/app/backend/.opsintech
@@ -133,7 +133,7 @@ services:
     build:
       context: ../
       dockerfile: backend/Dockerfile
-    container_name: opsintech-gateway
+    container_name: vnpt-gateway
     command: sh -c "cd backend && PYTHONPATH=. uv run uvicorn app.gateway.app:app --host 0.0.0.0 --port 8001 --workers 2"
     volumes:
       - ${OPSINTECH_CONFIG_PATH}:/app/backend/config.yaml:ro
@@ -174,7 +174,7 @@ services:
     build:
       context: ../
       dockerfile: backend/Dockerfile
-    container_name: opsintech-langgraph
+    container_name: vnpt-langgraph
     command: sh -c "cd /app/backend && uv run langgraph dev --no-browser --allow-blocking --no-reload --host 0.0.0.0 --port 2024"
     volumes:
       - ${OPSINTECH_CONFIG_PATH}:/app/config.yaml:ro
@@ -218,7 +218,7 @@ services:
     build:
       context: ./provisioner
       dockerfile: Dockerfile
-    container_name: opsintech-provisioner
+    container_name: vnpt-provisioner
     volumes:
       - ~/.kube/config:/root/.kube/config:ro
     environment:

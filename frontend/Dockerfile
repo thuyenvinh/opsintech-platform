@@ -17,14 +17,14 @@ COPY frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml frontend/package.json 
 # ── Dev: install only, CMD is overridden by docker-compose ───────────────────
 FROM base AS dev
 ARG NPM_REGISTRY
-RUN cd /app/frontend && pnpm config set registry ${NPM_REGISTRY} && pnpm install --frozen-lockfile
+RUN cd /app/frontend && pnpm config set registry ${NPM_REGISTRY} && pnpm install --no-frozen-lockfile
 COPY frontend ./frontend
 EXPOSE 3000
 
 # ── Builder: install + compile Next.js ───────────────────────────────────────
 FROM base AS builder
 ARG NPM_REGISTRY
-RUN cd /app/frontend && pnpm config set registry ${NPM_REGISTRY} && pnpm install --frozen-lockfile
+RUN cd /app/frontend && pnpm config set registry ${NPM_REGISTRY} && pnpm install --no-frozen-lockfile
 COPY frontend ./frontend
 RUN cd /app/frontend && SKIP_ENV_VALIDATION=1 pnpm build
 

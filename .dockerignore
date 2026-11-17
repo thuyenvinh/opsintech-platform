@@ -31,8 +31,10 @@ wheels/
 
 # Web
 node_modules
+**/node_modules
 npm-debug.log
 .next
+**/.next
 
 # IDE
 .idea/

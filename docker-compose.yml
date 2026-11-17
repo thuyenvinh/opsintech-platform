@@ -22,6 +22,8 @@ x-common-env: &common-env
   OPSINTECH_HOST_SKILLS_PATH: ${PWD:-.}/skills
   OPSINTECH_SANDBOX_HOST: host.docker.internal
   CI: "true"
+  CORS_ORIGINS: http://localhost:2026,http://frontend:3000
+  FRONTEND_URL: http://frontend:3000
 
 x-common-build: &common-build
   context: .
@@ -31,7 +33,7 @@ services:
   db-init:
     build:
       <<: *common-build
-    container_name: opsintech-db-init
+    container_name: vnpt-db-init
     command: sh -c "cd backend && PYTHONPATH=. uv run alembic upgrade head"
     volumes:
       - ./config.yaml:/app/backend/config.yaml:ro
@@ -54,7 +56,7 @@ services:
 
   postgres:
     image: postgres:16-alpine
-    container_name: opsintech-postgres
+    container_name: vnpt-postgres
     profiles:
       - postgres
     environment:
@@ -80,7 +82,7 @@ services:
 
   nginx:
     image: nginx:alpine
-    container_name: opsintech-nginx
+    container_name: vnpt-nginx
     ports:
       - "${PORT:-2026}:2026"
     volumes:
@@ -105,7 +107,7 @@ services:
       context: .
       dockerfile: frontend/Dockerfile
       target: prod
-    container_name: opsintech-frontend
+    container_name: vnpt-frontend
     volumes:
       - ./config.yaml:/app/config.yaml:ro
       - ${OPSINTECH_HOME:-./backend/.opsintech}:/app/backend/.opsintech
@@ -128,7 +130,7 @@ services:
   gateway:
     build:
       <<: *common-build
-    container_name: opsintech-gateway
+    container_name: vnpt-gateway
     command: sh -c "cd backend && PYTHONPATH=. uv run uvicorn app.gateway.app:app --host 0.0.0.0 --port 8001 --workers 2"
     volumes:
       - ./config.yaml:/app/backend/config.yaml:ro
@@ -160,7 +162,7 @@ services:
   langgraph:
     build:
       <<: *common-build
-    container_name: opsintech-langgraph
+    container_name: vnpt-langgraph
     command: sh -c "cd /app/backend && uv run langgraph dev --no-browser --allow-blocking --no-reload --host 0.0.0.0 --port 2024"
     volumes:
       - ./config.yaml:/app/config.yaml:ro

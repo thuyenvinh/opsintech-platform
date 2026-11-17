@@ -255,7 +255,7 @@ export function EditAgentDialog({ agentName, open, onOpenChange, onSuccess }: Ed
       tags,
       tool_groups: selectedToolGroups.size > 0 ? Array.from(selectedToolGroups) : null,
       enabled,
-      is_shared: isShared,
+      ...(isTenantAdmin ? { is_shared: isShared } : {}),
     };
 
     try {

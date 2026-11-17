@@ -376,10 +376,10 @@ async def update_agent(
 
     # If updating shared status
     if "is_shared" in fields_set and body.is_shared is not None:
-        if not is_admin:
-            raise HTTPException(status_code=403, detail="Only tenant admins can share or unshare agents")
         target_user_id = "tenant-shared" if body.is_shared else user_id
         if agent.user_id != target_user_id:
+            if not is_admin:
+                raise HTTPException(status_code=403, detail="Only tenant admins can share or unshare agents")
             # Check for collisions in target scope
             conflict_result = await session.exec(
                 sa_select(CustomAgent).where(

@@ -12,8 +12,9 @@ from sqlmodel import delete, select
 
 from app.gateway.audit import read_audit_events, record_audit_event
 from app.gateway.auth_repository import AuthUserRepository
-from app.gateway.authorization import require_admin_base, require_platform_admin, require_tenant_admin
+from app.gateway.authorization import require_platform_admin
 from app.gateway.i18n import tr
+from app.gateway.permissions import require_cap
 from deerflow.config.paths import get_paths
 from deerflow.database.models import Tenant, TenantMcpServer, TenantMembership, TenantModelConfig, TenantSkill, UserConfig
 from deerflow.database.secrets_crypto import decrypt_app_payload, decrypt_model_settings, encrypt_app_payload
@@ -620,7 +621,7 @@ async def get_audit_logs(
     return AdminAuditLogsResponse(events=[AdminAuditEvent(**row) for row in rows])
 
 
-@router.get("/tenant-audit/logs", response_model=TenantAuditLogsResponse, dependencies=[Depends(require_tenant_admin)])
+@router.get("/tenant-audit/logs", response_model=TenantAuditLogsResponse, dependencies=[Depends(require_cap("tenant.audit.read"))])
 async def get_tenant_audit_logs(
     request: Request,
     limit: int = 100,
@@ -645,7 +646,7 @@ class BootstrapStatusResponse(BaseModel):
 class ChangePasswordRequest(BaseModel):
     new_password: str
 
-@router.get("/bootstrap-status", response_model=BootstrapStatusResponse, dependencies=[Depends(require_admin_base)])
+@router.get("/bootstrap-status", response_model=BootstrapStatusResponse, dependencies=[Depends(require_cap("self.password.change"))])
 async def get_bootstrap_status(request: Request) -> BootstrapStatusResponse:
     user_id = getattr(request.state, "user_id", None)
     if not user_id:
@@ -661,7 +662,7 @@ async def get_bootstrap_status(request: Request) -> BootstrapStatusResponse:
         must_change_password=bool(user.get("mustChangePassword", False))
     )
 
-@router.post("/change-initial-password", dependencies=[Depends(require_admin_base)])
+@router.post("/change-initial-password", dependencies=[Depends(require_cap("self.password.change"))])
 async def change_initial_password(request: Request, body: ChangePasswordRequest):
     user_id = getattr(request.state, "user_id", None)
     if not user_id:
@@ -688,7 +689,12 @@ async def change_initial_password(request: Request, body: ChangePasswordRequest)
     
     return {"status": "success", "message": "Initial password changed successfully"}
 
-@router.post("/change-password", dependencies=[Depends(require_platform_admin)])
+# Self-service despite the /admin prefix: the handler rotates
+# request.state.user_id's own password and the body carries no target user, so it
+# cannot reach another account. Gating it on a platform capability made the
+# "change my password" dialog -- rendered for every workspace user in
+# workspace-nav-menu.tsx -- return 403 for everyone who is not a platform admin.
+@router.post("/change-password", dependencies=[Depends(require_cap("self.password.change"))])
 async def change_password(request: Request, body: ChangePasswordRequest):
     user_id = getattr(request.state, "user_id", None)
     if not user_id:

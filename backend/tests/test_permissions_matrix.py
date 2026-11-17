@@ -183,6 +183,19 @@ def test_require_cap_reports_missing_tenant_context() -> None:
     assert exc.value.status_code == 400
 
 
+def test_tenant_context_is_asserted_even_for_a_capability_holder() -> None:
+    """A handler may drop its own require_tenant_context and rely on this.
+
+    Without the up-front check, a tenant-scoped guard would pass a caller whose
+    tenant_id is blank and leave the handler to fail further in.
+    """
+    guard = require_cap("tenant.summarization.write")
+    with pytest.raises(HTTPException) as exc:
+        guard(_request(tenant_role_value="tenant_admin", tenant_id="   "))
+    assert exc.value.status_code == 400
+    assert exc.value.detail == "Tenant context is required"
+
+
 def test_require_cap_requires_all_listed_capabilities() -> None:
     guard = require_cap("incident.read", "incident.suppress")
     guard(_request(tenant_role_value="tenant_admin"))

@@ -6,7 +6,14 @@ from sqlalchemy import desc
 from sqlmodel import select
 
 from app.gateway.audit import record_audit_event
-from app.gateway.authorization import require_platform_admin, require_tenant_context
+from app.gateway.authorization import require_tenant_context
+from app.gateway.permissions import (
+    ROLE_TENANT_ADMIN,
+    ROLE_TENANT_MEMBER,
+    TENANT_ADMIN_ROLE_ALIASES,
+    TENANT_MEMBER_ROLE_ALIASES,
+    require_cap,
+)
 from deerflow.database.models import PlatformAnnouncement, PlatformAnnouncementRead
 from deerflow.database.session import get_session_factory
 
@@ -109,10 +116,10 @@ def _normalize_csv_list(values: list[str]) -> list[str]:
 def _canonicalize_role(value: str) -> str:
     normalized = value.strip().lower()
     # Backward compatibility for historical role labels.
-    if normalized in {"owner", "admin", "tenant_admin"}:
-        return "tenant_admin"
-    if normalized in {"member", "tenant_member"}:
-        return "tenant_member"
+    if normalized in TENANT_ADMIN_ROLE_ALIASES:
+        return ROLE_TENANT_ADMIN
+    if normalized in TENANT_MEMBER_ROLE_ALIASES:
+        return ROLE_TENANT_MEMBER
     return normalized
 
 
@@ -234,7 +241,7 @@ def _require_user_id(request: Request) -> str:
     return user_id
 
 
-@router.get("/admin/announcements", response_model=AnnouncementListResponse, dependencies=[Depends(require_platform_admin)])
+@router.get("/admin/announcements", response_model=AnnouncementListResponse, dependencies=[Depends(require_cap("platform.announcement.write"))])
 async def list_admin_announcements() -> AnnouncementListResponse:
     session_factory = get_session_factory()
     async with session_factory() as session:
@@ -246,7 +253,7 @@ async def list_admin_announcements() -> AnnouncementListResponse:
     return AnnouncementListResponse(items=[_serialize_item(row, None) for row in rows])
 
 
-@router.post("/admin/announcements", response_model=AnnouncementItem, dependencies=[Depends(require_platform_admin)])
+@router.post("/admin/announcements", response_model=AnnouncementItem, dependencies=[Depends(require_cap("platform.announcement.write"))])
 async def create_admin_announcement(request: Request, body: AnnouncementCreateRequest) -> AnnouncementItem:
     actor_id = _require_user_id(request)
     now = _utc_now()
@@ -300,7 +307,7 @@ async def create_admin_announcement(request: Request, body: AnnouncementCreateRe
     return _serialize_item(record, None)
 
 
-@router.get("/admin/announcements/{announcement_id}", response_model=AnnouncementItem, dependencies=[Depends(require_platform_admin)])
+@router.get("/admin/announcements/{announcement_id}", response_model=AnnouncementItem, dependencies=[Depends(require_cap("platform.announcement.write"))])
 async def get_admin_announcement(announcement_id: int) -> AnnouncementItem:
     session_factory = get_session_factory()
     async with session_factory() as session:
@@ -310,7 +317,7 @@ async def get_admin_announcement(announcement_id: int) -> AnnouncementItem:
     return _serialize_item(item, None)
 
 
-@router.put("/admin/announcements/{announcement_id}", response_model=AnnouncementItem, dependencies=[Depends(require_platform_admin)])
+@router.put("/admin/announcements/{announcement_id}", response_model=AnnouncementItem, dependencies=[Depends(require_cap("platform.announcement.write"))])
 async def update_admin_announcement(
     request: Request,
     announcement_id: int,
@@ -382,7 +389,7 @@ async def update_admin_announcement(
     return _serialize_item(item, None)
 
 
-@router.post("/admin/announcements/{announcement_id}/publish", response_model=AnnouncementActionResponse, dependencies=[Depends(require_platform_admin)])
+@router.post("/admin/announcements/{announcement_id}/publish", response_model=AnnouncementActionResponse, dependencies=[Depends(require_cap("platform.announcement.write"))])
 async def publish_admin_announcement(request: Request, announcement_id: int) -> AnnouncementActionResponse:
     actor_id = _require_user_id(request)
     now = _utc_now()
@@ -406,7 +413,7 @@ async def publish_admin_announcement(request: Request, announcement_id: int) -> 
     return AnnouncementActionResponse(status="ok")
 
 
-@router.post("/admin/announcements/{announcement_id}/archive", response_model=AnnouncementActionResponse, dependencies=[Depends(require_platform_admin)])
+@router.post("/admin/announcements/{announcement_id}/archive", response_model=AnnouncementActionResponse, dependencies=[Depends(require_cap("platform.announcement.write"))])
 async def archive_admin_announcement(request: Request, announcement_id: int) -> AnnouncementActionResponse:
     actor_id = _require_user_id(request)
     now = _utc_now()
@@ -430,7 +437,7 @@ async def archive_admin_announcement(request: Request, announcement_id: int) -> 
     return AnnouncementActionResponse(status="ok")
 
 
-@router.delete("/admin/announcements/{announcement_id}", response_model=AnnouncementActionResponse, dependencies=[Depends(require_platform_admin)])
+@router.delete("/admin/announcements/{announcement_id}", response_model=AnnouncementActionResponse, dependencies=[Depends(require_cap("platform.announcement.write"))])
 async def delete_admin_announcement(request: Request, announcement_id: int) -> AnnouncementActionResponse:
     actor_id = _require_user_id(request)
 

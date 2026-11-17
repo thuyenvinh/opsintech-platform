@@ -5,8 +5,8 @@ from pydantic import BaseModel, Field
 
 from app.gateway.audit import record_audit_event
 from app.gateway.auth_repository import AuthUserRepository
-from app.gateway.authorization import require_tenant_admin
 from app.gateway.i18n import tr
+from app.gateway.permissions import require_cap
 from deerflow.database.tenant_service import (
     add_tenant_member,
     get_membership,
@@ -178,7 +178,7 @@ class UpdateTenantMemberStatusRequest(BaseModel):
     status: Literal["active", "inactive"] = Field(..., description="Membership status")
 
 
-@router.get("/tenants/users", response_model=TenantSelectableUsersResponse, dependencies=[Depends(require_tenant_admin)])
+@router.get("/tenants/users", response_model=TenantSelectableUsersResponse, dependencies=[Depends(require_cap("tenant.member.read"))])
 async def list_selectable_users(
     request: Request,
     keyword: str | None = None,
@@ -207,7 +207,7 @@ async def list_selectable_users(
     return TenantSelectableUsersResponse(users=users)
 
 
-@router.get("/tenants/members", response_model=TenantMembersListResponse, dependencies=[Depends(require_tenant_admin)])
+@router.get("/tenants/members", response_model=TenantMembersListResponse, dependencies=[Depends(require_cap("tenant.member.read"))])
 async def list_members(request: Request) -> TenantMembersListResponse:
     tenant_id = request.state.tenant_id
     members = await list_tenant_members(tenant_id, include_inactive=True)
@@ -230,7 +230,7 @@ async def list_members(request: Request) -> TenantMembersListResponse:
     return TenantMembersListResponse(members=response_members)
 
 
-@router.post("/tenants/members", response_model=TenantMemberResponse, dependencies=[Depends(require_tenant_admin)])
+@router.post("/tenants/members", response_model=TenantMemberResponse, dependencies=[Depends(require_cap("tenant.member.write"))])
 async def add_member(request: Request, body: AddTenantMemberRequest) -> TenantMemberResponse:
     tenant_id = request.state.tenant_id
     actor_id = getattr(request.state, "user_id", None)
@@ -257,7 +257,7 @@ async def add_member(request: Request, body: AddTenantMemberRequest) -> TenantMe
     )
 
 
-@router.post("/tenants/members/by-email", response_model=AddTenantMembersByEmailResult, dependencies=[Depends(require_tenant_admin)])
+@router.post("/tenants/members/by-email", response_model=AddTenantMembersByEmailResult, dependencies=[Depends(require_cap("tenant.member.write"))])
 async def add_members_by_email(request: Request, body: AddTenantMembersByEmailRequest) -> AddTenantMembersByEmailResult:
     tenant_id = request.state.tenant_id
     actor_id = getattr(request.state, "user_id", None)
@@ -318,7 +318,7 @@ async def add_members_by_email(request: Request, body: AddTenantMembersByEmailRe
     )
 
 
-@router.put("/tenants/members/{target_user_id}", response_model=TenantMemberResponse, dependencies=[Depends(require_tenant_admin)])
+@router.put("/tenants/members/{target_user_id}", response_model=TenantMemberResponse, dependencies=[Depends(require_cap("tenant.member.write"))])
 async def update_member(request: Request, target_user_id: str, body: UpdateTenantMemberRequest) -> TenantMemberResponse:
     tenant_id = request.state.tenant_id
     actor_id = getattr(request.state, "user_id", None)
@@ -349,7 +349,7 @@ async def update_member(request: Request, target_user_id: str, body: UpdateTenan
     )
 
 
-@router.patch("/tenants/members/{target_user_id}/status", response_model=TenantMemberResponse, dependencies=[Depends(require_tenant_admin)])
+@router.patch("/tenants/members/{target_user_id}/status", response_model=TenantMemberResponse, dependencies=[Depends(require_cap("tenant.member.write"))])
 async def update_member_status(
     request: Request,
     target_user_id: str,
@@ -391,7 +391,7 @@ async def update_member_status(
     )
 
 
-@router.delete("/tenants/members/{target_user_id}", dependencies=[Depends(require_tenant_admin)])
+@router.delete("/tenants/members/{target_user_id}", dependencies=[Depends(require_cap("tenant.member.write"))])
 async def remove_member(request: Request, target_user_id: str):
     tenant_id = request.state.tenant_id
     actor_id = getattr(request.state, "user_id", None)

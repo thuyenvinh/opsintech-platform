@@ -3,7 +3,8 @@ import asyncio
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.gateway.authorization import _is_global_admin, _is_tenant_admin, require_config_write_access, require_tenant_admin, require_tenant_context
+from app.gateway.authorization import require_tenant_context
+from app.gateway.permissions import has_cap, is_platform_admin, require_any_cap, require_cap
 from deerflow.database.user_config_service import (
     create_tenant_shared_model,
     create_user_model,
@@ -124,8 +125,8 @@ async def list_models(request: Request) -> ModelsListResponse:
     rows = await get_available_models(
         request.state.user_id,
         tenant_id,
-        is_tenant_admin=_is_tenant_admin(request),
-        is_platform_admin=_is_platform_admin(request),
+        is_tenant_admin=has_cap(request, "tenant.model.write"),
+        is_platform_admin=is_platform_admin(request),
     )
     models = [
         ModelResponse(
@@ -150,10 +151,10 @@ async def list_models(request: Request) -> ModelsListResponse:
     status_code=201,
     summary="Register Model",
     description="Register a new AI model for the current user.",
+    dependencies=[Depends(require_cap("tenant.model.write"))],
 )
 async def register_model(request: Request, body: ModelCreateRequest) -> ModelResponse:
     require_tenant_context(request)
-    require_config_write_access(request)
     try:
         row = await create_user_model(
             request.state.user_id,
@@ -211,21 +212,12 @@ def _model_enabled_from_row_settings(row) -> bool:
     return bool(settings.get("enabled", True))
 
 
-def _is_platform_admin(request: Request) -> bool:
-    role = getattr(request.state, "user_role", None)
-    return isinstance(role, str) and role.lower() in {"platform_admin", "admin"}
-
-
-def _is_tenant_admin(request: Request) -> bool:
-    role = getattr(request.state, "tenant_role", None)
-    return isinstance(role, str) and role.lower() == "tenant_admin"
-
-
 @router.post(
     "/models/test-connection",
     response_model=TestConnectionResponse,
     summary="Test Model Connection",
     description="Test connectivity to a model provider by sending a minimal chat completion request.",
+    dependencies=[Depends(require_any_cap("platform.model_template.write", "tenant.model.write"))],
 )
 async def test_model_connection(request: Request, body: TestConnectionRequest) -> TestConnectionResponse:
     """Test connectivity to a model provider with the given parameters.
@@ -233,9 +225,6 @@ async def test_model_connection(request: Request, body: TestConnectionRequest) -
     Instantiates the provider's chat model class and sends a minimal request
     to verify that the base URL, API key, and model identifier are valid.
     """
-    if not _is_global_admin(request) and not _is_tenant_admin(request):
-        raise HTTPException(status_code=403, detail="Admin access required")
-
     try:
         model_class = resolve_class(body.use)
         model_class = _maybe_patch_openai_model_class(body.use, model_class)
@@ -305,8 +294,8 @@ async def list_available_models(request: Request) -> AvailableModelsListResponse
     rows = await get_available_models(
         request.state.user_id,
         tenant_id,
-        is_tenant_admin=_is_tenant_admin(request),
-        is_platform_admin=_is_platform_admin(request),
+        is_tenant_admin=has_cap(request, "tenant.model.write"),
+        is_platform_admin=is_platform_admin(request),
     )
     return AvailableModelsListResponse(models=[AvailableModelResponse.model_validate(row) for row in rows])
 
@@ -316,7 +305,7 @@ async def list_available_models(request: Request) -> AvailableModelsListResponse
     response_model=ModelsListResponse,
     summary="List Tenant Shared Models",
     description="List tenant shared models for current tenant.",
-    dependencies=[Depends(require_tenant_admin)],
+    dependencies=[Depends(require_cap("tenant.model.write"))],
 )
 async def list_tenant_models(request: Request) -> ModelsListResponse:
     tenant_id = require_tenant_context(request)
@@ -343,7 +332,7 @@ async def list_tenant_models(request: Request) -> ModelsListResponse:
     response_model=ModelResponse,
     status_code=201,
     summary="Create Tenant Shared Model",
-    dependencies=[Depends(require_tenant_admin)],
+    dependencies=[Depends(require_cap("tenant.model.write"))],
 )
 async def create_tenant_model(request: Request, body: ModelCreateRequest) -> ModelResponse:
     raise HTTPException(status_code=410, detail="Tenant model creation has been deprecated. Use platform model assignment.")
@@ -353,7 +342,7 @@ async def create_tenant_model(request: Request, body: ModelCreateRequest) -> Mod
     "/tenants/models/{model_name:path}",
     response_model=ModelResponse,
     summary="Update Tenant Shared Model",
-    dependencies=[Depends(require_tenant_admin)],
+    dependencies=[Depends(require_cap("tenant.model.write"))],
 )
 async def update_tenant_model(model_name: str, request: Request, body: ModelUpdateRequest) -> ModelResponse:
     tenant_id = require_tenant_context(request)
@@ -388,7 +377,7 @@ async def update_tenant_model(model_name: str, request: Request, body: ModelUpda
     "/tenants/models/{model_name:path}",
     status_code=204,
     summary="Delete Tenant Shared Model",
-    dependencies=[Depends(require_tenant_admin)],
+    dependencies=[Depends(require_cap("tenant.model.write"))],
 )
 async def delete_tenant_model(model_name: str, request: Request):
     raise HTTPException(status_code=410, detail="Tenant model deletion has been deprecated. Use platform model unassignment.")
@@ -488,8 +477,8 @@ async def get_model(model_name: str, request: Request) -> ModelResponse:
     rows = await get_available_models(
         request.state.user_id,
         tenant_id,
-        is_tenant_admin=_is_tenant_admin(request),
-        is_platform_admin=_is_platform_admin(request),
+        is_tenant_admin=has_cap(request, "tenant.model.write"),
+        is_platform_admin=is_platform_admin(request),
     )
     model = next((row for row in rows if row.name == model_name), None)
     if model is None:
@@ -506,10 +495,13 @@ async def get_model(model_name: str, request: Request) -> ModelResponse:
         enabled=_model_enabled_from_row_settings(model),
     )
 
-@router.put("/models/{model_name:path}", response_model=ModelResponse)
+@router.put(
+    "/models/{model_name:path}",
+    response_model=ModelResponse,
+    dependencies=[Depends(require_cap("tenant.model.write"))],
+)
 async def update_model(model_name: str, request: Request, body: ModelUpdateRequest) -> ModelResponse:
     require_tenant_context(request)
-    require_config_write_access(request)
     try:
         row = await update_user_model(
             request.state.user_id,
@@ -533,10 +525,13 @@ async def update_model(model_name: str, request: Request, body: ModelUpdateReque
         enabled=_model_enabled_from_row_settings(row),
     )
 
-@router.delete("/models/{model_name:path}", status_code=204)
+@router.delete(
+    "/models/{model_name:path}",
+    status_code=204,
+    dependencies=[Depends(require_cap("tenant.model.write"))],
+)
 async def delete_model(model_name: str, request: Request):
     require_tenant_context(request)
-    require_config_write_access(request)
     try:
         await delete_user_model(
             request.state.user_id,

@@ -1273,11 +1273,11 @@ def test_admin_create_user_writes_valid_scrypt_hash(tmp_path, monkeypatch):
     assert verify_password(hashed_pwd, "Password123!") is True
 
 
-def test_bootstrap_status_strict_mode_rejects_global_admin_without_tenant_admin(tmp_path, monkeypatch):
+def test_bootstrap_status_allows_platform_admin_without_tenant_admin(tmp_path, monkeypatch):
+    """Reading your own rotation flags is self-service, not tenant governance."""
     db_path = tmp_path / "auth.db"
     _create_auth_db_with_credentials(db_path)
     _patch_auth_db(monkeypatch, db_path)
-    monkeypatch.setenv("DEERFLOW_ADMIN_REQUIRE_TENANT_ROLE", "true")
 
     app = _create_app()
     with TestClient(app) as client:
@@ -1286,14 +1286,14 @@ def test_bootstrap_status_strict_mode_rejects_global_admin_without_tenant_admin(
             headers={"x-user-id": "u-admin", "x-user-role": "admin", "x-tenant-role": "member"},
         )
 
-    assert response.status_code == 403
+    assert response.status_code == 200
+    assert response.json()["is_bootstrap_admin"] is False
 
 
-def test_bootstrap_status_strict_mode_allows_tenant_admin(tmp_path, monkeypatch):
+def test_bootstrap_status_allows_tenant_admin(tmp_path, monkeypatch):
     db_path = tmp_path / "auth.db"
     _create_auth_db_with_credentials(db_path)
     _patch_auth_db(monkeypatch, db_path)
-    monkeypatch.setenv("DEERFLOW_ADMIN_REQUIRE_TENANT_ROLE", "true")
 
     app = _create_app()
     with TestClient(app) as client:
@@ -1307,11 +1307,10 @@ def test_bootstrap_status_strict_mode_allows_tenant_admin(tmp_path, monkeypatch)
     assert payload["is_bootstrap_admin"] is False
 
 
-def test_change_initial_password_strict_mode_allows_bootstrap_global_admin(tmp_path, monkeypatch):
+def test_change_initial_password_allows_bootstrap_platform_admin(tmp_path, monkeypatch):
     db_path = tmp_path / "auth.db"
     _create_auth_db_with_credentials(db_path)
     _patch_auth_db(monkeypatch, db_path)
-    monkeypatch.setenv("DEERFLOW_ADMIN_REQUIRE_TENANT_ROLE", "true")
 
     calls = []
     monkeypatch.setattr(admin, "record_audit_event", lambda *args, **kwargs: calls.append((args, kwargs)))
@@ -1331,3 +1330,105 @@ def test_change_initial_password_strict_mode_allows_bootstrap_global_admin(tmp_p
 
     assert response.status_code == 200
     assert calls and calls[0][1]["metadata"]["is_initial"] is True
+
+
+def test_change_initial_password_allows_tenant_member(tmp_path, monkeypatch):
+    """Regression: a freshly created member was locked out of the rotation page.
+
+    ``must_change_password`` defaults to true for every user an admin creates,
+    and the forced-rotation page posts here. The old admin-only guard answered
+    403, so the account could never finish the flow it was forced into.
+    """
+    db_path = tmp_path / "auth.db"
+    _create_auth_db_with_credentials(db_path)
+    _patch_auth_db(monkeypatch, db_path)
+
+    calls = []
+    monkeypatch.setattr(admin, "record_audit_event", lambda *args, **kwargs: calls.append((args, kwargs)))
+
+    app = _create_app()
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/admin/change-initial-password",
+            headers={
+                "x-user-id": "u-user",
+                "x-user-role": "user",
+                "x-tenant-role": "tenant_member",
+                "x-tenant-id": "tenant-a",
+                "x-must-change-password": "true",
+            },
+            json={"new_password": "MemberNewPassword123!"},
+        )
+
+    assert response.status_code == 200, response.text
+    assert calls and calls[0][1]["target_user_id"] == "u-user"
+
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        row = dict(conn.execute("SELECT mustChangePassword FROM user WHERE id = ?", ("u-user",)).fetchone())
+        other = dict(conn.execute("SELECT password FROM account WHERE userId = ?", ("u-admin",)).fetchone())
+
+    assert row["mustChangePassword"] == 0
+    assert other["password"] == "hash-admin"
+
+
+def test_change_initial_password_rejects_caller_who_does_not_need_it(tmp_path, monkeypatch):
+    db_path = tmp_path / "auth.db"
+    _create_auth_db_with_credentials(db_path)
+    _patch_auth_db(monkeypatch, db_path)
+
+    app = _create_app()
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/admin/change-initial-password",
+            headers={"x-user-id": "u-user", "x-user-role": "user", "x-tenant-role": "tenant_member"},
+            json={"new_password": "MemberNewPassword123!"},
+        )
+
+    assert response.status_code == 400
+
+
+def test_change_password_is_self_service(tmp_path, monkeypatch):
+    """Despite the /admin prefix, this rotates the caller's own password.
+
+    The handler reads request.state.user_id and the body carries no target
+    user, so it cannot reach another account. Gating it on a platform
+    capability made the change-password dialog -- rendered for every workspace
+    user in workspace-nav-menu.tsx -- return 403 for everyone who is not a
+    platform admin.
+    """
+    db_path = tmp_path / "auth.db"
+    _create_auth_db_with_credentials(db_path)
+    _patch_auth_db(monkeypatch, db_path)
+    monkeypatch.setattr(admin, "record_audit_event", lambda *args, **kwargs: None)
+
+    app = _create_app()
+    with TestClient(app) as client:
+        member = client.post(
+            "/api/admin/change-password",
+            headers={"x-user-id": "u-user", "x-user-role": "user", "x-tenant-role": "tenant_member"},
+            json={"new_password": "MemberNewPassword123!"},
+        )
+
+    assert member.status_code == 200, member.text
+
+    # The property that makes this safe to widen: the member rotated their own
+    # credential and could not reach anyone else's.
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = {
+            row["userId"]: row["password"]
+            for row in conn.execute("SELECT userId, password FROM account")
+        }
+
+    assert rows["u-user"] != "hash-user"
+    assert rows["u-admin"] == "hash-admin"
+
+    with TestClient(app) as client:
+        admin_response = client.post(
+            "/api/admin/change-password",
+            headers={"x-user-id": "u-admin", "x-user-role": "admin"},
+            json={"new_password": "AdminNewPassword123!"},
+        )
+
+    assert admin_response.status_code == 200, admin_response.text

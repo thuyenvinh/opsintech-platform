@@ -221,21 +221,27 @@ def require_cap(*caps: str) -> Callable[[Request], None]:
                 headers={"X-Must-Change-Password": "true"},
             )
 
+        # Checked before the capability itself, and on the success path too, so
+        # a handler that drops its own require_tenant_context can still rely on
+        # request.state.tenant_id being usable.
+        if needs_tenant:
+            tenant_id = _state(request, "tenant_id")
+            if not isinstance(tenant_id, str) or not tenant_id.strip():
+                raise HTTPException(status_code=400, detail="Tenant context is required")
+
         granted = effective_caps(request)
         missing = set(caps) - granted
         if not missing:
             return
-
-        if needs_tenant and tenant_role(request) is None:
-            tenant_id = _state(request, "tenant_id")
-            if not isinstance(tenant_id, str) or not tenant_id.strip():
-                raise HTTPException(status_code=400, detail="Tenant context is required")
 
         raise HTTPException(
             status_code=403,
             detail=f"Missing permission: {', '.join(sorted(missing))}",
         )
 
+    # Lets the route inventory test see which capability guards which route.
+    dependency.__capabilities__ = frozenset(caps)  # type: ignore[attr-defined]
+    dependency.__capability_mode__ = "all"  # type: ignore[attr-defined]
     return dependency
 
 
@@ -257,4 +263,15 @@ def require_any_cap(*caps: str) -> Callable[[Request], None]:
             detail=f"Missing permission: one of {', '.join(sorted(caps))}",
         )
 
+    dependency.__capabilities__ = frozenset(caps)  # type: ignore[attr-defined]
+    dependency.__capability_mode__ = "any"  # type: ignore[attr-defined]
     return dependency
+
+
+def route_capabilities(dependency: object) -> frozenset[str]:
+    """Capabilities a dependency enforces, or an empty set if it enforces none.
+
+    Used by the route inventory test to tell a guarded route from an open one.
+    """
+    caps = getattr(dependency, "__capabilities__", None)
+    return caps if isinstance(caps, frozenset) else frozenset()

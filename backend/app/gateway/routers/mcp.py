@@ -5,7 +5,8 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from app.gateway.authorization import require_config_write_access, require_tenant_admin, require_tenant_context
+from app.gateway.authorization import require_tenant_context
+from app.gateway.permissions import has_cap, is_platform_admin, require_cap
 from deerflow.database.user_config_service import (
     _build_default_payloads,
     get_available_mcp_servers,
@@ -98,16 +99,6 @@ class TenantMcpEnabledUpdateResponse(BaseModel):
     source: str = Field(..., description="Server source: tenant_shared or platform_builtin")
 
 
-def _is_platform_admin(request: Request) -> bool:
-    role = getattr(request.state, "user_role", None)
-    return isinstance(role, str) and role.lower() in {"platform_admin", "admin"}
-
-
-def _is_tenant_admin(request: Request) -> bool:
-    role = getattr(request.state, "tenant_role", None)
-    return isinstance(role, str) and role.lower() == "tenant_admin"
-
-
 @router.get(
     "/mcp/config",
     response_model=McpConfigResponse,
@@ -174,8 +165,8 @@ async def get_available_mcp_configuration(request: Request) -> AvailableMcpConfi
     rows = await get_available_mcp_servers(
         request.state.user_id,
         tenant_id,
-        is_tenant_admin=_is_tenant_admin(request),
-        is_platform_admin=_is_platform_admin(request),
+        is_tenant_admin=has_cap(request, "tenant.mcp.write"),
+        is_platform_admin=is_platform_admin(request),
     )
     return AvailableMcpConfigResponse(mcp_servers=[AvailableMcpServerResponse.model_validate(row) for row in rows])
 
@@ -184,7 +175,7 @@ async def get_available_mcp_configuration(request: Request) -> AvailableMcpConfi
     "/tenants/mcp/config",
     response_model=McpConfigResponse,
     summary="Get Tenant Shared MCP Configuration",
-    dependencies=[Depends(require_tenant_admin)],
+    dependencies=[Depends(require_cap("tenant.mcp.write"))],
 )
 async def get_tenant_mcp_configuration(request: Request) -> McpConfigResponse:
     tenant_id = require_tenant_context(request)
@@ -214,7 +205,7 @@ async def get_tenant_mcp_configuration(request: Request) -> McpConfigResponse:
     "/tenants/mcp/config",
     response_model=McpConfigResponse,
     summary="Replace Tenant Shared MCP Configuration",
-    dependencies=[Depends(require_tenant_admin)],
+    dependencies=[Depends(require_cap("tenant.mcp.write"))],
 )
 async def update_tenant_mcp_configuration(request: Request, body: McpConfigUpdateRequest) -> McpConfigResponse:
     tenant_id = require_tenant_context(request)
@@ -228,7 +219,7 @@ async def update_tenant_mcp_configuration(request: Request, body: McpConfigUpdat
     "/tenants/mcp/{server_name}/enabled",
     response_model=TenantMcpEnabledUpdateResponse,
     summary="Enable or Disable Tenant-Visible MCP Server",
-    dependencies=[Depends(require_tenant_admin)],
+    dependencies=[Depends(require_cap("tenant.mcp.write"))],
 )
 async def toggle_tenant_mcp_server_enabled(
     request: Request,
@@ -254,6 +245,7 @@ async def toggle_tenant_mcp_server_enabled(
     response_model=McpConfigResponse,
     summary="Update MCP Configuration",
     description="Update Model Context Protocol (MCP) server configurations and save to file.",
+    dependencies=[Depends(require_cap("tenant.mcp.write"))],
 )
 async def update_mcp_configuration(request: Request, body: McpConfigUpdateRequest) -> McpConfigResponse:
     """Update the MCP configuration.
@@ -288,7 +280,6 @@ async def update_mcp_configuration(request: Request, body: McpConfigUpdateReques
         ```
     """
     require_tenant_context(request)
-    require_config_write_access(request)
     try:
         payload = {name: server.model_dump() for name, server in body.mcp_servers.items()}
         await replace_user_mcp_servers(
@@ -342,7 +333,7 @@ async def ping_mcp_server(request: Request, server: McpServerConfigResponse):
 @router.post(
     "/mcp/check-health/{server_name}",
     summary="Check MCP Server Health",
-    dependencies=[Depends(require_tenant_admin)],
+    dependencies=[Depends(require_cap("tenant.mcp.write"))],
 )
 async def check_mcp_server_health(request: Request, server_name: str):
     """Test connectivity to a stored MCP server and persist health status."""
@@ -358,7 +349,7 @@ async def check_mcp_server_health(request: Request, server_name: str):
                 request.state.user_id,
                 tenant_id,
                 is_tenant_admin=True,
-                is_platform_admin=_is_platform_admin(request),
+                is_platform_admin=is_platform_admin(request),
             )
             server_rows = [r for r in all_rows if r.get("name") == server_name]
             if not server_rows:

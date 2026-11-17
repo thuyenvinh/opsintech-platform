@@ -9,9 +9,10 @@ import yaml
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from pydantic import BaseModel, Field
 
-from app.gateway.authorization import require_tenant_admin, require_tenant_context
+from app.gateway.authorization import require_tenant_context
 from app.gateway.i18n import tr
 from app.gateway.path_utils import resolve_thread_virtual_path
+from app.gateway.permissions import has_cap, is_platform_admin, require_cap
 from deerflow.database.user_config_service import (
     create_tenant_shared_skill,
     create_tenant_personal_skill,
@@ -144,16 +145,6 @@ class SummarizeDiagnosisResponse(BaseModel):
     instructions: str = Field(..., description="Refined structured SOP instructions in Markdown")
     suggested_tools: list[str] = Field(default_factory=list, description="Suggested bound tools")
     suggested_category: str = Field(default="custom", description="Suggested skill category")
-
-
-def _is_platform_admin(request: Request) -> bool:
-    role = getattr(request.state, "user_role", None)
-    return isinstance(role, str) and role.lower() in {"platform_admin", "admin"}
-
-
-def _is_tenant_admin(request: Request) -> bool:
-    role = getattr(request.state, "tenant_role", None)
-    return isinstance(role, str) and role.lower() == "tenant_admin"
 
 
 class SkillInstallRequest(BaseModel):
@@ -394,8 +385,8 @@ async def list_available_skills(request: Request) -> AvailableSkillsListResponse
         rows = await get_available_skills(
             request.state.user_id,
             tenant_id,
-            is_tenant_admin=_is_tenant_admin(request),
-            is_platform_admin=_is_platform_admin(request),
+            is_tenant_admin=has_cap(request, "tenant.skill.write"),
+            is_platform_admin=is_platform_admin(request),
         )
         enriched_rows = []
         for row in rows:
@@ -422,7 +413,7 @@ async def list_available_skills(request: Request) -> AvailableSkillsListResponse
     "/tenants/skills",
     response_model=SkillsListResponse,
     summary="List Tenant Shared Skills",
-    dependencies=[Depends(require_tenant_admin)],
+    dependencies=[Depends(require_cap("tenant.skill.write"))],
 )
 async def list_tenant_skills(request: Request) -> SkillsListResponse:
     tenant_id = require_tenant_context(request)
@@ -508,7 +499,7 @@ async def create_tenant_skill(request: Request, body: TenantSkillCreateRequest) 
     "/tenants/skills/{skill_name}",
     response_model=SkillResponse,
     summary="Update Tenant Shared Skill",
-    dependencies=[Depends(require_tenant_admin)],
+    dependencies=[Depends(require_cap("tenant.skill.write"))],
 )
 async def update_tenant_skill(skill_name: str, request: SkillUpdateRequest, api_request: Request) -> SkillResponse:
     tenant_id = require_tenant_context(api_request)
@@ -534,7 +525,7 @@ async def update_tenant_skill(skill_name: str, request: SkillUpdateRequest, api_
 async def patch_tenant_skill(skill_name: str, request: TenantSkillPatchRequest, api_request: Request) -> SkillResponse:
     tenant_id = require_tenant_context(api_request)
     user_id: str = getattr(api_request.state, "user_id", "")
-    is_admin = _is_tenant_admin(api_request)
+    is_admin = has_cap(api_request, "tenant.skill.write")
 
     try:
         row = await update_tenant_shared_skill(
@@ -601,7 +592,7 @@ async def patch_tenant_skill(skill_name: str, request: TenantSkillPatchRequest, 
     "/tenants/skills/{skill_name}",
     status_code=204,
     summary="Delete Tenant Shared Skill",
-    dependencies=[Depends(require_tenant_admin)],
+    dependencies=[Depends(require_cap("tenant.skill.write"))],
 )
 async def delete_tenant_skill(skill_name: str, request: Request):
     tenant_id = require_tenant_context(request)
@@ -850,7 +841,7 @@ async def import_personal_skill(request: Request, archive: UploadFile = File(...
     response_model=SkillResponse,
     status_code=201,
     summary="Import Tenant Shared Skill",
-    dependencies=[Depends(require_tenant_admin)],
+    dependencies=[Depends(require_cap("tenant.skill.write"))],
 )
 async def import_tenant_skill(request: Request, archive: UploadFile = File(...)) -> SkillResponse:
     tenant_id = require_tenant_context(request)
@@ -942,7 +933,7 @@ async def get_skill(skill_name: str, request: Request) -> SkillResponse:
     response_model=SkillInstallResponse,
     summary="Install Skill",
     description="Tenant admins install a .skill or .zip archive and register it as a tenant-shared skill.",
-    dependencies=[Depends(require_tenant_admin)],
+    dependencies=[Depends(require_cap("tenant.skill.write"))],
 )
 async def install_skill(request: SkillInstallRequest, api_request: Request) -> SkillInstallResponse:
     tenant_id = require_tenant_context(api_request)
@@ -997,8 +988,8 @@ async def get_skill_detail(skill_name: str, request: Request) -> SkillDetailResp
     rows = await get_available_skills(
         user_id,
         tenant_id,
-        is_tenant_admin=_is_tenant_admin(request),
-        is_platform_admin=_is_platform_admin(request),
+        is_tenant_admin=has_cap(request, "tenant.skill.write"),
+        is_platform_admin=is_platform_admin(request),
     )
     
     row = next((r for r in rows if r.get("name") == skill_name), None)

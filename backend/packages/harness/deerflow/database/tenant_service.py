@@ -31,11 +31,20 @@ def tenant_role_has_admin_capability(role: str | None) -> bool:
         return False
 
 
-def normalize_tenant_role_for_storage(role: str, *, preserve_owner: bool = False) -> str:
-    normalized = normalize_tenant_role(role)
-    if normalized == TENANT_ROLE_ADMIN:
-        return "owner" if preserve_owner else "admin"
-    return "member"
+def normalize_tenant_role_for_storage(role: str) -> str:
+    """Canonical value to persist in ``tenant_memberships.role``.
+
+    Storage used to write "admin"/"member", and "owner" for whoever created the
+    tenant, while the API spoke tenant_admin/tenant_member -- so the same role
+    had one name in a request and another in the row. Nothing ever branched on
+    "owner": every reader ran it through :func:`normalize_tenant_role`, which
+    folds it into tenant_admin. The distinction carried no behaviour, so it is
+    gone and storage now writes what the API already says.
+
+    Rows written before this still read correctly: normalize_tenant_role keeps
+    accepting the legacy spellings.
+    """
+    return normalize_tenant_role(role)
 
 
 def _slugify(name: str) -> str:
@@ -264,7 +273,7 @@ async def create_tenant(name: str, owner_user_id: str, slug: str | None = None, 
         membership = TenantMembership(
             tenant_id=tenant_id,
             user_id=owner_user_id,
-            role=normalize_tenant_role_for_storage(TENANT_ROLE_ADMIN, preserve_owner=True),
+            role=normalize_tenant_role_for_storage(TENANT_ROLE_ADMIN),
             status="active"
         )
         session.add(membership)

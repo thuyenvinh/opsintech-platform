@@ -13,9 +13,13 @@ import {
   PanelLeftCloseIcon,
   PanelLeftOpenIcon,
   Settings2Icon,
+  SunIcon,
+  MoonIcon,
+  MonitorSmartphoneIcon,
   UserCircleIcon,
   UserIcon,
 } from "lucide-react";
+import { useTheme } from "next-themes";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -57,6 +61,7 @@ export function WorkspaceNavMenu() {
   const isCollapsed = state === "collapsed";
 
   const { t, locale, changeLocale } = useI18n();
+  const { theme, setTheme, resolvedTheme } = useTheme();
 
   const isPlatformAdmin = canAccessAdminPage(session?.user?.role);
   const userName = session?.user?.name ?? t.navMenu.user;
@@ -245,6 +250,39 @@ export function WorkspaceNavMenu() {
                           )}
                         </DropdownMenuItem>
                       ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
+
+                  {/* 主题切换 - 二级菜单 */}
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm cursor-pointer text-sidebar-foreground/80 hover:text-sidebar-foreground focus:bg-sidebar-accent">
+                      {resolvedTheme === "dark" ? (
+                        <MoonIcon className="size-4 text-zinc-500 shrink-0" />
+                      ) : (
+                        <SunIcon className="size-4 text-zinc-500 shrink-0" />
+                      )}
+                      <span className="truncate">{t.settings.appearance.themeTitle}</span>
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent className="min-w-[140px]">
+                      {[
+                        { value: "light", label: t.settings.appearance.light, icon: SunIcon },
+                        { value: "dark", label: t.settings.appearance.dark, icon: MoonIcon },
+                        { value: "system", label: t.settings.appearance.system, icon: MonitorSmartphoneIcon },
+                      ].map((item) => {
+                        const ThemeIcon = item.icon;
+                        const activeTheme = (theme ?? "system") === item.value;
+                        return (
+                          <DropdownMenuItem
+                            key={item.value}
+                            onClick={() => setTheme(item.value)}
+                            className="flex items-center gap-2 rounded-md px-2.5 py-2 text-sm cursor-pointer"
+                          >
+                            <ThemeIcon className="size-4 text-muted-foreground shrink-0" />
+                            <span className="flex-1">{item.label}</span>
+                            {activeTheme && <CheckIcon className="size-4 text-primary" />}
+                          </DropdownMenuItem>
+                        );
+                      })}
                     </DropdownMenuSubContent>
                   </DropdownMenuSub>
 

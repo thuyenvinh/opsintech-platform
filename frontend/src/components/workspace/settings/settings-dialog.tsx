@@ -99,7 +99,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
       onOpenChange={(open) => props.onOpenChange?.(open)}
     >
       <DialogContent
-        className="flex h-[80vh] max-h-[calc(100vh-2rem)] flex-col sm:max-w-5xl md:max-w-6xl p-0 gap-0 overflow-hidden bg-background/95 backdrop-blur-2xl shadow-2xl rounded-2xl sm:rounded-3xl border-white/5"
+        className="flex h-[80vh] max-h-[calc(100vh-2rem)] flex-col sm:max-w-5xl md:max-w-6xl p-0 gap-0 overflow-hidden bg-background/95 backdrop-blur-2xl shadow-2xl rounded-2xl sm:rounded-3xl border border-border"
         aria-describedby={undefined}
       >
         <DialogHeader className="gap-1 border-b px-6 py-5 bg-muted/10">

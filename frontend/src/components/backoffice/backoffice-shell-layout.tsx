@@ -12,7 +12,11 @@ import {
   ArrowLeftIcon,
   GlobeIcon,
   CheckIcon,
+  SunIcon,
+  MoonIcon,
+  MonitorSmartphoneIcon,
 } from "lucide-react";
+import { useTheme } from "next-themes";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, type ComponentType, type ReactNode } from "react";
@@ -65,6 +69,7 @@ export function BackofficeShellLayout({
   children,
 }: BackofficeShellLayoutProps) {
   const { t, locale, changeLocale } = useI18n();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -116,9 +121,30 @@ export function BackofficeShellLayout({
         )}
       >
         <div className="border-b px-4 py-4">
-          <div className="flex items-center gap-2 text-sm font-semibold text-sidebar-foreground">
-            <ModuleIcon className="size-4 text-primary" />
-            {!sidebarCollapsed && <span>{moduleTitle}</span>}
+          <div className="flex items-center justify-between gap-2 text-sm font-semibold text-sidebar-foreground">
+            <div className="flex items-center gap-2 min-w-0">
+              <ModuleIcon className="size-4 shrink-0 text-primary" />
+              {!sidebarCollapsed && <span className="truncate">{moduleTitle}</span>}
+            </div>
+            {!sidebarCollapsed && (
+              <button
+                type="button"
+                onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                title={
+                  resolvedTheme === "dark"
+                    ? t.settings.appearance.light
+                    : t.settings.appearance.dark
+                }
+                aria-label={t.settings.appearance.themeTitle}
+              >
+                {resolvedTheme === "dark" ? (
+                  <SunIcon className="size-4" />
+                ) : (
+                  <MoonIcon className="size-4" />
+                )}
+              </button>
+            )}
           </div>
           {!sidebarCollapsed && (
             <>
@@ -159,7 +185,7 @@ export function BackofficeShellLayout({
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="group flex h-11 w-full items-center gap-3 rounded-lg px-2 transition-all hover:bg-sidebar-accent">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-800 text-zinc-100 transition-transform group-hover:scale-105">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-200 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100 transition-transform group-hover:scale-105">
                         <UserIcon className="size-4" />
                       </div>
                       <div className="flex-1 min-w-0 text-left">
@@ -232,6 +258,38 @@ export function BackofficeShellLayout({
                             )}
                           </DropdownMenuItem>
                         ))}
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm cursor-pointer text-sidebar-foreground/80 hover:text-sidebar-foreground focus:bg-sidebar-accent">
+                        {resolvedTheme === "dark" ? (
+                          <MoonIcon className="size-4 text-zinc-500 shrink-0" />
+                        ) : (
+                          <SunIcon className="size-4 text-zinc-500 shrink-0" />
+                        )}
+                        <span className="truncate">{t.settings.appearance.themeTitle}</span>
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent className="min-w-[140px]">
+                        {[
+                          { value: "light", label: t.settings.appearance.light, icon: SunIcon },
+                          { value: "dark", label: t.settings.appearance.dark, icon: MoonIcon },
+                          { value: "system", label: t.settings.appearance.system, icon: MonitorSmartphoneIcon },
+                        ].map((item) => {
+                          const ThemeIcon = item.icon;
+                          const activeTheme = (theme ?? "system") === item.value;
+                          return (
+                            <DropdownMenuItem
+                              key={item.value}
+                              onClick={() => setTheme(item.value)}
+                              className="flex items-center gap-2 rounded-md px-2.5 py-2 text-sm cursor-pointer"
+                            >
+                              <ThemeIcon className="size-4 text-muted-foreground shrink-0" />
+                              <span className="flex-1">{item.label}</span>
+                              {activeTheme && <CheckIcon className="size-4 text-primary" />}
+                            </DropdownMenuItem>
+                          );
+                        })}
                       </DropdownMenuSubContent>
                     </DropdownMenuSub>
 

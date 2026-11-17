@@ -36,6 +36,7 @@ import { fetchAuthApi } from "@/core/api/auth-client";
 import { useArtifactContent } from "@/core/artifacts/hooks";
 import { ensureLeadingSlash, urlOfArtifact } from "@/core/artifacts/utils";
 import { getAuthToken } from "@/core/auth/auth-api";
+import { tr } from "@/core/i18n";
 import { useI18n } from "@/core/i18n/hooks";
 import { installSkill } from "@/core/skills/api";
 import { streamdownPlugins } from "@/core/streamdown";
@@ -84,7 +85,7 @@ export function ArtifactFileDetail({
   filepath: string;
   threadId: string;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { artifacts, select, setOpen } = useArtifacts();
   const { data: currentTenant } = useCurrentTenant();
   const isWriteFile = useMemo(() => {
@@ -445,8 +446,8 @@ export function ArtifactFileDetail({
                 <FileIcon className="size-8 text-destructive" />
               </div>
               <div>
-                <p className="text-sm font-medium text-foreground">无法加载文件内容</p>
-                <p className="text-xs text-muted-foreground mt-1">{error?.message || "文件可能已不存在或无权访问"}</p>
+                <p className="text-sm font-medium text-foreground">{tr(locale, "无法加载文件内容", "Unable to load file content", "Không thể tải nội dung tệp")}</p>
+                <p className="text-xs text-muted-foreground mt-1">{error?.message || tr(locale, "文件可能已不存在或无权访问", "The file may not exist or you lack permission", "Tệp có thể không tồn tại hoặc bạn không có quyền truy cập")}</p>
               </div>
               <Button variant="default" size="sm" onClick={handleDownloadArtifact}>
                 <DownloadIcon className="mr-2 size-4" />
@@ -485,11 +486,11 @@ export function ArtifactFileDetail({
               <div className="flex size-16 items-center justify-center rounded-full bg-destructive/10">
                 <FileIcon className="size-8 text-destructive" />
               </div>
-              <p className="text-sm font-medium text-foreground">无法加载 PPTX 预览</p>
-              <p className="text-xs text-muted-foreground">该文件可能损坏或内容不包含可预览页面。</p>
+              <p className="text-sm font-medium text-foreground">{tr(locale, "无法加载 PPTX 预览", "Unable to load PPTX preview", "Không thể tải bản xem trước PPTX")}</p>
+              <p className="text-xs text-muted-foreground">{tr(locale, "该文件可能损坏或内容不包含可预览页面。", "The file may be corrupted or contain no previewable slides.", "Tệp có thể bị hỏng hoặc không chứa trang trình chiếu hợp lệ.")}</p>
               <Button variant="default" size="sm" onClick={handleDownloadArtifact}>
                 <DownloadIcon className="mr-2 size-4" />
-                下载源文件
+                {t.common.downloadFile}
               </Button>
             </div>
           </div>

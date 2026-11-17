@@ -8,7 +8,9 @@ export {
   DEFAULT_LOCALE,
   SUPPORTED_LOCALES,
   detectLocale,
+  getActiveLocale,
   isLocale,
   normalizeLocale,
+  tr,
 } from "./locale";
 export type { Locale } from "./locale";

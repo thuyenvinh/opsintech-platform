@@ -6,6 +6,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
+import { getActiveLocale, tr } from '@/core/i18n';
 
 export interface TodoInput {
   id?: string;
@@ -53,7 +54,12 @@ export class TodoWriteTool {
 
     // Basic validation
     if (processed.length === 0) {
-      return 'Todo list is empty. No tasks to manage.';
+      return tr(
+        getActiveLocale(),
+        '待办列表为空，没有需要管理的任务。',
+        'Todo list is empty. No tasks to manage.',
+        'Danh sách công việc trống. Không có công việc nào để quản lý.',
+      );
     }
 
     // Validate statuses
@@ -108,11 +114,12 @@ export class TodoWriteTool {
     const total = todos.length;
     const done = completed.length;
     const progress = total > 0 ? Math.round((done / total) * 100) : 0;
+    const locale = getActiveLocale();
 
-    let output = `## 任务清单 (${done}/${total} 完成 — ${progress}%)\n\n`;
+    let output = `## ${tr(locale, '任务清单', 'Todo List', 'Danh sách công việc')} (${done}/${total} ${tr(locale, '完成', 'completed', 'hoàn thành')} — ${progress}%)\n\n`;
 
     if (inProgress.length > 0) {
-      output += `**🔄 进行中**\n`;
+      output += `**🔄 ${tr(locale, '进行中', 'In Progress', 'Đang thực hiện')}**\n`;
       for (const t of inProgress) {
         output += `- [${t.id}] ${this.priorityIcon(t.priority)} **${t.content}**`;
         if (t.description) output += ` — ${t.description}`;
@@ -122,7 +129,7 @@ export class TodoWriteTool {
     }
 
     if (pending.length > 0) {
-      output += `**📋 待处理**\n`;
+      output += `**📋 ${tr(locale, '待处理', 'Pending', 'Đang chờ')}**\n`;
       for (const t of pending) {
         output += `- [${t.id}] ${this.priorityIcon(t.priority)} ${t.content}\n`;
       }
@@ -130,7 +137,7 @@ export class TodoWriteTool {
     }
 
     if (completed.length > 0) {
-      output += `**✅ 已完成**\n`;
+      output += `**✅ ${tr(locale, '已完成', 'Completed', 'Đã hoàn thành')}**\n`;
       for (const t of completed) {
         output += `- ~~${t.content}~~\n`;
       }
@@ -139,13 +146,23 @@ export class TodoWriteTool {
 
     // Reminder: if all are pending and >1, remind to focus
     if (pending.length > 1 && inProgress.length === 0) {
-      output += `⚠️ 所有任务都处于待处理状态。请立即将首个任务设为 in_progress 并开始执行。\n`;
+      output += `⚠️ ${tr(
+        locale,
+        '所有任务都处于待处理状态。请立即将首个任务设为 in_progress 并开始执行。',
+        'All tasks are pending. Please set the first task to in_progress and start executing immediately.',
+        'Tất cả công việc đều đang ở trạng thái chờ. Vui lòng chuyển công việc đầu tiên sang in_progress và bắt đầu thực hiện ngay.',
+      )}\n`;
     }
 
     // Focus chain suggestion
     if (completed.length > 0 && pending.length > 0) {
       const next = pending[0];
-      output += `\n💡 下一个任务是: **${next!.content}**。请使用 focus_task(${next!.id}) 聚焦并开始执行。\n`;
+      output += `\n💡 ${tr(
+        locale,
+        `下一个任务是: **${next!.content}**。请使用 focus_task(${next!.id}) 聚焦并开始执行。`,
+        `Next task: **${next!.content}**. Use focus_task(${next!.id}) to focus and start executing.`,
+        `Công việc tiếp theo: **${next!.content}**. Hãy dùng focus_task(${next!.id}) để tập trung và bắt đầu thực hiện.`,
+      )}\n`;
     }
 
     return output.trim();

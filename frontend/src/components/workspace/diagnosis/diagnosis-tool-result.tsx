@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { useArtifacts } from "@/components/workspace/artifacts/context";
 import { isMCPTool, buildToolResultArtifactPath } from "@/core/messages/utils";
 import { cn } from "@/lib/utils";
+import { tr } from "@/core/i18n";
+import { useI18n } from "@/core/i18n/hooks";
 
 interface DiagnosisToolResultProps {
   toolName: string;
@@ -58,6 +60,7 @@ export function DiagnosisToolResult({
   parentMessageId,
   threadId,
 }: DiagnosisToolResultProps) {
+  const { locale } = useI18n();
   const [expanded, setExpanded] = useState(false);
   const { setOpen, select } = useArtifacts();
 
@@ -68,7 +71,9 @@ export function DiagnosisToolResult({
   if (isError) {
     return (
       <div className="pt-2 border-t border-rose-200/40 dark:border-rose-900/40">
-        <p className="text-[9px] font-bold text-rose-500 uppercase tracking-wider mb-1">执行失败</p>
+        <p className="text-[9px] font-bold text-rose-500 uppercase tracking-wider mb-1">
+          {tr(locale, "执行失败", "Execution Failed", "Thực thi thất bại")}
+        </p>
         <div className="rounded-lg border border-rose-200 bg-rose-50/50 dark:border-rose-900/50 dark:bg-rose-950/20 p-2.5">
           <pre className="text-[10px] font-mono text-rose-600 dark:text-rose-400 overflow-x-auto max-h-32 overflow-y-auto whitespace-pre-wrap">
             {result}
@@ -90,7 +95,9 @@ export function DiagnosisToolResult({
 
     return (
       <div className="pt-2 border-t border-zinc-200/40 dark:border-zinc-800/40">
-        <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5">生成的文件</p>
+        <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5">
+          {tr(locale, "生成的文件", "Generated Files", "Tệp đã tạo")}
+        </p>
         <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 p-2.5">
           <ul className="space-y-1.5">
             {filepaths.map((filepath) => {
@@ -121,11 +128,13 @@ export function DiagnosisToolResult({
   if (toolName === "write_file" || toolName === "str_replace") {
     const displayPath = typeof args?.path === "string" 
       ? args.path.replace(/^\/?mnt\/user-data\/outputs\//, "") 
-      : "文件";
+      : tr(locale, "文件", "File", "Tệp");
 
     return (
       <div className="pt-2 border-t border-zinc-200/40 dark:border-zinc-800/40">
-        <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5">生成的文件</p>
+        <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5">
+          {tr(locale, "生成的文件", "Generated Files", "Tệp đã tạo")}
+        </p>
         <div className="flex items-center justify-between p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30">
           <div className="flex items-center gap-2 min-w-0">
             <div className="p-1.5 rounded-md bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 shrink-0">
@@ -136,7 +145,7 @@ export function DiagnosisToolResult({
                 {displayPath}
               </p>
               <p className="text-[9px] text-zinc-400 dark:text-zinc-500">
-                {toolName === "write_file" ? "新建文件" : "修改文件"}
+                {toolName === "write_file" ? tr(locale, "新建文件", "New File", "Tệp mới") : tr(locale, "修改文件", "Modified File", "Tệp đã sửa")}
               </p>
             </div>
           </div>
@@ -161,7 +170,7 @@ export function DiagnosisToolResult({
             }}
           >
             <EyeIcon className="h-3 w-3" />
-            查看文件
+            {tr(locale, "查看文件", "View File", "Xem tệp")}
           </Button>
         </div>
       </div>
@@ -172,7 +181,9 @@ export function DiagnosisToolResult({
   if (isMCPTool(toolName)) {
     return (
       <div className="pt-2 border-t border-zinc-200/40 dark:border-zinc-800/40">
-        <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5">工具执行报告</p>
+        <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5">
+          {tr(locale, "工具执行报告", "Tool Execution Report", "Báo cáo thực thi công cụ")}
+        </p>
         <div className="flex items-center justify-between p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30">
           <div className="flex items-center gap-2 min-w-0">
             <div className="p-1.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 shrink-0">
@@ -180,10 +191,10 @@ export function DiagnosisToolResult({
             </div>
             <div className="min-w-0">
               <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 truncate">
-                {toolName} 诊断结果
+                {toolName} {tr(locale, "诊断结果", "Diagnosis Result", "Kết quả chẩn đoán")}
               </p>
               <p className="text-[9px] text-zinc-400 dark:text-zinc-500">
-                已生成结构化运行数据
+                {tr(locale, "已生成结构化运行数据", "Structured execution data generated", "Đã tạo dữ liệu thực thi có cấu trúc")}
               </p>
             </div>
           </div>
@@ -206,7 +217,7 @@ export function DiagnosisToolResult({
             }}
           >
             <EyeIcon className="h-3 w-3" />
-            查看结果
+            {tr(locale, "查看结果", "View Result", "Xem kết quả")}
           </Button>
         </div>
       </div>
@@ -221,7 +232,9 @@ export function DiagnosisToolResult({
 
     return (
       <div className="pt-2 border-t border-zinc-200/40 dark:border-zinc-800/40 space-y-1">
-        <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">执行输出</p>
+        <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">
+          {tr(locale, "执行输出", "Command Output", "Kết quả lệnh")}
+        </p>
         <div className="overflow-hidden rounded-md border border-zinc-200 dark:border-zinc-800">
           <CodeBlock
             code={displayCode}
@@ -237,7 +250,9 @@ export function DiagnosisToolResult({
               className="h-6 text-[9px] px-2 py-0 text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium"
               onClick={() => setExpanded(!expanded)}
             >
-              {expanded ? "收起输出" : `展开完整输出 (+${lines.length - 3} 行)`}
+              {expanded
+                ? tr(locale, "收起输出", "Collapse Output", "Thu gọn kết quả")
+                : tr(locale, `展开完整输出 (+${lines.length - 3} 行)`, `Show Full Output (+${lines.length - 3} lines)`, `Xem toàn bộ (+${lines.length - 3} dòng)`)}
             </Button>
           </div>
         )}
@@ -254,7 +269,9 @@ export function DiagnosisToolResult({
 
     return (
       <div className="pt-2 border-t border-zinc-200/40 dark:border-zinc-800/40 space-y-1">
-        <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">文件内容</p>
+        <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">
+          {tr(locale, "文件内容", "File Content", "Nội dung tệp")}
+        </p>
         <div className="overflow-hidden rounded-md border border-zinc-200 dark:border-zinc-800">
           <CodeBlock
             code={displayCode}
@@ -270,7 +287,9 @@ export function DiagnosisToolResult({
               className="h-6 text-[9px] px-2 py-0 text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium"
               onClick={() => setExpanded(!expanded)}
             >
-              {expanded ? "收起内容" : `展开完整内容 (+${lines.length - 5} 行)`}
+              {expanded
+                ? tr(locale, "收起内容", "Collapse Content", "Thu gọn nội dung")
+                : tr(locale, `展开完整内容 (+${lines.length - 5} 行)`, `Show Full Content (+${lines.length - 5} lines)`, `Xem toàn bộ (+${lines.length - 5} dòng)`)}
             </Button>
           </div>
         )}
@@ -297,7 +316,9 @@ export function DiagnosisToolResult({
   if (isJson) {
     return (
       <div className="pt-2 border-t border-zinc-200/40 dark:border-zinc-800/40 space-y-1">
-        <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">结构化结果 (JSON)</p>
+        <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">
+          {tr(locale, "结构化结果 (JSON)", "Structured Result (JSON)", "Kết quả có cấu trúc (JSON)")}
+        </p>
         <div className="overflow-hidden rounded-md border border-zinc-200 dark:border-zinc-800">
           <CodeBlock
             code={JSON.stringify(parsedJson, null, 2)}
@@ -315,7 +336,9 @@ export function DiagnosisToolResult({
 
   return (
     <div className="pt-2 border-t border-zinc-200/40 dark:border-zinc-800/40 space-y-1">
-      <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">执行结果</p>
+      <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">
+        {tr(locale, "执行结果", "Execution Result", "Kết quả thực thi")}
+      </p>
       <div className="relative">
         <pre
           className={cn(
@@ -333,7 +356,7 @@ export function DiagnosisToolResult({
               className="h-5 text-[8px] px-2 py-0 shadow-sm"
               onClick={() => setExpanded(true)}
             >
-              展开完整结果
+              {tr(locale, "展开完整结果", "Show Full Result", "Xem toàn bộ kết quả")}
             </Button>
           </div>
         )}
@@ -345,7 +368,7 @@ export function DiagnosisToolResult({
               className="h-5 text-[9px] px-2 py-0 text-zinc-400 hover:text-zinc-600"
               onClick={() => setExpanded(false)}
             >
-              收起
+              {tr(locale, "收起", "Collapse", "Thu gọn")}
             </Button>
           </div>
         )}

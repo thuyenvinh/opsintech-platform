@@ -49,18 +49,24 @@ import {
   type AlertSource,
   type AlertSourceCreate,
 } from "@/core/alerting";
+import { tr, type Locale } from "@/core/i18n";
+import { useI18n } from "@/core/i18n/hooks";
 
-const SOURCE_TYPES = [
-  { value: "webhook", label: "通用 Webhook", icon: WebhookIcon, desc: "任意 JSON 负载，通过字段映射解析" },
-  { value: "alertmanager", label: "Alertmanager", icon: LayersIcon, desc: "Prometheus Alertmanager 标准格式" },
-  { value: "grafana", label: "Grafana", icon: GlobeIcon, desc: "Grafana Alerting webhook 格式" },
-  { value: "cloudwatch", label: "CloudWatch", icon: WifiIcon, desc: "AWS CloudWatch SNS 格式" },
-];
+function getSourceTypes(locale: Locale) {
+  return [
+    { value: "webhook", label: tr(locale, "通用 Webhook", "Generic Webhook", "Webhook chung"), icon: WebhookIcon, desc: tr(locale, "任意 JSON 负载，通过字段映射解析", "Any JSON payload parsed via field mapping", "Payload JSON bất kỳ, phân tích qua ánh xạ trường") },
+    { value: "alertmanager", label: "Alertmanager", icon: LayersIcon, desc: tr(locale, "Prometheus Alertmanager 标准格式", "Prometheus Alertmanager standard format", "Định dạng chuẩn Prometheus Alertmanager") },
+    { value: "grafana", label: "Grafana", icon: GlobeIcon, desc: tr(locale, "Grafana Alerting webhook 格式", "Grafana Alerting webhook format", "Định dạng webhook Grafana Alerting") },
+    { value: "cloudwatch", label: "CloudWatch", icon: WifiIcon, desc: tr(locale, "AWS CloudWatch SNS 格式", "AWS CloudWatch SNS format", "Định dạng AWS CloudWatch SNS") },
+  ];
+}
 
-const AUTH_MODES = [
-  { value: "none", label: "无认证" },
-  { value: "token", label: "Token 认证" },
-];
+function getAuthModes(locale: Locale) {
+  return [
+    { value: "none", label: tr(locale, "无认证", "No Auth", "Không xác thực") },
+    { value: "token", label: tr(locale, "Token 认证", "Token Auth", "Xác thực Token") },
+  ];
+}
 
 interface FieldMappingEntry {
   field: string;
@@ -77,17 +83,23 @@ const DEFAULT_FIELD_MAPPINGS: FieldMappingEntry[] = [
   { field: "labels", jsonpath: "$.labels" },
 ];
 
-const FIELD_LABELS: Record<string, string> = {
-  title: "告警标题",
-  summary: "告警摘要",
-  severity: "严重度",
-  service: "服务名",
-  environment: "环境",
-  status: "状态",
-  labels: "标签",
-};
+function getFieldLabels(locale: Locale): Record<string, string> {
+  return {
+    title: tr(locale, "告警标题", "Title", "Tiêu đề cảnh báo"),
+    summary: tr(locale, "告警摘要", "Summary", "Tóm tắt cảnh báo"),
+    severity: tr(locale, "严重度", "Severity", "Mức độ"),
+    service: tr(locale, "服务名", "Service", "Dịch vụ"),
+    environment: tr(locale, "环境", "Environment", "Môi trường"),
+    status: tr(locale, "状态", "Status", "Trạng thái"),
+    labels: tr(locale, "标签", "Labels", "Nhãn"),
+  };
+}
 
 export function AlertSourcesPanel() {
+  const { locale } = useI18n();
+  const SOURCE_TYPES = getSourceTypes(locale);
+  const AUTH_MODES = getAuthModes(locale);
+  const FIELD_LABELS = getFieldLabels(locale);
   const { data: sources = [], isLoading, refetch } = useAlertSources();
   const { mutate: createSource, isPending: creating } = useCreateAlertSource();
   const { mutate: updateSource, isPending: updating } = useUpdateAlertSource();
@@ -167,7 +179,7 @@ export function AlertSourcesPanel() {
 
   const handleSave = () => {
     if (!formName.trim()) {
-      toast.error("请输入告警源名称");
+      toast.error(tr(locale, "请输入告警源名称", "Please enter alert source name", "Vui lòng nhập tên nguồn cảnh báo"));
       return;
     }
 
@@ -178,10 +190,10 @@ export function AlertSourcesPanel() {
         { sourceId: editingSource.id, data: { name: formName, type: formType, auth_mode: formAuthMode, config_json } },
         {
           onSuccess: () => {
-            toast.success("告警源已更新");
+            toast.success(tr(locale, "告警源已更新", "Alert source updated", "Đã cập nhật nguồn cảnh báo"));
             setDialogOpen(false);
           },
-          onError: (err) => toast.error(err instanceof Error ? err.message : "更新失败"),
+          onError: (err) => toast.error(err instanceof Error ? err.message : tr(locale, "更新失败", "Update failed", "Cập nhật thất bại")),
         }
       );
     } else {
@@ -189,20 +201,20 @@ export function AlertSourcesPanel() {
         { name: formName, type: formType, auth_mode: formAuthMode, config_json },
         {
           onSuccess: () => {
-            toast.success("告警源已创建");
+            toast.success(tr(locale, "告警源已创建", "Alert source created", "Đã tạo nguồn cảnh báo"));
             setDialogOpen(false);
           },
-          onError: (err) => toast.error(err instanceof Error ? err.message : "创建失败"),
+          onError: (err) => toast.error(err instanceof Error ? err.message : tr(locale, "创建失败", "Creation failed", "Tạo thất bại")),
         }
       );
     }
   };
 
   const handleDelete = (sourceId: string, sourceName: string) => {
-    if (confirm(`确定要删除告警源「${sourceName}」吗？`)) {
+    if (confirm(tr(locale, `确定要删除告警源「${sourceName}」吗？`, `Delete alert source "${sourceName}"?`, `Xác nhận xóa nguồn cảnh báo "${sourceName}"?`))) {
       deleteSource(sourceId, {
-        onSuccess: () => toast.success("告警源已删除"),
-        onError: (err) => toast.error(err instanceof Error ? err.message : "删除失败"),
+        onSuccess: () => toast.success(tr(locale, "告警源已删除", "Alert source deleted", "Đã xóa nguồn cảnh báo")),
+        onError: (err) => toast.error(err instanceof Error ? err.message : tr(locale, "删除失败", "Delete failed", "Xóa thất bại")),
       });
     }
   };
@@ -237,7 +249,7 @@ export function AlertSourcesPanel() {
       try {
         payload = JSON.parse(testPayload);
       } catch {
-        setTestError("JSON 格式无效，请检查 payload 语法");
+        setTestError(tr(locale, "JSON 格式无效，请检查 payload 语法", "Invalid JSON format, please check payload syntax", "Định dạng JSON không hợp lệ, vui lòng kiểm tra cú pháp"));
         setTesting(false);
         return;
       }
@@ -252,10 +264,10 @@ export function AlertSourcesPanel() {
       if (response.ok) {
         setTestResult(JSON.stringify(json, null, 2));
       } else {
-        setTestError(json.detail || "测试发送失败");
+        setTestError(json.detail || tr(locale, "测试发送失败", "Test request failed", "Gửi thử nghiệm thất bại"));
       }
     } catch (err) {
-      setTestError(err instanceof Error ? err.message : "请求失败");
+      setTestError(err instanceof Error ? err.message : tr(locale, "请求失败", "Request failed", "Yêu cầu thất bại"));
     } finally {
       setTesting(false);
     }
@@ -267,7 +279,7 @@ export function AlertSourcesPanel() {
   };
 
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text).then(() => toast.success("已复制到剪贴板"));
+    navigator.clipboard.writeText(text).then(() => toast.success(tr(locale, "已复制到剪贴板", "Copied to clipboard", "Đã sao chép vào khay nhớ tạm")));
   };
 
   return (
@@ -276,20 +288,20 @@ export function AlertSourcesPanel() {
         <div>
           <h3 className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
             <SignalIcon className="h-4 w-4 text-violet-500" />
-            告警源管理 (Alert Sources)
+            {tr(locale, "告警源管理 (Alert Sources)", "Alert Sources", "Quản lý nguồn cảnh báo (Alert Sources)")}
           </h3>
           <p className="mt-1 text-xs text-muted-foreground">
-            配置外部告警源的连接信息、字段映射和认证方式
+            {tr(locale, "配置外部告警源的连接信息、字段映射和认证方式", "Configure connection details, field mappings, and authentication for external alert sources", "Cấu hình thông tin kết nối, ánh xạ trường và xác thực cho nguồn cảnh báo ngoài")}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-1">
             <RefreshCwIcon className="h-3 w-3" />
-            刷新
+            {tr(locale, "刷新", "Refresh", "Làm mới")}
           </Button>
           <Button size="sm" onClick={openCreate} className="gap-1.5">
             <PlusIcon className="h-3.5 w-3.5" />
-            添加告警源
+            {tr(locale, "添加告警源", "Add Source", "Thêm nguồn")}
           </Button>
         </div>
       </div>
@@ -304,8 +316,10 @@ export function AlertSourcesPanel() {
         ) : sources.length === 0 ? (
           <div className="py-8 text-center rounded-lg border border-dashed border-zinc-200 dark:border-zinc-800">
             <WebhookIcon className="h-8 w-8 mx-auto text-zinc-300 dark:text-zinc-600" />
-            <p className="mt-2 text-sm text-muted-foreground">暂无告警源</p>
-            <p className="text-xs text-muted-foreground mt-1">添加告警源以开始接收外部告警数据</p>
+            <p className="mt-2 text-sm text-muted-foreground">{tr(locale, "暂无告警源", "No alert sources", "Chưa có nguồn cảnh báo nào")}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {tr(locale, "添加告警源以开始接收外部告警数据", "Add an alert source to start receiving external alerts", "Thêm nguồn cảnh báo để bắt đầu nhận dữ liệu cảnh báo ngoài")}
+            </p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -334,7 +348,7 @@ export function AlertSourcesPanel() {
                             : "text-zinc-400"
                         }`}
                       >
-                        {source.status === "active" ? "活跃" : "停用"}
+                        {source.status === "active" ? tr(locale, "活跃", "Active", "Hoạt động") : tr(locale, "停用", "Disabled", "Tắt")}
                       </Badge>
                     </div>
                     <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
@@ -346,7 +360,7 @@ export function AlertSourcesPanel() {
                         type="button"
                         onClick={() => copyToClipboard(getWebhookUrl(source.id))}
                         className="hover:text-zinc-600 dark:hover:text-zinc-300"
-                        title="复制 URL"
+                        title={tr(locale, "复制 URL", "Copy URL", "Sao chép URL")}
                       >
                         <CopyIcon className="h-3 w-3" />
                       </button>
@@ -355,12 +369,12 @@ export function AlertSourcesPanel() {
                       {source.auth_mode !== "none" && (
                         <span className="flex items-center gap-1 text-[9px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
                           <KeyIcon className="h-2.5 w-2.5" />
-                          {source.auth_mode} 认证
+                          {source.auth_mode} {tr(locale, "认证", "Auth", "xác thực")}
                         </span>
                       )}
                       {mappingCount > 0 && (
                         <span className="text-[9px] text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded">
-                          {mappingCount} 个字段映射
+                          {tr(locale, `${mappingCount} 个字段映射`, `${mappingCount} field mappings`, `${mappingCount} ánh xạ trường`)}
                         </span>
                       )}
                     </div>
@@ -371,7 +385,7 @@ export function AlertSourcesPanel() {
                       size="icon"
                       className="h-7 w-7"
                       onClick={() => handleTest(source.id)}
-                      title="测试发送"
+                      title={tr(locale, "测试发送", "Test Send", "Gửi thử")}
                     >
                       <PlayIcon className="h-3.5 w-3.5 text-emerald-500" />
                     </Button>
@@ -380,7 +394,7 @@ export function AlertSourcesPanel() {
                       size="icon"
                       className="h-7 w-7"
                       onClick={() => openEdit(source)}
-                      title="编辑"
+                      title={tr(locale, "编辑", "Edit", "Sửa")}
                     >
                       <PencilIcon className="h-3.5 w-3.5" />
                     </Button>
@@ -389,7 +403,7 @@ export function AlertSourcesPanel() {
                       size="icon"
                       className="h-7 w-7 text-rose-500 hover:text-rose-600"
                       onClick={() => handleDelete(source.id, source.name)}
-                      title="删除"
+                      title={tr(locale, "删除", "Delete", "Xóa")}
                     >
                       <Trash2Icon className="h-3.5 w-3.5" />
                     </Button>
@@ -407,10 +421,10 @@ export function AlertSourcesPanel() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <SignalIcon className="h-5 w-5 text-violet-500" />
-              {editingSource ? "编辑告警源" : "新建告警源"}
+              {editingSource ? tr(locale, "编辑告警源", "Edit Alert Source", "Sửa nguồn cảnh báo") : tr(locale, "新建告警源", "New Alert Source", "Tạo nguồn cảnh báo")}
             </DialogTitle>
             <DialogDescription>
-              配置外部告警源的连接信息、字段映射和认证方式
+              {tr(locale, "配置外部告警源的连接信息、字段映射和认证方式", "Configure connection details, field mappings, and authentication", "Cấu hình thông tin kết nối, ánh xạ trường và xác thực")}
             </DialogDescription>
           </DialogHeader>
 
@@ -418,15 +432,19 @@ export function AlertSourcesPanel() {
             {/* Basic Info */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">告警源名称</label>
+                <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                  {tr(locale, "告警源名称", "Source Name", "Tên nguồn cảnh báo")}
+                </label>
                 <Input
-                  placeholder="如: Prometheus K8s"
+                  placeholder={tr(locale, "如: Prometheus K8s", "e.g. Prometheus K8s", "vd: Prometheus K8s")}
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">类型</label>
+                <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                  {tr(locale, "类型", "Type", "Loại")}
+                </label>
                 <select
                   value={formType}
                   onChange={(e) => setFormType(e.target.value)}
@@ -443,11 +461,13 @@ export function AlertSourcesPanel() {
             <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/30 p-4 dark:border-zinc-800/80 dark:bg-zinc-900/10 space-y-3">
               <div className="flex items-center gap-2">
                 <ShieldCheckIcon className="h-4 w-4 text-amber-500" />
-                <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200">认证配置</span>
+                <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
+                  {tr(locale, "认证配置", "Authentication", "Cấu hình xác thực")}
+                </span>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] text-zinc-500">认证方式</label>
+                  <label className="text-[10px] text-zinc-500">{tr(locale, "认证方式", "Auth Mode", "Phương thức xác thực")}</label>
                   <select
                     value={formAuthMode}
                     onChange={(e) => setFormAuthMode(e.target.value)}
@@ -472,11 +492,11 @@ export function AlertSourcesPanel() {
               </div>
               {formAuthMode === "token" && (
                 <div className="space-y-1.5">
-                  <label className="text-[10px] text-zinc-500">Token 值</label>
+                  <label className="text-[10px] text-zinc-500">{tr(locale, "Token 值", "Token Value", "Giá trị Token")}</label>
                   <div className="relative">
                     <Input
                       type={showToken ? "text" : "password"}
-                      placeholder="输入 token..."
+                      placeholder={tr(locale, "输入 token...", "Enter token...", "Nhập token...")}
                       value={formToken}
                       onChange={(e) => setFormToken(e.target.value)}
                       className="h-8 text-xs pr-8"
@@ -497,10 +517,12 @@ export function AlertSourcesPanel() {
             <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/30 p-4 dark:border-zinc-800/80 dark:bg-zinc-900/10 space-y-3">
               <div className="flex items-center gap-2">
                 <ArrowRightIcon className="h-4 w-4 text-violet-500" />
-                <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200">字段映射 (Field Mapping)</span>
+                <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
+                  {tr(locale, "字段映射 (Field Mapping)", "Field Mapping", "Ánh xạ trường (Field Mapping)")}
+                </span>
               </div>
               <p className="text-[10px] text-muted-foreground">
-                使用 JSONPath 表达式将外部 payload 字段映射到 OpsInTech 告警字段
+                {tr(locale, "使用 JSONPath 表达式将外部 payload 字段映射到 OpsInTech 告警字段", "Map external payload fields to OpsInTech alert fields using JSONPath", "Sử dụng biểu thức JSONPath để ánh xạ trường payload ngoài sang trường cảnh báo")}
               </p>
               <div className="space-y-2">
                 {fieldMappings.map(entry => (
@@ -546,11 +568,11 @@ export function AlertSourcesPanel() {
 
           <DialogFooter className="mt-4">
             <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>
-              取消
+              {tr(locale, "取消", "Cancel", "Hủy")}
             </Button>
             <Button size="sm" onClick={handleSave} disabled={creating || updating} className="gap-1">
               {(creating || updating) ? <Loader2Icon className="h-3.5 w-3.5 animate-spin" /> : <SaveIcon className="h-3.5 w-3.5" />}
-              {editingSource ? "保存修改" : "创建告警源"}
+              {editingSource ? tr(locale, "保存修改", "Save Changes", "Lưu thay đổi") : tr(locale, "创建告警源", "Create Source", "Tạo nguồn")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -562,16 +584,18 @@ export function AlertSourcesPanel() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <PlayIcon className="h-5 w-5 text-emerald-500" />
-              测试告警源
+              {tr(locale, "测试告警源", "Test Alert Source", "Kiểm tra nguồn cảnh báo")}
             </DialogTitle>
             <DialogDescription>
-              发送一条模拟告警 payload 到该告警源，验证配置是否正确
+              {tr(locale, "发送一条模拟告警 payload 到该告警源，验证配置是否正确", "Send a simulated alert payload to verify the source configuration", "Gửi payload cảnh báo giả lập để kiểm tra cấu hình nguồn")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">测试 Payload (JSON)</label>
+              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                {tr(locale, "测试 Payload (JSON)", "Test Payload (JSON)", "Payload thử nghiệm (JSON)")}
+              </label>
               <textarea
                 value={testPayload}
                 onChange={(e) => setTestPayload(e.target.value)}
@@ -582,14 +606,16 @@ export function AlertSourcesPanel() {
 
             <Button onClick={handleSendTest} disabled={testing} className="w-full gap-2">
               {testing ? <Loader2Icon className="h-4 w-4 animate-spin" /> : <SendIcon className="h-4 w-4" />}
-              {testing ? "发送中..." : "发送测试告警"}
+              {testing ? tr(locale, "发送中...", "Sending...", "Đang gửi...") : tr(locale, "发送测试告警", "Send Test Alert", "Gửi cảnh báo thử")}
             </Button>
 
             {testError && (
               <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 dark:border-rose-800 dark:bg-rose-950/20">
                 <div className="flex items-center gap-2 mb-1">
                   <XCircleIcon className="h-4 w-4 text-rose-500" />
-                  <span className="text-xs font-semibold text-rose-700 dark:text-rose-400">测试失败</span>
+                  <span className="text-xs font-semibold text-rose-700 dark:text-rose-400">
+                    {tr(locale, "测试失败", "Test Failed", "Kiểm tra thất bại")}
+                  </span>
                 </div>
                 <pre className="text-[10px] text-rose-600 dark:text-rose-400 whitespace-pre-wrap font-mono">{testError}</pre>
               </div>
@@ -599,7 +625,9 @@ export function AlertSourcesPanel() {
               <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-800 dark:bg-emerald-950/20">
                 <div className="flex items-center gap-2 mb-1">
                   <CheckCircle2Icon className="h-4 w-4 text-emerald-500" />
-                  <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">测试成功</span>
+                  <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                    {tr(locale, "测试成功", "Test Succeeded", "Kiểm tra thành công")}
+                  </span>
                 </div>
                 <pre className="text-[10px] text-emerald-600 dark:text-emerald-400 whitespace-pre-wrap font-mono max-h-40 overflow-y-auto">{testResult}</pre>
               </div>

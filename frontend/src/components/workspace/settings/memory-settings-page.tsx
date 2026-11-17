@@ -11,6 +11,8 @@ import { formatTimeAgo } from "@/core/utils/datetime";
 
 import { SettingsSection } from "./settings-section";
 
+import { getActiveLocale, tr } from "@/core/i18n";
+
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message) {
     return error.message;
@@ -18,7 +20,7 @@ function getErrorMessage(error: unknown): string {
   if (typeof error === "string" && error.trim()) {
     return error;
   }
-  return "加载记忆失败";
+  return tr(getActiveLocale(), "加载记忆失败", "Failed to load memory", "Tải bộ nhớ thất bại");
 }
 
 function confidenceToLevelKey(confidence: unknown): {

@@ -27,11 +27,14 @@ import {
 } from "@/components/workspace/workspace-container";
 import { useIncidents, useIncidentStats, getSeverityBadgeStyles, formatDate, type IncidentSummary } from "@/core/alerting";
 import { useWorkspaceTypeGuard } from "@/core/tenants/use-workspace-type-guard";
+import { tr } from "@/core/i18n";
+import { useI18n } from "@/core/i18n/hooks";
 
 const PAGE_SIZE = 15;
 
 export default function WorkspaceIncidentsPage() {
   useWorkspaceTypeGuard();
+  const { locale } = useI18n();
 
   const [activeTab, setActiveTab] = useState<"firing" | "resolved" | "suppressed">("firing");
   const [severityFilter, setSeverityFilter] = useState<string>("");
@@ -81,10 +84,10 @@ export default function WorkspaceIncidentsPage() {
             <div>
               <h1 className="flex items-center gap-2.5 text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
                 <ShieldAlertIcon className="h-6 w-6 text-zinc-800 dark:text-zinc-100" />
-                智能告警工作台
+                {tr(locale, "智能告警工作台", "Incident Workbench", "Bảng điều khiển sự cố")}
               </h1>
               <p className="mt-1 text-sm text-muted-foreground">
-                当前工作空间内处于 firing 或已处理的事件列表，您可以在此降噪和标记误报。
+                {tr(locale, "当前工作空间内处于 firing 或已处理的事件列表，您可以在此降噪和标记误报。", "Active and handled incidents in this workspace. Suppress noise or investigate root causes here.", "Danh sách sự cố đang xảy ra hoặc đã xử lý trong không gian làm việc này.")}
               </p>
             </div>
 
@@ -97,7 +100,7 @@ export default function WorkspaceIncidentsPage() {
                 disabled={isLoading || isFetching}
               >
                 <RefreshCwIcon className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
-                刷新列表
+                {tr(locale, "刷新列表", "Refresh", "Làm mới")}
               </Button>
             </div>
           </div>
@@ -114,7 +117,9 @@ export default function WorkspaceIncidentsPage() {
                   </div>
                   <div className="relative z-10">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">进行中 (Firing)</span>
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                        {tr(locale, "进行中 (Firing)", "Firing", "Đang xảy ra (Firing)")}
+                      </span>
                       <span className="relative flex h-2 w-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
@@ -128,7 +133,9 @@ export default function WorkspaceIncidentsPage() {
 
                 <div className="flex-1 p-5 relative overflow-hidden">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">已恢复 (Resolved)</span>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                      {tr(locale, "已恢复 (Resolved)", "Resolved", "Đã khôi phục (Resolved)")}
+                    </span>
                     <CheckCircle2Icon className="h-3 w-3 text-emerald-500" />
                   </div>
                   <div className="mt-2 text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-50">
@@ -137,7 +144,9 @@ export default function WorkspaceIncidentsPage() {
                 </div>
 
                 <div className="flex-1 p-5 relative overflow-hidden">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">平均恢复时间 (MTTR)</span>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                    {tr(locale, "平均恢复时间 (MTTR)", "MTTR", "Thời gian khôi phục TB (MTTR)")}
+                  </span>
                   <div className="mt-2 flex items-baseline gap-1">
                     <span className="text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-50">
                       {stats.mttr_minutes ? Math.round(stats.mttr_minutes) : "--"}
@@ -147,7 +156,9 @@ export default function WorkspaceIncidentsPage() {
                 </div>
 
                 <div className="flex-1 p-5 relative overflow-hidden">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">平均响应时间 (MTTA)</span>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                    {tr(locale, "平均响应时间 (MTTA)", "MTTA", "Thời gian phản hồi TB (MTTA)")}
+                  </span>
                   <div className="mt-2 flex items-baseline gap-1">
                     <span className="text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-50">
                       {stats.mtta_minutes ? Math.round(stats.mtta_minutes) : "--"}
@@ -160,8 +171,12 @@ export default function WorkspaceIncidentsPage() {
               {/* Right: Trend Sparkline */}
               <div className="w-full xl:w-[22rem] rounded-xl border border-zinc-200 dark:border-zinc-800 bg-background shadow-sm p-5 flex flex-col justify-between">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">最近 7 天新建告警</span>
-                  <span className="text-[10px] font-mono text-zinc-400">总计: {stats.recent_trend.reduce((a, b) => a + b.count, 0)}</span>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                    {tr(locale, "最近 7 天新建告警", "New Alerts (Last 7d)", "Cảnh báo mới 7 ngày qua")}
+                  </span>
+                  <span className="text-[10px] font-mono text-zinc-400">
+                    {tr(locale, "总计", "Total", "Tổng")}: {stats.recent_trend.reduce((a, b) => a + b.count, 0)}
+                  </span>
                 </div>
                 <div className="flex items-end gap-1.5 h-16 mt-auto">
                   {stats.recent_trend.map((day) => {
@@ -198,7 +213,7 @@ export default function WorkspaceIncidentsPage() {
                 }`}
             >
               <ActivityIcon className="h-4 w-4" />
-              发生中
+              {tr(locale, "发生中", "Firing", "Đang xảy ra")}
               {activeTab === "firing" && data && totalCount > 0 && (
                 <span className="rounded-full bg-rose-100 dark:bg-rose-950/40 px-2 py-0.5 text-xs font-medium text-rose-700 dark:text-rose-400">
                   {totalCount}
@@ -214,7 +229,7 @@ export default function WorkspaceIncidentsPage() {
                 }`}
             >
               <CheckCircle2Icon className="h-4 w-4" />
-              已恢复
+              {tr(locale, "已恢复", "Resolved", "Đã khôi phục")}
               {activeTab === "resolved" && data && totalCount > 0 && (
                 <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/40 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
                   {totalCount}
@@ -230,7 +245,7 @@ export default function WorkspaceIncidentsPage() {
                 }`}
             >
               <VolumeXIcon className="h-4 w-4" />
-              已静默
+              {tr(locale, "已静默", "Suppressed", "Đã tắt tiếng")}
               {activeTab === "suppressed" && data && totalCount > 0 && (
                 <span className="rounded-full bg-zinc-200 dark:bg-zinc-800 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:text-zinc-400">
                   {totalCount}
@@ -246,7 +261,7 @@ export default function WorkspaceIncidentsPage() {
               <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="搜索事件标题或 INC 编号..."
+                placeholder={tr(locale, "搜索事件标题或 INC 编号...", "Search incident title or INC ID...", "Tìm tiêu đề sự cố hoặc mã INC...")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 h-10 border-zinc-200 dark:border-zinc-800"
@@ -259,7 +274,7 @@ export default function WorkspaceIncidentsPage() {
                 <TagIcon className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" />
                 <Input
                   type="text"
-                  placeholder="按服务名过滤..."
+                  placeholder={tr(locale, "按服务名过滤...", "Filter by service...", "Lọc theo dịch vụ...")}
                   value={serviceQuery}
                   onChange={(e) => {
                     setServiceQuery(e.target.value);
@@ -273,7 +288,7 @@ export default function WorkspaceIncidentsPage() {
               <div className="relative w-36">
                 <FilterIcon className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" />
                 <select
-                  aria-label="按严重度过滤"
+                  aria-label={tr(locale, "按严重度过滤", "Filter by severity", "Lọc theo mức độ")}
                   value={severityFilter}
                   onChange={(e) => {
                     setSeverityFilter(e.target.value);
@@ -281,7 +296,7 @@ export default function WorkspaceIncidentsPage() {
                   }}
                   className="w-full h-10 pr-4 pl-9 text-xs rounded-md border border-zinc-200 dark:border-zinc-800 bg-background outline-none cursor-pointer appearance-none text-zinc-700 dark:text-zinc-300"
                 >
-                  <option value="">所有严重度</option>
+                  <option value="">{tr(locale, "所有严重度", "All Severities", "Tất cả mức độ")}</option>
                   <option value="critical">Critical</option>
                   <option value="major">Major</option>
                   <option value="warning">Warning</option>
@@ -308,18 +323,24 @@ export default function WorkspaceIncidentsPage() {
               // 错误态
               <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed py-16 text-center">
                 <AlertTriangleIcon className="h-10 w-10 text-rose-500" />
-                <h3 className="mt-4 text-base font-semibold">告警加载失败</h3>
-                <p className="mt-1 text-sm text-muted-foreground">无法从网关获取事件数据，请检查网络或重新登录重试。</p>
+                <h3 className="mt-4 text-base font-semibold">{tr(locale, "告警加载失败", "Failed to load incidents", "Tải danh sách sự cố thất bại")}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {tr(locale, "无法从网关获取事件数据，请检查网络或重新登录重试。", "Unable to fetch incidents from gateway. Check your network or sign in again.", "Không thể lấy dữ liệu sự cố từ cổng kết nối. Vui lòng kiểm tra mạng hoặc đăng nhập lại.")}
+                </p>
                 <Button size="sm" onClick={() => refetch()} className="mt-4">
-                  重试
+                  {tr(locale, "重试", "Retry", "Thử lại")}
                 </Button>
               </div>
             ) : filteredIncidents.length === 0 ? (
               // 空状态
               <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 py-16 text-center bg-background/50">
                 <ActivityIcon className="h-10 w-10 text-zinc-400" />
-                <h3 className="mt-4 text-base font-semibold text-zinc-800 dark:text-zinc-200">没有匹配的告警事件</h3>
-                <p className="mt-1 text-sm text-muted-foreground">当前大盘没有此条件的活跃事件，您的保障体系运行平稳。</p>
+                <h3 className="mt-4 text-base font-semibold text-zinc-800 dark:text-zinc-200">
+                  {tr(locale, "没有匹配的告警事件", "No matching incidents", "Không có sự cố phù hợp")}
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {tr(locale, "当前大盘没有此条件的活跃事件，您的保障体系运行平稳。", "No incidents match the current filters. Everything looks stable.", "Không có sự cố nào khớp bộ lọc hiện tại. Hệ thống đang hoạt động ổn định.")}
+                </p>
               </div>
             ) : (
               // 实际列表行渲染
@@ -354,30 +375,30 @@ export default function WorkspaceIncidentsPage() {
                                 incident.diagnosis_status === "running" ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/20 dark:text-indigo-400" :
                                   "bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400"
                               }`}>
-                              {incident.diagnosis_status === "completed" ? "已诊断" :
-                                incident.diagnosis_status === "failed" ? "诊断失败" :
-                                  incident.diagnosis_status === "running" ? "诊断中" :
-                                    incident.diagnosis_status === "partial" ? "部分诊断" :
+                              {incident.diagnosis_status === "completed" ? tr(locale, "已诊断", "Diagnosed", "Đã chẩn đoán") :
+                                incident.diagnosis_status === "failed" ? tr(locale, "诊断失败", "Failed", "Thất bại") :
+                                  incident.diagnosis_status === "running" ? tr(locale, "诊断中", "Diagnosing", "Đang chẩn đoán") :
+                                    incident.diagnosis_status === "partial" ? tr(locale, "部分诊断", "Partial", "Một phần") :
                                       incident.diagnosis_status}
                             </span>
                           )}
                         </div>
 
                         <h3 className="mt-2.5 text-sm font-semibold text-zinc-900 dark:text-zinc-50 group-hover:underline truncate leading-snug">
-                          {incident.title ?? "未命名告警事件"}
+                          {incident.title ?? tr(locale, "未命名告警事件", "Untitled Incident", "Sự cố chưa đặt tên")}
                         </h3>
 
                         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
                           {incident.service && (
                             <span className="flex items-center gap-1">
                               <TagIcon className="h-3 w-3" />
-                              服务: <span className="font-medium text-zinc-700 dark:text-zinc-300">{incident.service}</span>
+                              {tr(locale, "服务", "Service", "Dịch vụ")}: <span className="font-medium text-zinc-700 dark:text-zinc-300">{incident.service}</span>
                             </span>
                           )}
 
                           <span className="flex items-center gap-1">
                             <ClockIcon className="h-3 w-3" />
-                            最近发生: {formatDate(incident.last_seen_at)}
+                            {tr(locale, "最近发生", "Last seen", "Gần nhất")}: {formatDate(incident.last_seen_at)}
                           </span>
                         </div>
                       </div>
@@ -395,7 +416,7 @@ export default function WorkspaceIncidentsPage() {
                           <span className="text-sm font-bold text-zinc-900 dark:text-zinc-50">
                             {incident.signal_count}
                           </span>
-                          <p className="text-[10px] text-muted-foreground">关联信号数</p>
+                          <p className="text-[10px] text-muted-foreground">{tr(locale, "关联信号数", "Signals", "Tín hiệu")}</p>
                         </div>
 
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-50 border transition-colors group-hover:bg-primary group-hover:text-primary-foreground dark:bg-zinc-900 dark:border-zinc-800 group-hover:dark:border-transparent">
@@ -413,8 +434,8 @@ export default function WorkspaceIncidentsPage() {
           {totalPages > 1 && (
             <div className="mt-8 flex items-center justify-between border-t border-zinc-200 pt-4 dark:border-zinc-800">
               <span className="text-xs text-muted-foreground">
-                共 <span className="font-semibold text-zinc-800 dark:text-zinc-200">{totalCount}</span> 个事件 ·
-                第 <span className="font-semibold text-zinc-800 dark:text-zinc-200">{currentPage + 1}</span> / {totalPages} 页
+                {tr(locale, "共", "Total", "Tổng")} <span className="font-semibold text-zinc-800 dark:text-zinc-200">{totalCount}</span> {tr(locale, "个事件", "incidents", "sự cố")} ·{" "}
+                {tr(locale, "第", "Page", "Trang")} <span className="font-semibold text-zinc-800 dark:text-zinc-200">{currentPage + 1}</span> / {totalPages} {tr(locale, "页", "", "")}
               </span>
 
               <div className="flex items-center gap-2">

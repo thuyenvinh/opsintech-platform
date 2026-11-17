@@ -294,10 +294,10 @@ export function ChatThreadContent({ threadId, context, onContextChange }: ChatTh
                   <Link
                     href={`/workspace/incidents/${encodeURIComponent(headerCtx.incidentId)}`}
                     className="inline-flex items-center gap-1 text-[11px] font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300 no-underline"
-                    title="返回告警详情"
+                    title={headerCtx.t.sidebarNav.incidents}
                   >
                     <ArrowLeft className="size-3.5" />
-                    返回告警
+                    {headerCtx.t.sidebarNav.incidents}
                   </Link>
                 )}
                 <div className="bg-primary/5 text-primary inline-flex h-[24px] items-center rounded-md px-2 text-[11px] font-semibold uppercase tracking-wider">
@@ -459,7 +459,7 @@ export function ChatThreadContent({ threadId, context, onContextChange }: ChatTh
                         </span>
                       )}
                       <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300 truncate">
-                        {sourceIncident.title ?? "未命名告警"}
+                        {sourceIncident.title ?? t.pages.untitled}
                       </span>
                       <span className="text-[10px] text-zinc-400">
                         Service: {sourceIncident.service ?? "—"} · Env: {sourceIncident.environment ?? "—"}
@@ -468,13 +468,13 @@ export function ChatThreadContent({ threadId, context, onContextChange }: ChatTh
                         href={`/workspace/incidents/${encodeURIComponent(sourceIncident.id)}`}
                         className="ml-auto text-[10px] text-indigo-600 dark:text-indigo-400 hover:underline font-medium whitespace-nowrap"
                       >
-                        ← 告警详情
+                        ← {t.sidebarNav.incidents}
                       </Link>
                       <button
                         type="button"
                         onClick={() => setIncidentCardDismissed(true)}
                         className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
-                        title="关闭"
+                        title={t.common.close}
                       >
                         <X className="h-3.5 w-3.5" />
                       </button>

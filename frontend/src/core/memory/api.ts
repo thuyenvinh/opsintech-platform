@@ -1,4 +1,5 @@
 import { fetchAuthApi } from "@/core/api/auth-client";
+import { getActiveLocale, tr } from "@/core/i18n";
 
 import type { UserMemory } from "./types";
 
@@ -41,11 +42,11 @@ export async function loadMemory() {
   }
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(json, "加载记忆失败"));
+    throw new Error(getErrorMessage(json, tr(getActiveLocale(), "加载记忆失败", "Failed to load memory", "Tải bộ nhớ thất bại")));
   }
 
   if (!isUserMemory(json)) {
-    throw new Error("记忆数据格式错误");
+    throw new Error(tr(getActiveLocale(), "记忆数据格式错误", "Invalid memory data format", "Định dạng dữ liệu bộ nhớ không hợp lệ"));
   }
 
   return json;

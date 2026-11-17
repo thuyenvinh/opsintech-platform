@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAgents } from "@/core/agents";
+import { tr } from "@/core/i18n";
 import { useI18n } from "@/core/i18n/hooks";
 
 import { AgentCard } from "./agent-card";
@@ -16,7 +17,7 @@ import { EditAgentDialog } from "./edit-agent-dialog";
 import { SummarizationSettingsPage } from "@/components/workspace/settings/summarization-settings-page";
 
 export function AgentGallery() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { agents, isLoading, refetch } = useAgents();
   const router = useRouter();
 
@@ -55,9 +56,9 @@ export function AgentGallery() {
   const handleRefresh = async () => {
     try {
       await refetch();
-      toast.success("刷新成功");
+      toast.success(tr(locale, "刷新成功", "Refreshed", "Đã làm mới"));
     } catch {
-      toast.error("刷新失败");
+      toast.error(tr(locale, "刷新失败", "Refresh failed", "Làm mới thất bại"));
     }
   };
 
@@ -85,7 +86,7 @@ export function AgentGallery() {
           }`}
         >
           <BotIcon className="inline-block h-4 w-4 mr-1.5" />
-          智能体列表
+          {tr(locale, "智能体列表", "Agents", "Danh sách trợ lý")}
         </button>
         <button
           onClick={() => setActiveTab("summarization")}
@@ -96,7 +97,7 @@ export function AgentGallery() {
           }`}
         >
           <Settings2Icon className="inline-block h-4 w-4 mr-1.5" />
-          上下文压缩
+          {t.settings.sections.summarization}
         </button>
       </div>
 
@@ -119,7 +120,7 @@ export function AgentGallery() {
           <div className="relative w-full sm:w-80">
             <SearchIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="搜索名称、提示词或标签..."
+              placeholder={tr(locale, "搜索名称、提示词或标签...", "Search name, prompt or tags...", "Tìm tên, prompt hoặc thẻ...")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 h-9 bg-background"
@@ -131,7 +132,7 @@ export function AgentGallery() {
             onClick={handleReset}
             className="h-9 px-4 shrink-0 text-xs font-medium border-border/80"
           >
-            重置
+            {tr(locale, "重置", "Reset", "Đặt lại")}
           </Button>
         </div>
 
@@ -144,7 +145,7 @@ export function AgentGallery() {
             className="h-9 px-4 shrink-0 text-xs font-medium border-border/80 flex items-center gap-1.5"
           >
             <RotateCwIcon className="h-3.5 w-3.5" />
-            刷新
+            {tr(locale, "刷新", "Refresh", "Làm mới")}
           </Button>
           <Button
             size="sm"
@@ -152,7 +153,7 @@ export function AgentGallery() {
             className="h-9 px-4 bg-primary hover:bg-primary/95 text-primary-foreground font-medium shrink-0 text-xs flex items-center gap-1.5"
           >
             <PlusIcon className="h-3.5 w-3.5" />
-            新建智能体
+            {t.agents.newAgent}
           </Button>
         </div>
       </div>
@@ -161,7 +162,7 @@ export function AgentGallery() {
       <div className="flex-1 overflow-y-auto min-h-0 pt-1">
         {isLoading ? (
           <div className="text-muted-foreground flex h-40 items-center justify-center text-sm">
-            正在加载智能体...
+            {t.common.loading}
           </div>
         ) : filteredAgents.length === 0 ? (
           <div className="flex h-64 flex-col items-center justify-center gap-3 text-center border rounded-xl bg-card p-8">
@@ -170,18 +171,20 @@ export function AgentGallery() {
             </div>
             <div>
               <p className="font-medium text-sm text-foreground">
-                {searchQuery ? "未找到匹配的智能体" : "暂无自定义智能体"}
+                {searchQuery
+                  ? tr(locale, "未找到匹配的智能体", "No matching agents found", "Không tìm thấy trợ lý phù hợp")
+                  : t.agents.emptyTitle}
               </p>
               <p className="text-muted-foreground mt-1 text-xs">
                 {searchQuery 
-                  ? "请尝试调整您的搜索关键词或过滤标签" 
-                  : "立即创建一个新的智能体开始使用吧"}
+                  ? tr(locale, "请尝试调整您的搜索关键词或过滤标签", "Try adjusting your search keywords", "Hãy thử điều chỉnh từ khóa tìm kiếm")
+                  : t.agents.emptyDescription}
               </p>
             </div>
             {!searchQuery && (
               <Button size="sm" variant="outline" className="mt-2 text-xs" onClick={handleNewAgent}>
                 <PlusIcon className="mr-1.5 h-3.5 w-3.5" />
-                新建智能体
+                {t.agents.newAgent}
               </Button>
             )}
           </div>

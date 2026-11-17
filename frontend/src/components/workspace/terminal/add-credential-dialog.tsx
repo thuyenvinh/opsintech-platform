@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Eye, EyeOff } from 'lucide-react';
+import { tr } from '@/core/i18n';
+import { useI18n } from '@/core/i18n/hooks';
 
 export interface AddCredentialDialogProps {
   open: boolean;
@@ -13,6 +15,7 @@ export interface AddCredentialDialogProps {
 }
 
 export function AddCredentialDialog({ open, onOpenChange, onAddCredential }: AddCredentialDialogProps) {
+  const { locale } = useI18n();
   const [formData, setFormData] = useState({
     name: '',
     type: 'password',
@@ -32,19 +35,19 @@ export function AddCredentialDialog({ open, onOpenChange, onAddCredential }: Add
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>新建凭证</DialogTitle>
+          <DialogTitle>{tr(locale, '新建凭证', 'New Credential', 'Thêm thông tin xác thực')}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <label className="text-sm font-medium">凭证名称</label>
+            <label className="text-sm font-medium">{tr(locale, '凭证名称', 'Credential Name', 'Tên thông tin xác thực')}</label>
             <Input 
-              placeholder="例如：跳板机密码 / 生产环境私钥" 
+              placeholder={tr(locale, '例如：跳板机密码 / 生产环境私钥', 'e.g. Bastion Password / Prod SSH Key', 'vd: Mật khẩu máy chủ / Khóa SSH Production')} 
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             />
           </div>
           <div className="grid gap-2">
-            <label className="text-sm font-medium">类型</label>
+            <label className="text-sm font-medium">{tr(locale, '类型', 'Type', 'Loại')}</label>
             <Select 
               value={formData.type} 
               onValueChange={(val) => setFormData({ ...formData, type: val, value: '' })}
@@ -53,18 +56,22 @@ export function AddCredentialDialog({ open, onOpenChange, onAddCredential }: Add
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="password">Password (密码)</SelectItem>
-                <SelectItem value="ssh_key">SSH Key (私钥)</SelectItem>
+                <SelectItem value="password">{tr(locale, 'Password (密码)', 'Password', 'Mật khẩu (Password)')}</SelectItem>
+                <SelectItem value="ssh_key">{tr(locale, 'SSH Key (私钥)', 'SSH Key', 'Khóa SSH (Private Key)')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="grid gap-2">
-            <label className="text-sm font-medium">{formData.type === 'password' ? '密码' : '私钥内容'}</label>
+            <label className="text-sm font-medium">
+              {formData.type === 'password'
+                ? tr(locale, '密码', 'Password', 'Mật khẩu')
+                : tr(locale, '私钥内容', 'Private Key', 'Nội dung khóa riêng')}
+            </label>
             {formData.type === 'password' ? (
               <div className="relative mt-1">
                 <Input 
                   type={showPassword ? "text" : "password"}
-                  placeholder="输入密码" 
+                  placeholder={tr(locale, '输入密码', 'Enter password', 'Nhập mật khẩu')} 
                   className="pr-10"
                   value={formData.value}
                   onChange={(e) => setFormData({ ...formData, value: e.target.value })}
@@ -91,8 +98,8 @@ export function AddCredentialDialog({ open, onOpenChange, onAddCredential }: Add
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
-          <Button onClick={handleSubmit} disabled={!formData.name || !formData.value}>确定</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{tr(locale, '取消', 'Cancel', 'Hủy')}</Button>
+          <Button onClick={handleSubmit} disabled={!formData.name || !formData.value}>{tr(locale, '确定', 'Confirm', 'Xác nhận')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

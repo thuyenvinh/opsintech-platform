@@ -22,6 +22,8 @@ import {
   DEFAULT_AUTO_APPROVAL,
   type AutoApprovalSettings,
 } from './auto-approval-settings';
+import { tr } from '@/core/i18n';
+import { useI18n } from '@/core/i18n/hooks';
 
 interface SecuritySettingsPanelProps {
   open: boolean;
@@ -29,6 +31,7 @@ interface SecuritySettingsPanelProps {
 }
 
 export function SecuritySettingsPanel({ open, onClose }: SecuritySettingsPanelProps) {
+  const { locale } = useI18n();
   const [securityConfig, setSecurityConfig] = useState<SecurityConfig>(DEFAULT_SECURITY_CONFIG);
   const [autoSettings, setAutoSettings] = useState<AutoApprovalSettings>(DEFAULT_AUTO_APPROVAL);
   const [loading, setLoading] = useState(false);
@@ -129,10 +132,10 @@ export function SecuritySettingsPanel({ open, onClose }: SecuritySettingsPanelPr
             setAutoSettings(parsed.auto_approval);
             await saveSettings(parsed.security_config, parsed.auto_approval);
           } else {
-            alert('无效的配置文件格式');
+            alert(tr(locale, '无效的配置文件格式', 'Invalid configuration file format', 'Định dạng tệp cấu hình không hợp lệ'));
           }
         } catch {
-          alert('无效的配置文件格式');
+          alert(tr(locale, '无效的配置文件格式', 'Invalid configuration file format', 'Định dạng tệp cấu hình không hợp lệ'));
         }
       };
       reader.readAsText(file);
@@ -141,7 +144,7 @@ export function SecuritySettingsPanel({ open, onClose }: SecuritySettingsPanelPr
   };
 
   const handleReset = async () => {
-    if (confirm('确定要恢复默认安全配置吗？')) {
+    if (confirm(tr(locale, '确定要恢复默认安全配置吗？', 'Reset security settings to default?', 'Khôi phục cài đặt bảo mật về mặc định?'))) {
       try {
         const res = await fetchAuthApi('/api/v1/terminal/security-settings/reset', {
           method: 'POST',
@@ -168,7 +171,9 @@ export function SecuritySettingsPanel({ open, onClose }: SecuritySettingsPanelPr
         <div className="sticky top-0 bg-white border-b border-zinc-200 px-5 py-3 flex items-center justify-between z-10">
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4 text-blue-600" />
-            <h2 className="font-semibold text-sm text-zinc-900">安全与自动审批设置</h2>
+            <h2 className="font-semibold text-sm text-zinc-900">
+              {tr(locale, '安全与自动审批设置', 'Security & Auto-Approval Settings', 'Cài đặt bảo mật & tự động phê duyệt')}
+            </h2>
           </div>
           <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600">
             <X className="w-4 h-4" />
@@ -180,7 +185,7 @@ export function SecuritySettingsPanel({ open, onClose }: SecuritySettingsPanelPr
             <div className="flex items-start gap-2">
               <Shield className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
               <p className="text-xs text-blue-700">
-                命令执行以服务端安全策略为准。本页配置用于本地偏好和后续策略同步展示，危险操作仍会由服务端拦截或要求确认。
+                {tr(locale, '命令执行以服务端安全策略为准。本页配置用于本地偏好和后续策略同步展示，危险操作仍会由服务端拦截或要求确认。', 'Server-side security policies always take precedence. Dangerous commands will still be blocked or require confirmation.', 'Chính sách bảo mật phía máy chủ luôn được ưu tiên. Các lệnh nguy hiểm vẫn sẽ bị chặn hoặc yêu cầu xác nhận.')}
               </p>
             </div>
           </div>
@@ -190,14 +195,14 @@ export function SecuritySettingsPanel({ open, onClose }: SecuritySettingsPanelPr
               ============================================ */}
           <section>
             <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
-              命令安全
+              {tr(locale, '命令安全', 'Command Security', 'Bảo mật lệnh')}
             </h3>
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-sm font-medium text-zinc-800">启用命令安全检查</span>
-                  <p className="text-xs text-zinc-400 mt-0.5">在执行命令前进行安全验证</p>
+                  <span className="text-sm font-medium text-zinc-800">{tr(locale, '启用命令安全检查', 'Enable Command Security Check', 'Bật kiểm tra bảo mật lệnh')}</span>
+                  <p className="text-xs text-zinc-400 mt-0.5">{tr(locale, '在执行命令前进行安全验证', 'Validate commands before execution', 'Xác thực an toàn trước khi thực thi lệnh')}</p>
                 </div>
                 <Switch
                   checked={securityConfig.enableCommandSecurity}
@@ -207,8 +212,8 @@ export function SecuritySettingsPanel({ open, onClose }: SecuritySettingsPanelPr
 
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-sm font-medium text-zinc-800">严格模式</span>
-                  <p className="text-xs text-zinc-400 mt-0.5">仅允许白名单中的命令执行</p>
+                  <span className="text-sm font-medium text-zinc-800">{tr(locale, '严格模式', 'Strict Mode', 'Chế độ nghiêm ngặt')}</span>
+                  <p className="text-xs text-zinc-400 mt-0.5">{tr(locale, '仅允许白名单中的命令执行', 'Only allow whitelisted commands', 'Chỉ cho phép các lệnh trong danh sách trắng')}</p>
                 </div>
                 <Switch
                   checked={securityConfig.enableStrictMode}
@@ -218,8 +223,8 @@ export function SecuritySettingsPanel({ open, onClose }: SecuritySettingsPanelPr
 
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-sm font-medium text-zinc-800">高危命令：询问用户</span>
-                  <p className="text-xs text-zinc-400 mt-0.5">systemctl, chmod, chown 等高危命令</p>
+                  <span className="text-sm font-medium text-zinc-800">{tr(locale, '高危命令：询问用户', 'High-Risk Commands: Ask User', 'Lệnh rủi ro cao: Hỏi người dùng')}</span>
+                  <p className="text-xs text-zinc-400 mt-0.5">{tr(locale, 'systemctl, chmod, chown 等高危命令', 'High-risk commands like systemctl, chmod, chown', 'Các lệnh rủi ro cao như systemctl, chmod, chown')}</p>
                 </div>
                 <Switch
                   checked={securityConfig.securityPolicy.askForHigh}
@@ -231,8 +236,8 @@ export function SecuritySettingsPanel({ open, onClose }: SecuritySettingsPanelPr
 
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-sm font-medium text-zinc-800">中危命令：询问用户</span>
-                  <p className="text-xs text-zinc-400 mt-0.5">iptables, sudo, su 等中危命令</p>
+                  <span className="text-sm font-medium text-zinc-800">{tr(locale, '中危命令：询问用户', 'Medium-Risk Commands: Ask User', 'Lệnh rủi ro trung bình: Hỏi người dùng')}</span>
+                  <p className="text-xs text-zinc-400 mt-0.5">{tr(locale, 'iptables, sudo, su 等中危命令', 'Medium-risk commands like iptables, sudo, su', 'Các lệnh trung bình như iptables, sudo, su')}</p>
                 </div>
                 <Switch
                   checked={securityConfig.securityPolicy.askForMedium}
@@ -244,8 +249,10 @@ export function SecuritySettingsPanel({ open, onClose }: SecuritySettingsPanelPr
 
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-sm font-medium text-zinc-800">最大命令长度</span>
-                  <p className="text-xs text-zinc-400 mt-0.5">当前: {securityConfig.maxCommandLength} 字符</p>
+                  <span className="text-sm font-medium text-zinc-800">{tr(locale, '最大命令长度', 'Max Command Length', 'Độ dài lệnh tối đa')}</span>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    {tr(locale, `当前: ${securityConfig.maxCommandLength} 字符`, `Current: ${securityConfig.maxCommandLength} chars`, `Hiện tại: ${securityConfig.maxCommandLength} ký tự`)}
+                  </p>
                 </div>
                 <select
                   value={securityConfig.maxCommandLength}
@@ -266,14 +273,14 @@ export function SecuritySettingsPanel({ open, onClose }: SecuritySettingsPanelPr
               ============================================ */}
           <section>
             <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
-              自动审批
+              {tr(locale, '自动审批', 'Auto-Approval', 'Tự động phê duyệt')}
             </h3>
 
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3">
               <div className="flex items-start gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
                 <p className="text-xs text-amber-700">
-                  自动审批会让 Agent 自动执行命令而不等待你的确认。请谨慎启用。
+                  {tr(locale, '自动审批会让 Agent 自动执行命令而不等待你的确认。请谨慎启用。', 'Auto-approval lets the Agent run commands without waiting for your confirmation. Use with caution.', 'Tự động phê duyệt cho phép Agent chạy lệnh mà không cần chờ bạn xác nhận. Hãy cân nhắc kỹ.')}
                 </p>
               </div>
             </div>
@@ -281,8 +288,8 @@ export function SecuritySettingsPanel({ open, onClose }: SecuritySettingsPanelPr
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-sm font-medium text-zinc-800">启用自动审批</span>
-                  <p className="text-xs text-zinc-400 mt-0.5">符合策略的命令自动执行</p>
+                  <span className="text-sm font-medium text-zinc-800">{tr(locale, '启用自动审批', 'Enable Auto-Approval', 'Bật tự động phê duyệt')}</span>
+                  <p className="text-xs text-zinc-400 mt-0.5">{tr(locale, '符合策略的命令自动执行', 'Automatically execute policy-compliant commands', 'Tự động thực thi các lệnh hợp lệ theo chính sách')}</p>
                 </div>
                 <Switch
                   checked={autoSettings.enabled}
@@ -293,21 +300,21 @@ export function SecuritySettingsPanel({ open, onClose }: SecuritySettingsPanelPr
               {autoSettings.enabled && (
                 <>
                   <div className="flex items-center justify-between pl-4">
-                    <span className="text-sm text-zinc-700">自动读取文件</span>
+                    <span className="text-sm text-zinc-700">{tr(locale, '自动读取文件', 'Auto-read files', 'Tự động đọc tệp')}</span>
                     <Switch
                       checked={autoSettings.actions.readFiles}
                       onCheckedChange={(v) => updateAuto({ actions: { ...autoSettings.actions, readFiles: v } })}
                     />
                   </div>
                   <div className="flex items-center justify-between pl-4">
-                    <span className="text-sm text-zinc-700">自动编辑文件</span>
+                    <span className="text-sm text-zinc-700">{tr(locale, '自动编辑文件', 'Auto-edit files', 'Tự động sửa tệp')}</span>
                     <Switch
                       checked={autoSettings.actions.editFiles}
                       onCheckedChange={(v) => updateAuto({ actions: { ...autoSettings.actions, editFiles: v } })}
                     />
                   </div>
                   <div className="flex items-center justify-between pl-4">
-                    <span className="text-sm text-zinc-700">自动执行安全命令</span>
+                    <span className="text-sm text-zinc-700">{tr(locale, '自动执行安全命令', 'Auto-execute safe commands', 'Tự động chạy lệnh an toàn')}</span>
                     <Switch
                       checked={autoSettings.actions.executeSafeCommands}
                       onCheckedChange={(v) => updateAuto({ actions: { ...autoSettings.actions, executeSafeCommands: v } })}
@@ -315,8 +322,8 @@ export function SecuritySettingsPanel({ open, onClose }: SecuritySettingsPanelPr
                   </div>
                   <div className="flex items-center justify-between pl-4">
                     <div>
-                      <span className="text-sm text-zinc-700">自动执行所有命令</span>
-                      <p className="text-xs text-red-500 mt-0.5">⚠️ 包括危险命令，极度危险</p>
+                      <span className="text-sm text-zinc-700">{tr(locale, '自动执行所有命令', 'Auto-execute ALL commands', 'Tự động chạy MỌI lệnh')}</span>
+                      <p className="text-xs text-red-500 mt-0.5">{tr(locale, '⚠️ 包括危险命令，极度危险', '⚠️ Includes dangerous commands, extremely risky', '⚠️ Bao gồm cả lệnh nguy hiểm, cực kỳ rủi ro')}</p>
                     </div>
                     <Switch
                       checked={autoSettings.actions.executeAllCommands}
@@ -324,7 +331,7 @@ export function SecuritySettingsPanel({ open, onClose }: SecuritySettingsPanelPr
                     />
                   </div>
                   <div className="flex items-center justify-between pl-4">
-                    <span className="text-sm text-zinc-700">首次批准后自动执行只读命令</span>
+                    <span className="text-sm text-zinc-700">{tr(locale, '首次批准后自动执行只读命令', 'Auto-run read-only commands after first approval', 'Tự động chạy lệnh chỉ đọc sau lần duyệt đầu')}</span>
                     <Switch
                       checked={autoSettings.actions.autoExecuteReadOnlyCommands}
                       onCheckedChange={(v) =>
@@ -334,8 +341,8 @@ export function SecuritySettingsPanel({ open, onClose }: SecuritySettingsPanelPr
                   </div>
                   <div className="flex items-center justify-between pl-4">
                     <div>
-                      <span className="text-sm text-zinc-700">最大连续自动批准次数</span>
-                      <p className="text-xs text-zinc-400 mt-0.5">防止无限循环</p>
+                      <span className="text-sm text-zinc-700">{tr(locale, '最大连续自动批准次数', 'Max Consecutive Auto-Approvals', 'Số lần tự động duyệt liên tiếp tối đa')}</span>
+                      <p className="text-xs text-zinc-400 mt-0.5">{tr(locale, '防止无限循环', 'Prevent infinite loops', 'Ngăn chặn vòng lặp vô hạn')}</p>
                     </div>
                     <select
                       value={autoSettings.maxRequests}
@@ -357,7 +364,7 @@ export function SecuritySettingsPanel({ open, onClose }: SecuritySettingsPanelPr
               ============================================ */}
           <section>
             <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
-              配置管理
+              {tr(locale, '配置管理', 'Configuration', 'Quản lý cấu hình')}
             </h3>
             <div className="flex gap-2">
               <Button
@@ -367,7 +374,7 @@ export function SecuritySettingsPanel({ open, onClose }: SecuritySettingsPanelPr
                 onClick={handleExport}
               >
                 <Download className="w-3 h-3 mr-1" />
-                导出配置
+                {tr(locale, '导出配置', 'Export', 'Xuất cấu hình')}
               </Button>
               <Button
                 variant="outline"
@@ -376,7 +383,7 @@ export function SecuritySettingsPanel({ open, onClose }: SecuritySettingsPanelPr
                 onClick={handleImport}
               >
                 <Upload className="w-3 h-3 mr-1" />
-                导入配置
+                {tr(locale, '导入配置', 'Import', 'Nhập cấu hình')}
               </Button>
               <Button
                 variant="ghost"
@@ -385,7 +392,7 @@ export function SecuritySettingsPanel({ open, onClose }: SecuritySettingsPanelPr
                 onClick={handleReset}
               >
                 <RotateCcw className="w-3 h-3 mr-1" />
-                恢复默认
+                {tr(locale, '恢复默认', 'Reset', 'Mặc định')}
               </Button>
             </div>
           </section>

@@ -20,6 +20,8 @@ import { Badge } from "@/components/ui/badge";
 import { MarkdownContent } from "@/components/workspace/messages/markdown-content";
 import { summarizeDiagnosis, createPersonalSkill } from "@/core/skills/api";
 import type { ToolCallSummary } from "@/core/skills/type";
+import { getActiveLocale, tr } from "@/core/i18n";
+import { useI18n } from "@/core/i18n/hooks";
 
 /**
  * Extracts terminal session context into a format suitable for Skill summarization.
@@ -31,6 +33,7 @@ export function extractTerminalSession(messages: any[]): {
   diagnosisSteps: string[];
   toolCallsSummary: ToolCallSummary[];
 } {
+  const loc = getActiveLocale();
   const steps: string[] = [];
   const toolSummaries: ToolCallSummary[] = [];
   const parts: string[] = [];
@@ -46,20 +49,20 @@ export function extractTerminalSession(messages: any[]): {
 
     // Collect user input
     if (role === 'user' && content && !content.startsWith('[SYSTEM_INTERNAL]')) {
-      steps.push(`用户: ${content.slice(0, 100)}`);
+      steps.push(`${tr(loc, '用户', 'User', 'Người dùng')}: ${content.slice(0, 100)}`);
     }
 
     // Collect tool call summaries from parts
     if (m.parts && Array.isArray(m.parts)) {
       for (const p of m.parts) {
         if (p.toolName === 'execute_command' && p.input?.command) {
-          steps.push(`执行命令: ${p.input.command}`);
+          steps.push(`${tr(loc, '执行命令', 'Command', 'Thực thi lệnh')}: ${p.input.command}`);
           toolSummaries.push({
             tool: 'execute_command',
             description: p.input.command.slice(0, 80),
           });
         } else if (p.toolName && p.toolName !== 'execute_command') {
-          steps.push(`工具调用: ${p.toolName}`);
+          steps.push(`${tr(loc, '工具调用', 'Tool call', 'Gọi công cụ')}: ${p.toolName}`);
           toolSummaries.push({
             tool: p.toolName,
             description: p.input ? JSON.stringify(p.input).slice(0, 80) : '',
@@ -73,7 +76,7 @@ export function extractTerminalSession(messages: any[]): {
   const firstUserMsg = messages.find(m => (m.role || m.type) === 'user');
   const title = firstUserMsg
     ? (typeof firstUserMsg.content === 'string' ? firstUserMsg.content : '').slice(0, 60).replace(/\\n/g, ' ')
-    : '终端排查会话';
+    : tr(loc, '终端排查会话', 'Terminal Session', 'Phiên kiểm tra Terminal');
 
   return {
     title,
@@ -107,11 +110,13 @@ interface Props {
 type Stage = "trigger" | "refining" | "preview" | "saving";
 
 export function SaveAsSkillDialog({
-  sessionTitle = "终端排查会话",
+  sessionTitle,
   diagnosisText,
   diagnosisSteps = [],
   toolCallsSummary = [],
 }: Props) {
+  const { locale } = useI18n();
+  const effectiveTitle = sessionTitle ?? tr(locale, "终端排查会话", "Terminal Session", "Phiên kiểm tra Terminal");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [stage, setStage] = useState<Stage>("trigger");
@@ -143,7 +148,7 @@ export function SaveAsSkillDialog({
 
     try {
       const result = await summarizeDiagnosis({
-        incident_title: sessionTitle || null,
+        incident_title: effectiveTitle || null,
         diagnosis_result: diagnosisText,
         diagnosis_steps: diagnosisSteps.length > 0 ? diagnosisSteps : undefined,
         tool_calls_summary: toolCallsSummary.length > 0 ? toolCallsSummary : undefined,
@@ -162,7 +167,7 @@ export function SaveAsSkillDialog({
 
       setStage("preview");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "AI 提炼失败");
+      setError(err instanceof Error ? err.message : tr(locale, "AI 提炼失败", "AI extraction failed", "Trích xuất AI thất bại"));
       setStage("trigger");
     }
   };
@@ -184,12 +189,12 @@ export function SaveAsSkillDialog({
         enabled: true,
       });
 
-      toast.success("Skill 已创建，可在 Skills Plaza 的「我的 Skill」中查看");
+      toast.success(tr(locale, "Skill 已创建，可在 Skills Plaza 的「我的 Skill」中查看", "Skill created. View it under 'My Skills' in Skills Plaza.", "Đã tạo Skill, bạn có thể xem trong mục 'Skill của tôi' tại Skills Plaza"));
       setOpen(false);
       // Redirect to Skills Plaza (personal skill detail page doesn't exist yet)
       router.push("/workspace/skills?filter=personal");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "创建失败");
+      setError(err instanceof Error ? err.message : tr(locale, "创建失败", "Creation failed", "Tạo thất bại"));
       setStage("preview");
     }
   };
@@ -203,7 +208,7 @@ export function SaveAsSkillDialog({
           className="gap-1.5 h-8 text-xs font-semibold border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 dark:border-emerald-900 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
         >
           <BookmarkIcon className="h-3.5 w-3.5" />
-          存为 Skill
+          {tr(locale, "存为 Skill", "Save as Skill", "Lưu thành Skill")}
         </Button>
       </DialogTrigger>
 
@@ -221,10 +226,10 @@ export function SaveAsSkillDialog({
             </div>
             <div className="text-center space-y-2">
               <DialogTitle className="text-lg font-bold bg-gradient-to-r from-emerald-600 to-indigo-600 bg-clip-text text-transparent">
-                AI 正在提炼排查经验
+                {tr(locale, "AI 正在提炼排查经验", "AI is distilling troubleshooting experience", "AI đang đúc kết kinh nghiệm xử lý")}
               </DialogTitle>
               <DialogDescription className="text-sm max-w-sm">
-                正在分析排查过程，提取通用 SOP，去除实例信息，生成可复用的 Skill 指令...
+                {tr(locale, "正在分析排查过程，提取通用 SOP，去除实例信息，生成可复用的 Skill 指令...", "Analyzing steps, extracting generic SOP, stripping instance details...", "Đang phân tích quá trình xử lý, trích xuất SOP chung và tạo hướng dẫn Skill...")}
               </DialogDescription>
             </div>
             <div className="flex gap-1.5">
@@ -241,10 +246,10 @@ export function SaveAsSkillDialog({
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <SparklesIcon className="h-5 w-5 text-emerald-500" />
-                AI 提炼结果预览
+                {tr(locale, "AI 提炼结果预览", "AI Distillation Preview", "Xem trước kết quả đúc kết AI")}
               </DialogTitle>
               <DialogDescription>
-                AI 已将排查经验提炼为结构化 Skill。你可以直接保存或修改后保存。
+                {tr(locale, "AI 已将排查经验提炼为结构化 Skill。你可以直接保存或修改后保存。", "AI distilled the session into a structured Skill. Save directly or edit first.", "AI đã đúc kết kinh nghiệm thành Skill có cấu trúc. Bạn có thể lưu ngay hoặc chỉnh sửa.")}
               </DialogDescription>
             </DialogHeader>
 
@@ -252,7 +257,7 @@ export function SaveAsSkillDialog({
               {/* Editable name & description */}
               <div className="grid grid-cols-1 gap-3">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium">Skill 名称</label>
+                  <label className="text-xs font-medium">{tr(locale, "Skill 名称", "Skill Name", "Tên Skill")}</label>
                   <div className="flex items-center gap-2">
                     <Input
                       value={editedName}
@@ -271,7 +276,7 @@ export function SaveAsSkillDialog({
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium">描述</label>
+                  <label className="text-xs font-medium">{tr(locale, "描述", "Description", "Mô tả")}</label>
                   <Input
                     value={editedDescription}
                     onChange={(e) => setEditedDescription(e.target.value)}
@@ -285,15 +290,15 @@ export function SaveAsSkillDialog({
                 <TabsList className="w-full grid grid-cols-3 h-9">
                   <TabsTrigger value="refined" className="text-xs gap-1.5">
                     <SparklesIcon className="h-3 w-3" />
-                    AI 提炼
+                    {tr(locale, "AI 提炼", "AI Distilled", "AI đúc kết")}
                   </TabsTrigger>
                   <TabsTrigger value="original" className="text-xs gap-1.5">
                     <FileTextIcon className="h-3 w-3" />
-                    原始排查
+                    {tr(locale, "原始排查", "Original Session", "Phiên gốc")}
                   </TabsTrigger>
                   <TabsTrigger value="diff" className="text-xs gap-1.5">
                     <GitCompareIcon className="h-3 w-3" />
-                    差异对比
+                    {tr(locale, "差异对比", "Diff Summary", "So sánh khác biệt")}
                   </TabsTrigger>
                 </TabsList>
 
@@ -317,32 +322,32 @@ export function SaveAsSkillDialog({
                   <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50/30 dark:bg-zinc-900/10 p-4 space-y-3">
                     <div className="space-y-1.5">
                       <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                        + 新增结构
+                        {tr(locale, "+ 新增结构", "+ Added Structure", "+ Cấu trúc bổ sung")}
                       </p>
                       <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                        AI 增加了适用场景、排查步骤、关键检查点、常见根因、修复建议和参考命令等结构化章节，使排查经验更容易被其他 Agent 复用。
+                        {tr(locale, "AI 增加了适用场景、排查步骤、关键检查点、常见根因、修复建议和参考命令等结构化章节，使排查经验更容易被其他 Agent 复用。", "AI added structured sections including scenarios, steps, checkpoints, root causes, and fixes.", "AI đã thêm các mục có cấu trúc như tình huống áp dụng, bước kiểm tra, nguyên nhân gốc và cách khắc phục.")}
                       </p>
                     </div>
                     <div className="space-y-1.5">
                       <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">
-                        - 去除实例信息
+                        {tr(locale, "- 去除实例信息", "- Removed Instance Details", "- Đã loại bỏ thông tin riêng lẻ")}
                       </p>
                       <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                        AI 移除了排查过程中具体的 Pod 名称、IP 地址、时间戳、具体数值等实例信息，将其替换为通用占位符或参数化描述。
+                        {tr(locale, "AI 移除了排查过程中具体的 Pod 名称、IP 地址、时间戳、具体数值等实例信息，将其替换为通用占位符或参数化描述。", "AI stripped specific Pod names, IPs, timestamps, and values, replacing them with generic placeholders.", "AI đã loại bỏ tên Pod, địa chỉ IP, dấu thời gian và giá trị cụ thể, thay bằng tham số tổng quát.")}
                       </p>
                     </div>
                     <div className="space-y-1.5">
                       <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
-                        ~ 保留领域知识
+                        {tr(locale, "~ 保留领域知识", "~ Preserved Domain Knowledge", "~ Giữ lại kiến thức chuyên môn")}
                       </p>
                       <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                        关键的检查命令、排查思路、根因分类和阈值建议被完整保留，确保了 Skill 的实用性。
+                        {tr(locale, "关键的检查命令、排查思路、根因分类和阈值建议被完整保留，确保了 Skill 的实用性。", "Key inspection commands, logic, root causes, and thresholds are preserved.", "Các lệnh kiểm tra, tư duy xử lý, phân loại nguyên nhân và ngưỡng tham chiếu được giữ nguyên.")}
                       </p>
                     </div>
                     {refinedTools.length > 0 && (
                       <div className="space-y-1.5">
                         <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">
-                          🔧 建议绑定工具
+                          🔧 {tr(locale, "建议绑定工具", "Suggested Tools", "Công cụ gợi ý")}
                         </p>
                         <div className="flex gap-1 flex-wrap">
                           {refinedTools.map((t) => (
@@ -370,7 +375,7 @@ export function SaveAsSkillDialog({
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-[10px] gap-1">
                   <CheckIcon className="h-3 w-3" />
-                  分类: {refinedCategory}
+                  {tr(locale, "分类", "Category", "Phân loại")}: {refinedCategory}
                 </Badge>
               </div>
               <div className="flex gap-2">
@@ -383,7 +388,7 @@ export function SaveAsSkillDialog({
                   }}
                   disabled={stage === "saving"}
                 >
-                  取消
+                  {tr(locale, "取消", "Cancel", "Hủy")}
                 </Button>
                 <Button
                   size="sm"
@@ -394,12 +399,12 @@ export function SaveAsSkillDialog({
                   {stage === "saving" ? (
                     <>
                       <Loader2Icon className="h-3.5 w-3.5 animate-spin" />
-                      保存中...
+                      {tr(locale, "保存中...", "Saving...", "Đang lưu...")}
                     </>
                   ) : (
                     <>
                       <BookmarkIcon className="h-3.5 w-3.5" />
-                      保存为 Skill
+                      {tr(locale, "保存为 Skill", "Save as Skill", "Lưu thành Skill")}
                     </>
                   )}
                 </Button>
@@ -412,9 +417,9 @@ export function SaveAsSkillDialog({
         {stage === "trigger" && (
           <>
             <DialogHeader>
-              <DialogTitle>保存为可复用 Skill</DialogTitle>
+              <DialogTitle>{tr(locale, "保存为可复用 Skill", "Save as Reusable Skill", "Lưu thành Skill tái sử dụng")}</DialogTitle>
               <DialogDescription>
-                将本次排查经验保存为 Skill。AI 会自动提炼排查过程，生成结构化的 SOP 指令，供后续类似告警或排查复用。
+                {tr(locale, "将本次排查经验保存为 Skill。AI 会自动提炼排查过程，生成结构化的 SOP 指令，供后续类似告警或排查复用。", "Save this session as a Skill. AI extracts the process into a structured SOP for future reuse.", "Lưu kinh nghiệm phiên này thành Skill. AI sẽ đúc kết thành SOP có cấu trúc để tái sử dụng.")}
               </DialogDescription>
             </DialogHeader>
 
@@ -422,20 +427,20 @@ export function SaveAsSkillDialog({
               <div className="rounded-lg border border-emerald-100 dark:border-emerald-900/50 bg-emerald-50/30 dark:bg-emerald-950/10 p-4 space-y-2">
                 <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
                   <SparklesIcon className="h-3.5 w-3.5" />
-                  AI 提炼流程
+                  {tr(locale, "AI 提炼流程", "AI Distillation Flow", "Quy trình đúc kết AI")}
                 </p>
                 <ul className="space-y-1.5">
                   <li className="text-xs text-zinc-600 dark:text-zinc-400 flex items-start gap-2">
                     <span className="text-emerald-500 mt-0.5">1.</span>
-                    分析排查步骤，提取通用 SOP 流程
+                    {tr(locale, "分析排查步骤，提取通用 SOP 流程", "Analyze steps and extract generic SOP", "Phân tích các bước xử lý, trích xuất quy trình SOP chung")}
                   </li>
                   <li className="text-xs text-zinc-600 dark:text-zinc-400 flex items-start gap-2">
                     <span className="text-emerald-500 mt-0.5">2.</span>
-                    去除实例信息（IP、Pod、时间戳等），保留领域知识
+                    {tr(locale, "去除实例信息（IP、Pod、时间戳等），保留领域知识", "Remove instance details (IP, Pod, timestamps) and keep domain knowledge", "Loại bỏ thông tin riêng lẻ (IP, Pod, thời gian...) và giữ kiến thức chuyên môn")}
                   </li>
                   <li className="text-xs text-zinc-600 dark:text-zinc-400 flex items-start gap-2">
                     <span className="text-emerald-500 mt-0.5">3.</span>
-                    生成结构化指令，包含排查步骤、检查点、根因和修复建议
+                    {tr(locale, "生成结构化指令，包含排查步骤、检查点、根因和修复建议", "Generate structured instructions with steps, checkpoints, root causes, and fixes", "Tạo hướng dẫn có cấu trúc gồm các bước kiểm tra, nguyên nhân gốc và cách khắc phục")}
                   </li>
                 </ul>
               </div>
@@ -449,7 +454,7 @@ export function SaveAsSkillDialog({
 
             <div className="flex justify-end gap-2">
               <Button variant="outline" size="sm" onClick={() => setOpen(false)}>
-                取消
+                {tr(locale, "取消", "Cancel", "Hủy")}
               </Button>
               <Button
                 size="sm"
@@ -457,7 +462,7 @@ export function SaveAsSkillDialog({
                 className="bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-700 hover:to-indigo-700 text-white gap-1.5"
               >
                 <SparklesIcon className="h-3.5 w-3.5" />
-                开始 AI 提炼
+                {tr(locale, "开始 AI 提炼", "Start AI Distillation", "Bắt đầu đúc kết AI")}
               </Button>
             </div>
           </>

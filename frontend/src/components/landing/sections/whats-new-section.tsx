@@ -1,12 +1,15 @@
 "use client";
 
 import MagicBento, { type BentoCardProps } from "@/components/ui/magic-bento";
+import { tr, type Locale } from "@/core/i18n";
+import { useI18n } from "@/core/i18n/hooks";
 import { cn } from "@/lib/utils";
 
 import { Section } from "../section";
 
 const COLOR = "#0a0a0a";
-const features: BentoCardProps[] = [
+function getFeatures(locale: Locale): BentoCardProps[] {
+  return [
   {
     color: COLOR,
     label: "Multi-Tenant",
@@ -37,7 +40,12 @@ const features: BentoCardProps[] = [
     color: COLOR,
     label: "Flexible",
     title: "20+ Model Providers",
-    description: "OpenAI, Anthropic, DeepSeek, Gemini, Ollama, 智谱, 百炼...",
+    description: tr(
+      locale,
+      "OpenAI, Anthropic, DeepSeek, Gemini, Ollama, 智谱, 百炼...",
+      "OpenAI, Anthropic, DeepSeek, Gemini, Ollama, Zhipu, Bailian...",
+      "OpenAI, Anthropic, DeepSeek, Gemini, Ollama, Zhipu, Bailian...",
+    ),
   },
   {
     color: COLOR,
@@ -46,8 +54,11 @@ const features: BentoCardProps[] = [
     description: "Self-hosted, full control, community-driven",
   },
 ];
+}
 
 export function WhatsNewSection({ className }: { className?: string }) {
+  const { locale } = useI18n();
+  const features = getFeatures(locale);
   return (
     <Section
       className={cn("", className)}

@@ -2,6 +2,7 @@ export interface ProviderTemplate {
   id: string;
   label: string;
   labelEn: string;
+  labelVi: string;
   use: string;
   baseUrl: string;
   isOpenAICompatible: boolean;
@@ -12,6 +13,7 @@ export interface ProviderTemplate {
   defaultModelType?: string;
   note: string;
   noteEn: string;
+  noteVi: string;
 }
 
 export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
@@ -19,6 +21,7 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     id: "openai",
     label: "OpenAI",
     labelEn: "OpenAI",
+    labelVi: "OpenAI",
     use: "langchain_openai.ChatOpenAI",
     baseUrl: "",
     isOpenAICompatible: true,
@@ -28,11 +31,13 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     defaultSupportsText2Image: true,
     note: "",
     noteEn: "Connects to api.openai.com by default, no Base URL needed",
+    noteVi: "Mặc định kết nối tới api.openai.com, không cần nhập Base URL",
   },
   {
     id: "openai_compatible",
     label: "OpenAI Compatible",
     labelEn: "OpenAI Compatible",
+    labelVi: "OpenAI Compatible",
     use: "langchain_openai.ChatOpenAI",
     baseUrl: "",
     isOpenAICompatible: true,
@@ -41,11 +46,13 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     defaultSupportsReasoningEffort: false,
     note: "适用于所有兼容 OpenAI API 的厂商，需填写 Base URL",
     noteEn: "For any OpenAI API-compatible provider, requires Base URL",
+    noteVi: "Dùng cho mọi nhà cung cấp tương thích OpenAI API, cần nhập Base URL",
   },
   {
     id: "anthropic",
     label: "Anthropic",
     labelEn: "Anthropic",
+    labelVi: "Anthropic",
     use: "langchain_anthropic.ChatAnthropic",
     baseUrl: "",
     isOpenAICompatible: false,
@@ -54,11 +61,13 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     defaultSupportsReasoningEffort: false,
     note: "原生 Anthropic provider，支持 extended thinking",
     noteEn: "Native Anthropic provider with extended thinking support",
+    noteVi: "Nhà cung cấp Anthropic gốc, hỗ trợ extended thinking",
   },
   {
     id: "deepseek",
     label: "DeepSeek",
     labelEn: "DeepSeek",
+    labelVi: "DeepSeek",
     use: "langchain_openai.ChatOpenAI",
     baseUrl: "https://api.deepseek.com/v1",
     isOpenAICompatible: true,
@@ -68,11 +77,13 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     defaultModelType: "reasoning",
     note: "DeepSeek 开放平台，走 OpenAI-compatible 通道",
     noteEn: "DeepSeek platform via OpenAI-compatible channel",
+    noteVi: "Nền tảng DeepSeek qua kênh tương thích OpenAI",
   },
   {
     id: "azure_openai",
     label: "Azure OpenAI",
     labelEn: "Azure OpenAI",
+    labelVi: "Azure OpenAI",
     use: "langchain_openai.AzureChatOpenAI",
     baseUrl: "",
     isOpenAICompatible: true,
@@ -82,11 +93,13 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     defaultModelType: "chat",
     note: "Azure 部署需填写 endpoint 作为 Base URL，并确保 api_version 正确",
     noteEn: "Azure deployment requires endpoint as Base URL and correct api_version",
+    noteVi: "Triển khai Azure cần nhập endpoint làm Base URL và đúng api_version",
   },
   {
     id: "gemini",
     label: "Gemini (Google)",
     labelEn: "Gemini (Google)",
+    labelVi: "Gemini (Google)",
     use: "langchain_google_genai.ChatGoogleGenerativeAI",
     baseUrl: "",
     isOpenAICompatible: false,
@@ -96,11 +109,13 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     defaultSupportsText2Image: true,
     note: "需安装 langchain-google-genai 依赖",
     noteEn: "Requires langchain-google-genai dependency",
+    noteVi: "Yêu cầu cài đặt thư viện langchain-google-genai",
   },
   {
     id: "ollama",
     label: "Ollama",
     labelEn: "Ollama",
+    labelVi: "Ollama",
     use: "langchain_openai.ChatOpenAI",
     baseUrl: "http://localhost:11434/v1",
     isOpenAICompatible: true,
@@ -110,11 +125,13 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     defaultModelType: "chat",
     note: "本地部署，需填写 Base URL 为 http://localhost:11434/v1",
     noteEn: "Local deployment, set Base URL to http://localhost:11434/v1",
+    noteVi: "Triển khai cục bộ, đặt Base URL thành http://localhost:11434/v1",
   },
   {
     id: "openrouter",
     label: "OpenRouter",
     labelEn: "OpenRouter",
+    labelVi: "OpenRouter",
     use: "langchain_openai.ChatOpenAI",
     baseUrl: "https://openrouter.ai/api/v1",
     isOpenAICompatible: true,
@@ -123,11 +140,13 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     defaultSupportsReasoningEffort: false,
     note: "聚合模型平台，统一走 OpenAI-compatible 通道",
     noteEn: "Aggregated model platform via OpenAI-compatible channel",
+    noteVi: "Nền tảng tổng hợp mô hình qua kênh tương thích OpenAI",
   },
   {
     id: "groq",
     label: "Groq",
     labelEn: "Groq",
+    labelVi: "Groq",
     use: "langchain_openai.ChatOpenAI",
     baseUrl: "https://api.groq.com/openai/v1",
     isOpenAICompatible: true,
@@ -136,11 +155,13 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     defaultSupportsReasoningEffort: false,
     note: "高速推理平台，走 OpenAI-compatible 通道",
     noteEn: "High-speed inference via OpenAI-compatible channel",
+    noteVi: "Nền tảng suy luận tốc độ cao qua kênh tương thích OpenAI",
   },
   {
     id: "together",
     label: "Together AI",
     labelEn: "Together AI",
+    labelVi: "Together AI",
     use: "langchain_openai.ChatOpenAI",
     baseUrl: "https://api.together.xyz/v1",
     isOpenAICompatible: true,
@@ -149,11 +170,13 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     defaultSupportsReasoningEffort: false,
     note: "开源模型托管平台，走 OpenAI-compatible 通道",
     noteEn: "Open-source model hosting via OpenAI-compatible channel",
+    noteVi: "Nền tảng lưu trữ mô hình mã nguồn mở qua kênh tương thích OpenAI",
   },
   {
     id: "siliconflow",
     label: "SiliconFlow (硅基流动)",
     labelEn: "SiliconFlow",
+    labelVi: "SiliconFlow",
     use: "langchain_openai.ChatOpenAI",
     baseUrl: "https://api.siliconflow.cn/v1",
     isOpenAICompatible: true,
@@ -162,11 +185,13 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     defaultSupportsReasoningEffort: false,
     note: "国内 AI 模型平台，走 OpenAI-compatible 通道",
     noteEn: "China-based AI platform via OpenAI-compatible channel",
+    noteVi: "Nền tảng AI Trung Quốc qua kênh tương thích OpenAI",
   },
   {
     id: "dashscope",
     label: "DashScope (阿里百炼)",
     labelEn: "DashScope (Alibaba)",
+    labelVi: "DashScope (Alibaba)",
     use: "langchain_openai.ChatOpenAI",
     baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
     isOpenAICompatible: true,
@@ -175,11 +200,13 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     defaultSupportsReasoningEffort: false,
     note: "阿里百炼平台，走兼容 OpenAI 模式",
     noteEn: "Alibaba Bailian via OpenAI-compatible mode",
+    noteVi: "Nền tảng Alibaba Bailian qua chế độ tương thích OpenAI",
   },
   {
     id: "zhipu",
     label: "智谱 (GLM)",
     labelEn: "Zhipu (GLM)",
+    labelVi: "Zhipu (GLM)",
     use: "langchain_openai.ChatOpenAI",
     baseUrl: "https://open.bigmodel.cn/api/paas/v4",
     isOpenAICompatible: true,
@@ -188,11 +215,13 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     defaultSupportsReasoningEffort: false,
     note: "智谱 AI 平台，走 OpenAI-compatible 通道",
     noteEn: "Zhipu AI platform via OpenAI-compatible channel",
+    noteVi: "Nền tảng Zhipu AI qua kênh tương thích OpenAI",
   },
   {
     id: "moonshot",
     label: "Moonshot (月之暗面)",
     labelEn: "Moonshot",
+    labelVi: "Moonshot",
     use: "langchain_openai.ChatOpenAI",
     baseUrl: "https://api.moonshot.cn/v1",
     isOpenAICompatible: true,
@@ -201,11 +230,13 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     defaultSupportsReasoningEffort: false,
     note: "Kimi 平台，走 OpenAI-compatible 通道",
     noteEn: "Kimi platform via OpenAI-compatible channel",
+    noteVi: "Nền tảng Kimi qua kênh tương thích OpenAI",
   },
   {
     id: "minimax",
     label: "MiniMax",
     labelEn: "MiniMax",
+    labelVi: "MiniMax",
     use: "langchain_openai.ChatOpenAI",
     baseUrl: "https://api.minimax.io/v1",
     isOpenAICompatible: true,
@@ -214,11 +245,13 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     defaultSupportsReasoningEffort: false,
     note: "MiniMax 平台，走 OpenAI-compatible 通道",
     noteEn: "MiniMax platform via OpenAI-compatible channel",
+    noteVi: "Nền tảng MiniMax qua kênh tương thích OpenAI",
   },
   {
     id: "baichuan",
     label: "百川智能",
     labelEn: "Baichuan",
+    labelVi: "Baichuan",
     use: "langchain_openai.ChatOpenAI",
     baseUrl: "https://api.baichuan-ai.com/v1",
     isOpenAICompatible: true,
@@ -227,11 +260,13 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     defaultSupportsReasoningEffort: false,
     note: "百川 AI 平台，走 OpenAI-compatible 通道",
     noteEn: "Baichuan AI platform via OpenAI-compatible channel",
+    noteVi: "Nền tảng Baichuan AI qua kênh tương thích OpenAI",
   },
   {
     id: "lingyiwanwu",
     label: "零一万物",
     labelEn: "01.AI (Yi)",
+    labelVi: "01.AI (Yi)",
     use: "langchain_openai.ChatOpenAI",
     baseUrl: "https://api.lingyiwanwu.com/v1",
     isOpenAICompatible: true,
@@ -240,11 +275,13 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     defaultSupportsReasoningEffort: false,
     note: "零一万物平台，走 OpenAI-compatible 通道",
     noteEn: "01.AI platform via OpenAI-compatible channel",
+    noteVi: "Nền tảng 01.AI qua kênh tương thích OpenAI",
   },
   {
     id: "volcengine",
     label: "火山方舟 (字节)",
     labelEn: "Volcengine Ark",
+    labelVi: "Volcengine Ark",
     use: "langchain_openai.ChatOpenAI",
     baseUrl: "https://ark.cn-beijing.volces.com/api/v3",
     isOpenAICompatible: true,
@@ -253,11 +290,13 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     defaultSupportsReasoningEffort: false,
     note: "火山引擎方舟平台，走 OpenAI-compatible 通道",
     noteEn: "Volcengine Ark via OpenAI-compatible channel",
+    noteVi: "Nền tảng Volcengine Ark qua kênh tương thích OpenAI",
   },
   {
     id: "novita",
     label: "Novita AI",
     labelEn: "Novita AI",
+    labelVi: "Novita AI",
     use: "langchain_openai.ChatOpenAI",
     baseUrl: "https://api.novita.ai/openai",
     isOpenAICompatible: true,
@@ -266,6 +305,7 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     defaultSupportsReasoningEffort: false,
     note: "Novita AI 平台，走 OpenAI-compatible 通道",
     noteEn: "Novita AI platform via OpenAI-compatible channel",
+    noteVi: "Nền tảng Novita AI qua kênh tương thích OpenAI",
   },
 ];
 

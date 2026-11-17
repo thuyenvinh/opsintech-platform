@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { tr } from "@/core/i18n";
 import { useI18n } from "@/core/i18n/hooks";
 import {
   useAvailableMcpConfig,
@@ -243,7 +244,7 @@ function ArrayEditor({
 }
 
 export function TenantAdminToolsPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { rawArray, isLoading, error } = useAvailableMcpConfig();
   const { mutateAsync: createTenantTool, isPending: isCreating } = useCreateTenantMCPServer();
   const { mutateAsync: updateTenantTool, isPending: isUpdating } = useUpdateSingleTenantMCPServer();
@@ -910,18 +911,21 @@ export function TenantAdminToolsPage() {
                     <SelectValue placeholder={t.tenantAdmin.tools.templatePlaceholder} />
                   </SelectTrigger>
                   <SelectContent>
-                    {MCP_TEMPLATES.map((tmpl) => (
-                      <div key={tmpl.id} className="flex flex-col">
-                        <SelectItem value={tmpl.id}>
-                          {tmpl.label}
-                        </SelectItem>
-                        {tmpl.description && (
-                          <div className="px-8 pb-1.5 text-xs text-muted-foreground -mt-1 pointer-events-none select-none">
-                            {tmpl.description}
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                    {MCP_TEMPLATES.map((tmpl) => {
+                      const desc = tr(locale, tmpl.description, tmpl.descriptionEn, tmpl.descriptionVi);
+                      return (
+                        <div key={tmpl.id} className="flex flex-col">
+                          <SelectItem value={tmpl.id}>
+                            {tr(locale, tmpl.label, tmpl.labelEn, tmpl.labelVi)}
+                          </SelectItem>
+                          {desc && (
+                            <div className="px-8 pb-1.5 text-xs text-muted-foreground -mt-1 pointer-events-none select-none">
+                              {desc}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>

@@ -33,6 +33,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { fetchAuthApi } from "@/core/api/auth-client";
+import { tr } from "@/core/i18n";
 import { useI18n } from "@/core/i18n/hooks";
 import { testModelConnection } from "@/core/models/api";
 import { PROVIDER_TEMPLATES, getProviderById } from "@/core/models/provider-templates";
@@ -141,7 +142,7 @@ function useAssignedTenantsByModel(tenants: AdminTenant[] | undefined) {
 }
 
 export default function AdminModelsPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const queryClient = useQueryClient();
 
   const [creatingDialogOpen, setCreatingDialogOpen] = useState(false);
@@ -859,16 +860,21 @@ export default function AdminModelsPage() {
                       </SelectTrigger>
                       <SelectContent>
                         {PROVIDER_TEMPLATES.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+                          <SelectItem key={p.id} value={p.id}>{tr(locale, p.label, p.labelEn, p.labelVi)}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                     {globalProviderId && (
-                      <p className="text-[11px] text-muted-foreground leading-tight">{getProviderById(globalProviderId)?.note}</p>
+                      <p className="text-[11px] text-muted-foreground leading-tight">
+                        {(() => {
+                          const p = getProviderById(globalProviderId);
+                          return p ? tr(locale, p.note, p.noteEn, p.noteVi) : "";
+                        })()}
+                      </p>
                     )}
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-medium leading-none">模型类型</label>
+                    <label className="text-sm font-medium leading-none">{tr(locale, "模型类型", "Model Type", "Loại mô hình")}</label>
                     <Select value={globalModelType} onValueChange={(v) => {
                       setGlobalModelType(v);
                       const preset = MODEL_TYPES[v];
@@ -881,12 +887,12 @@ export default function AdminModelsPage() {
                     }}>
                       <SelectTrigger size="sm" className="h-9 w-full"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="chat">对话 (Chat)</SelectItem>
-                        <SelectItem value="code">代码 (Code)</SelectItem>
-                        <SelectItem value="reasoning">推理 (Reasoning)</SelectItem>
-                        <SelectItem value="vision">视觉 (Vision)</SelectItem>
-                        <SelectItem value="text2image">文生图 (Text-to-Image)</SelectItem>
-                        <SelectItem value="multimodal">多模态 (Multimodal)</SelectItem>
+                        <SelectItem value="chat">{tr(locale, "对话 (Chat)", "Chat", "Hội thoại (Chat)")}</SelectItem>
+                        <SelectItem value="code">{tr(locale, "代码 (Code)", "Code", "Lập trình (Code)")}</SelectItem>
+                        <SelectItem value="reasoning">{tr(locale, "推理 (Reasoning)", "Reasoning", "Suy luận (Reasoning)")}</SelectItem>
+                        <SelectItem value="vision">{tr(locale, "视觉 (Vision)", "Vision", "Thị giác (Vision)")}</SelectItem>
+                        <SelectItem value="text2image">{tr(locale, "文生图 (Text-to-Image)", "Text-to-Image", "Tạo ảnh (Text-to-Image)")}</SelectItem>
+                        <SelectItem value="multimodal">{tr(locale, "多模态 (Multimodal)", "Multimodal", "Đa phương thức (Multimodal)")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1130,16 +1136,21 @@ export default function AdminModelsPage() {
                       <SelectTrigger id="edit-provider-select" className="w-full"><SelectValue placeholder={t.admin.models.createDialog.providerPlaceholder} /></SelectTrigger>
                       <SelectContent>
                         {PROVIDER_TEMPLATES.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+                          <SelectItem key={p.id} value={p.id}>{tr(locale, p.label, p.labelEn, p.labelVi)}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                     {editProviderId && (
-                      <p className="text-[11px] text-muted-foreground leading-tight">{getProviderById(editProviderId)?.note}</p>
+                      <p className="text-[11px] text-muted-foreground leading-tight">
+                        {(() => {
+                          const p = getProviderById(editProviderId);
+                          return p ? tr(locale, p.note, p.noteEn, p.noteVi) : "";
+                        })()}
+                      </p>
                     )}
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-medium leading-none">模型类型</label>
+                    <label className="text-sm font-medium leading-none">{tr(locale, "模型类型", "Model Type", "Loại mô hình")}</label>
                     <Select value={editModelType} onValueChange={(v) => {
                       setEditModelType(v);
                       const preset = MODEL_TYPES[v];
@@ -1152,12 +1163,12 @@ export default function AdminModelsPage() {
                     }}>
                       <SelectTrigger size="sm" className="h-9 w-full"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="chat">对话 (Chat)</SelectItem>
-                        <SelectItem value="code">代码 (Code)</SelectItem>
-                        <SelectItem value="reasoning">推理 (Reasoning)</SelectItem>
-                        <SelectItem value="vision">视觉 (Vision)</SelectItem>
-                        <SelectItem value="text2image">文生图 (Text-to-Image)</SelectItem>
-                        <SelectItem value="multimodal">多模态 (Multimodal)</SelectItem>
+                        <SelectItem value="chat">{tr(locale, "对话 (Chat)", "Chat", "Hội thoại (Chat)")}</SelectItem>
+                        <SelectItem value="code">{tr(locale, "代码 (Code)", "Code", "Lập trình (Code)")}</SelectItem>
+                        <SelectItem value="reasoning">{tr(locale, "推理 (Reasoning)", "Reasoning", "Suy luận (Reasoning)")}</SelectItem>
+                        <SelectItem value="vision">{tr(locale, "视觉 (Vision)", "Vision", "Thị giác (Vision)")}</SelectItem>
+                        <SelectItem value="text2image">{tr(locale, "文生图 (Text-to-Image)", "Text-to-Image", "Tạo ảnh (Text-to-Image)")}</SelectItem>
+                        <SelectItem value="multimodal">{tr(locale, "多模态 (Multimodal)", "Multimodal", "Đa phương thức (Multimodal)")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

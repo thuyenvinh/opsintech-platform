@@ -30,6 +30,7 @@ import {
 } from "@/components/workspace/workspace-container";
 // import { useAgents } from "@/core/agents/hooks";
 import { useIncidentStats } from "@/core/alerting";
+import { tr } from "@/core/i18n";
 import { useI18n } from "@/core/i18n/hooks";
 import { useAvailableMcpConfig } from "@/core/mcp/hooks";
 import { useAvailableModels } from "@/core/models/hooks";
@@ -42,7 +43,8 @@ function formatDateTime(value: string | null | undefined, locale: string) {
   if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString(locale === "en" ? "en-US" : "zh-CN", {
+  const intlLocale = locale === "vi" ? "vi-VN" : locale.startsWith("zh") ? "zh-CN" : "en-US";
+  return date.toLocaleString(intlLocale, {
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
@@ -106,17 +108,17 @@ function formatRelativeTime(dateString: string, locale: string) {
   const diffMins = Math.floor(diffMs / (1000 * 60));
 
   if (diffMins < 1) {
-    return locale === "zh-CN" ? "刚刚" : "just now";
+    return tr(locale, "刚刚", "just now", "vừa xong");
   }
   if (diffMins < 60) {
-    return locale === "zh-CN" ? `${diffMins} 分钟前` : `${diffMins}m ago`;
+    return tr(locale, `${diffMins} 分钟前`, `${diffMins}m ago`, `${diffMins} phút trước`);
   }
   const diffHours = Math.floor(diffMins / 60);
   if (diffHours < 24) {
-    return locale === "zh-CN" ? `${diffHours} 小时前` : `${diffHours}h ago`;
+    return tr(locale, `${diffHours} 小时前`, `${diffHours}h ago`, `${diffHours} giờ trước`);
   }
   const diffDays = Math.floor(diffHours / 24);
-  return locale === "zh-CN" ? `${diffDays} 天前` : `${diffDays}d ago`;
+  return tr(locale, `${diffDays} 天前`, `${diffDays}d ago`, `${diffDays} ngày trước`);
 }
 
 function HeaderActions() {
@@ -237,29 +239,28 @@ export default function WorkspaceOverviewPage() {
 
   // Localization map for alerting
   const alertText = useMemo(() => {
-    const isZh = locale === "zh-CN";
     return {
-      firing: isZh ? "活动告警" : "Firing Alerts",
-      resolved: isZh ? "已恢复" : "Resolved Alerts",
-      suppressed: isZh ? "已静默" : "Suppressed Alerts",
-      total: isZh ? "事件总数" : "Total Incidents",
+      firing: tr(locale, "活动告警", "Firing Alerts", "Cảnh báo đang kích hoạt"),
+      resolved: tr(locale, "已恢复", "Resolved Alerts", "Đã khắc phục"),
+      suppressed: tr(locale, "已静默", "Suppressed Alerts", "Đã tắt tiếng"),
+      total: tr(locale, "事件总数", "Total Incidents", "Tổng sự cố"),
 
-      distributionTitle: isZh ? "告警级别分布" : "Severity Distribution",
-      distributionDesc: isZh ? "当前空间各级别告警分布态势" : "Workspace alert severity distribution",
+      distributionTitle: tr(locale, "告警级别分布", "Severity Distribution", "Phân bố mức độ cảnh báo"),
+      distributionDesc: tr(locale, "当前空间各级别告警分布态势", "Workspace alert severity distribution", "Phân bố cảnh báo theo mức độ trong không gian làm việc"),
 
-      servicesTitle: isZh ? "Top 5 告警服务" : "Top 5 Alerting Services",
-      servicesDesc: isZh ? "当前空间内告警发生频率最高的服务" : "Most frequent alerting microservices",
-      noServices: isZh ? "暂无服务告警记录" : "No service alert records",
+      servicesTitle: tr(locale, "Top 5 告警服务", "Top 5 Alerting Services", "Top 5 dịch vụ cảnh báo"),
+      servicesDesc: tr(locale, "当前空间内告警发生频率最高的服务", "Most frequent alerting microservices", "Các dịch vụ phát sinh cảnh báo nhiều nhất"),
+      noServices: tr(locale, "暂无服务告警记录", "No service alert records", "Chưa có bản ghi cảnh báo dịch vụ"),
 
-      recentTitle: isZh ? "最近活跃告警" : "Recent Firing Incidents",
-      recentDesc: isZh ? "实时发生的活动状态告警列表" : "Real-time active alert incidents list",
-      noRecent: isZh ? "暂无活跃告警事件" : "No active firing incidents",
-      viewAll: isZh ? "查看全部" : "View All",
+      recentTitle: tr(locale, "最近活跃告警", "Recent Firing Incidents", "Sự cố đang hoạt động gần đây"),
+      recentDesc: tr(locale, "实时发生的活动状态告警列表", "Real-time active alert incidents list", "Danh sách sự cố cảnh báo đang hoạt động theo thời gian thực"),
+      noRecent: tr(locale, "暂无活跃告警事件", "No active firing incidents", "Không có sự cố nào đang kích hoạt"),
+      viewAll: tr(locale, "查看全部", "View All", "Xem tất cả"),
 
-      critical: isZh ? "紧急 (Critical)" : "Critical",
-      major: isZh ? "重要 (Major)" : "Major",
-      warning: isZh ? "警告 (Warning)" : "Warning",
-      info: isZh ? "提示 (Info)" : "Info",
+      critical: tr(locale, "紧急 (Critical)", "Critical", "Khẩn cấp (Critical)"),
+      major: tr(locale, "重要 (Major)", "Major", "Quan trọng (Major)"),
+      warning: tr(locale, "警告 (Warning)", "Warning", "Cảnh báo (Warning)"),
+      info: tr(locale, "提示 (Info)", "Info", "Thông tin (Info)"),
     };
   }, [locale]);
 
@@ -326,9 +327,12 @@ export default function WorkspaceOverviewPage() {
             <div className="pt-2">
               <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/30 p-4 text-center">
                 <p className="text-sm text-red-700 dark:text-red-400 font-medium">
-                  {locale === "zh-CN"
-                    ? "告警统计数据加载失败，请检查后台服务是否正常"
-                    : "Failed to load incident stats — please check if the backend service is running"}
+                  {tr(
+                    locale,
+                    "告警统计数据加载失败，请检查后台服务是否正常",
+                    "Failed to load incident stats — please check if the backend service is running",
+                    "Tải thống kê cảnh báo thất bại — vui lòng kiểm tra dịch vụ máy chủ"
+                  )}
                 </p>
               </div>
             </div>
@@ -440,8 +444,16 @@ export default function WorkspaceOverviewPage() {
             ) : (
               <div className="space-y-6">
                 <OverviewSectionCard
-                  title={tenantType === "product" ? "产品设计快速入口" : "研发快速入口"}
-                  description={tenantType === "product" ? "产品经理常用工具与知识库" : "研发人员常用工具与代码库"}
+                  title={
+                    tenantType === "product"
+                      ? tr(locale, "产品设计快速入口", "Product Quick Access", "Lối tắt Thiết kế sản phẩm")
+                      : tr(locale, "研发快速入口", "R&D Quick Access", "Lối tắt Nghiên cứu & Phát triển")
+                  }
+                  description={
+                    tenantType === "product"
+                      ? tr(locale, "产品经理常用工具与知识库", "Common tools and knowledge base for PMs", "Công cụ và kho tri thức cho Quản lý sản phẩm")
+                      : tr(locale, "研发人员常用工具与代码库", "Common tools and repositories for R&D", "Công cụ và kho mã nguồn cho kỹ sư R&D")
+                  }
                 >
                   <div className="mt-4 grid grid-cols-2 gap-3">
                     <Link
@@ -449,32 +461,38 @@ export default function WorkspaceOverviewPage() {
                       className="rounded-xl border bg-card p-4 hover:shadow-md transition-all hover:border-primary/30 group"
                     >
                       <SparklesIcon className="size-5 text-indigo-500 mb-2" />
-                      <h4 className="text-sm font-semibold">智能工作台</h4>
-                      <p className="text-xs text-muted-foreground mt-1">开始新对话</p>
+                      <h4 className="text-sm font-semibold">{t.sidebarNav.smartWorkbench}</h4>
+                      <p className="text-xs text-muted-foreground mt-1">{t.overview.quickActions.newChat}</p>
                     </Link>
                     <Link
                       href="/workspace/skills"
                       className="rounded-xl border bg-card p-4 hover:shadow-md transition-all hover:border-primary/30 group"
                     >
                       <BoxesIcon className="size-5 text-sky-500 mb-2" />
-                      <h4 className="text-sm font-semibold">技能广场</h4>
-                      <p className="text-xs text-muted-foreground mt-1">浏览可用技能</p>
+                      <h4 className="text-sm font-semibold">{t.sidebarNav.skillsPlaza}</h4>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {tr(locale, "浏览可用技能", "Browse available skills", "Khám phá các kỹ năng khả dụng")}
+                      </p>
                     </Link>
                     <Link
                       href="/workspace/terminal"
                       className="rounded-xl border bg-card p-4 hover:shadow-md transition-all hover:border-primary/30 group"
                     >
                       <WrenchIcon className="size-5 text-amber-500 mb-2" />
-                      <h4 className="text-sm font-semibold">智能终端</h4>
-                      <p className="text-xs text-muted-foreground mt-1">命令行工具</p>
+                      <h4 className="text-sm font-semibold">{tr(locale, "智能终端", "Smart Terminal", "Terminal thông minh")}</h4>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {tr(locale, "命令行工具", "Command-line tools", "Công cụ dòng lệnh")}
+                      </p>
                     </Link>
                     <Link
                       href="/tenant-admin"
                       className="rounded-xl border bg-card p-4 hover:shadow-md transition-all hover:border-primary/30 group"
                     >
                       <Server className="size-5 text-emerald-500 mb-2" />
-                      <h4 className="text-sm font-semibold">空间管理</h4>
-                      <p className="text-xs text-muted-foreground mt-1">配置与治理</p>
+                      <h4 className="text-sm font-semibold">{t.navMenu.manageWorkspace}</h4>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {tr(locale, "配置与治理", "Config & governance", "Cấu hình & quản trị")}
+                      </p>
                     </Link>
                   </div>
                 </OverviewSectionCard>

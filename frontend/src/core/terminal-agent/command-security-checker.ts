@@ -4,6 +4,7 @@
  * strict mode, per-severity policies, and wildcard blacklist matching.
  */
 
+import { getActiveLocale, tr } from '@/core/i18n';
 import type { SecurityPolicy } from './security/security-config';
 
 export interface SecurityCheckResult {
@@ -33,37 +34,215 @@ export interface CheckOptions {
 }
 
 // Default dangerous commands with severity
-const DANGEROUS_COMMANDS_SEVERITY: Record<string, { severity: 'critical' | 'high' | 'medium'; reason: string }> = {
+const DANGEROUS_COMMANDS_SEVERITY: Record<
+  string,
+  { severity: 'critical' | 'high' | 'medium'; reason: { zh: string; en: string; vi: string } }
+> = {
   // Critical
-  rm: { severity: 'critical', reason: '删除文件/目录，可能导致数据丢失' },
-  del: { severity: 'critical', reason: '删除文件，可能导致数据丢失' },
-  format: { severity: 'critical', reason: '格式化磁盘，会导致数据永久丢失' },
-  shutdown: { severity: 'critical', reason: '关闭系统，会导致服务中断' },
-  reboot: { severity: 'critical', reason: '重启系统，会导致服务中断' },
-  halt: { severity: 'critical', reason: '停止系统，会导致服务中断' },
-  poweroff: { severity: 'critical', reason: '关闭电源，会导致服务中断' },
-  dd: { severity: 'critical', reason: '磁盘操作，误用会导致数据丢失' },
-  mkfs: { severity: 'critical', reason: '创建文件系统，会清空磁盘数据' },
-  fdisk: { severity: 'critical', reason: '磁盘分区操作，误用会导致数据丢失' },
-  parted: { severity: 'critical', reason: '磁盘分区工具，误操作会导致数据丢失' },
-  init: { severity: 'critical', reason: '改变系统运行级别，可能导致服务中断' },
+  rm: {
+    severity: 'critical',
+    reason: {
+      zh: '删除文件/目录，可能导致数据丢失',
+      en: 'Deletes files/directories and may cause data loss',
+      vi: 'Xóa tệp/thư mục, có thể gây mất dữ liệu',
+    },
+  },
+  del: {
+    severity: 'critical',
+    reason: {
+      zh: '删除文件，可能导致数据丢失',
+      en: 'Deletes files and may cause data loss',
+      vi: 'Xóa tệp, có thể gây mất dữ liệu',
+    },
+  },
+  format: {
+    severity: 'critical',
+    reason: {
+      zh: '格式化磁盘，会导致数据永久丢失',
+      en: 'Formats disk and causes permanent data loss',
+      vi: 'Định dạng ổ đĩa, sẽ gây mất dữ liệu vĩnh viễn',
+    },
+  },
+  shutdown: {
+    severity: 'critical',
+    reason: {
+      zh: '关闭系统，会导致服务中断',
+      en: 'Shuts down the system and interrupts services',
+      vi: 'Tắt hệ thống, sẽ làm gián đoạn dịch vụ',
+    },
+  },
+  reboot: {
+    severity: 'critical',
+    reason: {
+      zh: '重启系统，会导致服务中断',
+      en: 'Reboots the system and interrupts services',
+      vi: 'Khởi động lại hệ thống, sẽ làm gián đoạn dịch vụ',
+    },
+  },
+  halt: {
+    severity: 'critical',
+    reason: {
+      zh: '停止系统，会导致服务中断',
+      en: 'Halts the system and interrupts services',
+      vi: 'Dừng hệ thống, sẽ làm gián đoạn dịch vụ',
+    },
+  },
+  poweroff: {
+    severity: 'critical',
+    reason: {
+      zh: '关闭电源，会导致服务中断',
+      en: 'Powers off the system and interrupts services',
+      vi: 'Tắt nguồn hệ thống, sẽ làm gián đoạn dịch vụ',
+    },
+  },
+  dd: {
+    severity: 'critical',
+    reason: {
+      zh: '磁盘操作，误用会导致数据丢失',
+      en: 'Low-level disk operation; misuse may cause data loss',
+      vi: 'Thao tác ổ đĩa cấp thấp; dùng sai có thể gây mất dữ liệu',
+    },
+  },
+  mkfs: {
+    severity: 'critical',
+    reason: {
+      zh: '创建文件系统，会清空磁盘数据',
+      en: 'Creates a filesystem and erases disk data',
+      vi: 'Tạo hệ thống tệp, sẽ xóa sạch dữ liệu ổ đĩa',
+    },
+  },
+  fdisk: {
+    severity: 'critical',
+    reason: {
+      zh: '磁盘分区操作，误用会导致数据丢失',
+      en: 'Disk partitioning operation; misuse may cause data loss',
+      vi: 'Thao tác phân vùng ổ đĩa; dùng sai có thể gây mất dữ liệu',
+    },
+  },
+  parted: {
+    severity: 'critical',
+    reason: {
+      zh: '磁盘分区工具，误操作会导致数据丢失',
+      en: 'Disk partitioning tool; misuse may cause data loss',
+      vi: 'Công cụ phân vùng ổ đĩa; thao tác sai có thể gây mất dữ liệu',
+    },
+  },
+  init: {
+    severity: 'critical',
+    reason: {
+      zh: '改变系统运行级别，可能导致服务中断',
+      en: 'Changes system runlevel and may interrupt services',
+      vi: 'Thay đổi runlevel hệ thống, có thể làm gián đoạn dịch vụ',
+    },
+  },
 
   // High
-  killall: { severity: 'high', reason: '批量终止进程，可能影响系统稳定性' },
-  pkill: { severity: 'high', reason: '模式匹配终止进程，可能误杀关键进程' },
-  systemctl: { severity: 'high', reason: '管理系统服务，可能影响服务运行' },
-  service: { severity: 'high', reason: '管理系统服务，可能影响服务运行' },
-  chmod: { severity: 'high', reason: '修改文件权限，可能导致安全漏洞' },
-  chown: { severity: 'high', reason: '修改文件所有者，可能影响系统安全' },
-  mount: { severity: 'high', reason: '挂载文件系统，不当操作可能影响系统' },
-  umount: { severity: 'high', reason: '卸载文件系统，可能导致数据不一致' },
+  killall: {
+    severity: 'high',
+    reason: {
+      zh: '批量终止进程，可能影响系统稳定性',
+      en: 'Terminates processes in bulk; may affect system stability',
+      vi: 'Kết thúc hàng loạt tiến trình, có thể ảnh hưởng ổn định hệ thống',
+    },
+  },
+  pkill: {
+    severity: 'high',
+    reason: {
+      zh: '模式匹配终止进程，可能误杀关键进程',
+      en: 'Kills processes by pattern; may terminate critical processes',
+      vi: 'Kết thúc tiến trình theo mẫu, có thể dừng nhầm tiến trình quan trọng',
+    },
+  },
+  systemctl: {
+    severity: 'high',
+    reason: {
+      zh: '管理系统服务，可能影响服务运行',
+      en: 'Manages system services; may affect running services',
+      vi: 'Quản lý dịch vụ hệ thống, có thể ảnh hưởng hoạt động dịch vụ',
+    },
+  },
+  service: {
+    severity: 'high',
+    reason: {
+      zh: '管理系统服务，可能影响服务运行',
+      en: 'Manages system services; may affect running services',
+      vi: 'Quản lý dịch vụ hệ thống, có thể ảnh hưởng hoạt động dịch vụ',
+    },
+  },
+  chmod: {
+    severity: 'high',
+    reason: {
+      zh: '修改文件权限，可能导致安全漏洞',
+      en: 'Modifies file permissions; may introduce security risks',
+      vi: 'Thay đổi quyền tệp, có thể gây lỗ hổng bảo mật',
+    },
+  },
+  chown: {
+    severity: 'high',
+    reason: {
+      zh: '修改文件所有者，可能影响系统安全',
+      en: 'Changes file ownership; may affect system security',
+      vi: 'Thay đổi chủ sở hữu tệp, có thể ảnh hưởng bảo mật hệ thống',
+    },
+  },
+  mount: {
+    severity: 'high',
+    reason: {
+      zh: '挂载文件系统，不当操作可能影响系统',
+      en: 'Mounts a filesystem; improper use may affect the system',
+      vi: 'Gắn kết hệ thống tệp; thao tác sai có thể ảnh hưởng hệ thống',
+    },
+  },
+  umount: {
+    severity: 'high',
+    reason: {
+      zh: '卸载文件系统，可能导致数据不一致',
+      en: 'Unmounts a filesystem; may cause data inconsistency',
+      vi: 'Tháo gắn kết hệ thống tệp, có thể gây mất nhất quán dữ liệu',
+    },
+  },
 
   // Medium
-  iptables: { severity: 'medium', reason: '修改防火墙规则，可能影响网络访问' },
-  ufw: { severity: 'medium', reason: '修改防火墙设置，可能影响网络访问' },
-  'firewall-cmd': { severity: 'medium', reason: '修改防火墙配置，可能影响网络访问' },
-  sudo: { severity: 'medium', reason: '以超级用户权限执行命令，请确认必要性' },
-  su: { severity: 'medium', reason: '切换用户身份，请确认必要性' },
+  iptables: {
+    severity: 'medium',
+    reason: {
+      zh: '修改防火墙规则，可能影响网络访问',
+      en: 'Modifies firewall rules; may affect network access',
+      vi: 'Thay đổi quy tắc tường lửa, có thể ảnh hưởng truy cập mạng',
+    },
+  },
+  ufw: {
+    severity: 'medium',
+    reason: {
+      zh: '修改防火墙设置，可能影响网络访问',
+      en: 'Modifies firewall settings; may affect network access',
+      vi: 'Thay đổi cài đặt tường lửa, có thể ảnh hưởng truy cập mạng',
+    },
+  },
+  'firewall-cmd': {
+    severity: 'medium',
+    reason: {
+      zh: '修改防火墙配置，可能影响网络访问',
+      en: 'Modifies firewall configuration; may affect network access',
+      vi: 'Thay đổi cấu hình tường lửa, có thể ảnh hưởng truy cập mạng',
+    },
+  },
+  sudo: {
+    severity: 'medium',
+    reason: {
+      zh: '以超级用户权限执行命令，请确认必要性',
+      en: 'Executes command with superuser privileges; please confirm necessity',
+      vi: 'Thực thi lệnh với quyền siêu người dùng, vui lòng xác nhận sự cần thiết',
+    },
+  },
+  su: {
+    severity: 'medium',
+    reason: {
+      zh: '切换用户身份，请确认必要性',
+      en: 'Switches user identity; please confirm necessity',
+      vi: 'Chuyển đổi danh tính người dùng, vui lòng xác nhận sự cần thiết',
+    },
+  },
 };
 
 // Default blacklist patterns
@@ -213,7 +392,12 @@ export class CommandSecurityChecker {
     if (trimmed.length > maxCommandLength) {
       return {
         isSafe: false,
-        reason: `命令长度超过限制 (${maxCommandLength} 字符)`,
+        reason: tr(
+          getActiveLocale(),
+          `命令长度超过限制 (${maxCommandLength} 字符)`,
+          `Command length exceeds limit (${maxCommandLength} characters)`,
+          `Độ dài lệnh vượt quá giới hạn (${maxCommandLength} ký tự)`,
+        ),
         severity: 'medium',
         category: 'permission',
         action: 'block',
@@ -246,7 +430,12 @@ export class CommandSecurityChecker {
         if (!isWhitelisted) {
           return {
             isSafe: false,
-            reason: `命令 "${executable}" 不在白名单中（严格模式已启用）`,
+            reason: tr(
+              getActiveLocale(),
+              `命令 "${executable}" 不在白名单中（严格模式已启用）`,
+              `Command "${executable}" is not in the whitelist (strict mode enabled)`,
+              `Lệnh "${executable}" không nằm trong danh sách cho phép (đã bật chế độ nghiêm ngặt)`,
+            ),
             severity: 'medium',
             category: 'whitelist',
             action: 'block',
@@ -274,7 +463,12 @@ export class CommandSecurityChecker {
         const shouldAsk = securityPolicy?.askForBlacklist ?? false;
         return {
           isSafe: shouldAsk,
-          reason: `命令匹配黑名单模式: ${pattern}`,
+          reason: tr(
+            getActiveLocale(),
+            `命令匹配黑名单模式: ${pattern}`,
+            `Command matches blacklist pattern: ${pattern}`,
+            `Lệnh khớp mẫu danh sách đen: ${pattern}`,
+          ),
           severity: 'critical',
           category: 'blacklist',
           action: shouldAsk ? 'ask' : 'block',
@@ -303,7 +497,7 @@ export class CommandSecurityChecker {
 
     return {
       isSafe: shouldAsk,
-      reason: info.reason,
+      reason: tr(getActiveLocale(), info.reason.zh, info.reason.en, info.reason.vi),
       severity: info.severity,
       category: 'dangerous',
       action: shouldAsk ? 'ask' : 'block',

@@ -18,6 +18,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { formatDate, getSeverityBadgeStyles } from "@/core/alerting";
 import type { Signal } from "@/core/alerting/types";
+import { tr } from "@/core/i18n";
+import { useI18n } from "@/core/i18n/hooks";
 
 export interface TimelineEvent {
   type: "signal" | "ai_analysis" | "diagnosis" | "action" | "status_change";
@@ -55,6 +57,7 @@ function EventIcon({ type }: { type: string }) {
 }
 
 export function IncidentTimeline({ signals, timeline, isLoading }: IncidentTimelineProps) {
+  const { locale } = useI18n();
   const [expandedPayloads, setExpandedPayloads] = useState<Record<string, boolean>>({});
   const [expandedLabels, setExpandedLabels] = useState<Record<string, boolean>>({});
 
@@ -76,9 +79,11 @@ export function IncidentTimeline({ signals, timeline, isLoading }: IncidentTimel
     <div className="rounded-2xl border border-zinc-200/80 bg-background p-6 shadow-sm dark:border-zinc-800/80">
       <h3 className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 flex items-center gap-2 border-b pb-3 border-zinc-100 dark:border-zinc-800">
         <ClockIcon className="h-4 w-4 text-zinc-500" />
-        {hasTimeline ? "事件时间线 (Incident Timeline)" : "关联告警信号时间线 (Signals Timeline)"}
+        {hasTimeline
+          ? tr(locale, "事件时间线 (Incident Timeline)", "Incident Timeline", "Dòng thời gian sự cố (Incident Timeline)")
+          : tr(locale, "关联告警信号时间线 (Signals Timeline)", "Signals Timeline", "Dòng thời gian tín hiệu cảnh báo (Signals Timeline)")}
         <span className="ml-auto rounded-full bg-zinc-100 dark:bg-zinc-800 px-2.5 py-0.5 text-xs text-muted-foreground">
-          共 {totalEvents} 个事件
+          {tr(locale, `共 ${totalEvents} 个事件`, `${totalEvents} events`, `${totalEvents} sự kiện`)}
         </span>
       </h3>
 
@@ -110,10 +115,10 @@ export function IncidentTimeline({ signals, timeline, isLoading }: IncidentTimel
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className={`text-[9px] px-1.5 rounded py-0 font-medium ${color} border-current/20`}>
-                          {event.type === "signal" ? "信号" :
-                           event.type === "ai_analysis" ? "AI 解读" :
-                           event.type === "diagnosis" ? "Agent 诊断" :
-                           event.type === "action" ? "用户操作" : "状态变更"}
+                          {event.type === "signal" ? tr(locale, "信号", "Signal", "Tín hiệu") :
+                           event.type === "ai_analysis" ? tr(locale, "AI 解读", "AI Analysis", "Phân tích AI") :
+                           event.type === "diagnosis" ? tr(locale, "Agent 诊断", "Agent Diagnosis", "Chẩn đoán Agent") :
+                           event.type === "action" ? tr(locale, "用户操作", "User Action", "Thao tác người dùng") : tr(locale, "状态变更", "Status Change", "Đổi trạng thái")}
                         </Badge>
                         {event.actor && event.actor !== "system" && (
                           <span className="text-[10px] text-zinc-500 font-mono">{event.actor}</span>
@@ -138,8 +143,8 @@ export function IncidentTimeline({ signals, timeline, isLoading }: IncidentTimel
                     {event.type === "signal" && event.metadata && (
                       <>
                         <div className="mt-2 flex items-center gap-3 text-[10px] text-zinc-500">
-                          <span>来源: <span className="font-semibold text-zinc-700 dark:text-zinc-400 uppercase">{String(event.metadata.source || "")}</span></span>
-                          {Boolean(event.metadata.service) && <span>服务: <span className="font-medium">{String(event.metadata.service)}</span></span>}
+                          <span>{tr(locale, "来源", "Source", "Nguồn")}: <span className="font-semibold text-zinc-700 dark:text-zinc-400 uppercase">{String(event.metadata.source || "")}</span></span>
+                          {Boolean(event.metadata.service) && <span>{tr(locale, "服务", "Service", "Dịch vụ")}: <span className="font-medium">{String(event.metadata.service)}</span></span>}
                           <Badge variant="outline" className={`${getSeverityBadgeStyles(String(event.metadata.severity || "warning"))} border text-[9px] px-1.5 rounded py-0`}>
                             {String(event.metadata.severity)}
                           </Badge>
@@ -153,14 +158,16 @@ export function IncidentTimeline({ signals, timeline, isLoading }: IncidentTimel
                           return (
                           <div className="mt-3 border-t border-zinc-200/40 dark:border-zinc-800/60 pt-3">
                             <div className="flex items-center justify-between mb-2">
-                              <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">信号关联属性 (Labels JSON)</span>
+                              <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">
+                                {tr(locale, "信号关联属性 (Labels JSON)", "Signal Labels (JSON)", "Thuộc tính tín hiệu (Labels JSON)")}
+                              </span>
                               <button
                                 type="button"
                                 onClick={() => toggleLabels(labelsKey)}
                                 className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors cursor-pointer"
                               >
-                                <span>{isExpanded ? "收起" : "展开"}</span>
-                                <span className="text-[9px] text-zinc-400">({labelCount} 项)</span>
+                                <span>{isExpanded ? tr(locale, "收起", "Collapse", "Thu gọn") : tr(locale, "展开", "Expand", "Mở rộng")}</span>
+                                <span className="text-[9px] text-zinc-400">({tr(locale, `${labelCount} 项`, `${labelCount}`, `${labelCount} mục`)})</span>
                               </button>
                             </div>
                             {isExpanded && (
@@ -187,7 +194,9 @@ export function IncidentTimeline({ signals, timeline, isLoading }: IncidentTimel
                               onClick={() => togglePayload(String(event.metadata?.signal_id || `${event.type}-${event.timestamp}`))}
                               className="flex items-center gap-1 text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold hover:text-indigo-500 transition-colors cursor-pointer"
                             >
-                              {expandedPayloads[String(event.metadata?.signal_id || `${event.type}-${event.timestamp}`)] ? "收起原始告警 Payload (Collapse)" : "查看原始告警 Payload (Expand)"}
+                              {expandedPayloads[String(event.metadata?.signal_id || `${event.type}-${event.timestamp}`)]
+                                ? tr(locale, "收起原始告警 Payload (Collapse)", "Hide Raw Payload", "Thu gọn Payload gốc")
+                                : tr(locale, "查看原始告警 Payload (Expand)", "Show Raw Payload", "Xem Payload gốc")}
                             </button>
 
                             {expandedPayloads[String(event.metadata?.signal_id || `${event.type}-${event.timestamp}`)] && (
@@ -234,8 +243,8 @@ export function IncidentTimeline({ signals, timeline, isLoading }: IncidentTimel
                   </h4>
 
                   <div className="mt-2 flex items-center gap-3 text-[10px] text-zinc-500">
-                    <span>告警源: <span className="font-semibold text-zinc-700 dark:text-zinc-400 uppercase">{sig.source}</span></span>
-                    {sig.service && <span>服务: <span className="font-medium">{sig.service}</span></span>}
+                    <span>{tr(locale, "告警源", "Source", "Nguồn")}: <span className="font-semibold text-zinc-700 dark:text-zinc-400 uppercase">{sig.source}</span></span>
+                    {sig.service && <span>{tr(locale, "服务", "Service", "Dịch vụ")}: <span className="font-medium">{sig.service}</span></span>}
                   </div>
 
                   {sig.labels_json && Object.keys(sig.labels_json).length > 0 && (() => {
@@ -244,14 +253,16 @@ export function IncidentTimeline({ signals, timeline, isLoading }: IncidentTimel
                     return (
                     <div className="mt-3 border-t border-zinc-200/40 dark:border-zinc-800/60 pt-3">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">信号关联属性 (Labels JSON)</span>
+                        <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">
+                          {tr(locale, "信号关联属性 (Labels JSON)", "Signal Labels (JSON)", "Thuộc tính tín hiệu (Labels JSON)")}
+                        </span>
                         <button
                           type="button"
                           onClick={() => toggleLabels(sig.id)}
                           className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors cursor-pointer"
                         >
-                          <span>{isExpanded ? "收起" : "展开"}</span>
-                          <span className="text-[9px] text-zinc-400">({labelCount} 项)</span>
+                          <span>{isExpanded ? tr(locale, "收起", "Collapse", "Thu gọn") : tr(locale, "展开", "Expand", "Mở rộng")}</span>
+                          <span className="text-[9px] text-zinc-400">({tr(locale, `${labelCount} 项`, `${labelCount}`, `${labelCount} mục`)})</span>
                         </button>
                       </div>
                       {isExpanded && (
@@ -277,7 +288,9 @@ export function IncidentTimeline({ signals, timeline, isLoading }: IncidentTimel
                         onClick={() => togglePayload(sig.id)}
                         className="flex items-center gap-1 text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold hover:text-indigo-500 transition-colors cursor-pointer"
                       >
-                        {expandedPayloads[sig.id] ? "收起原始告警 Payload (Collapse)" : "查看原始告警 Payload (Expand)"}
+                        {expandedPayloads[sig.id]
+                          ? tr(locale, "收起原始告警 Payload (Collapse)", "Hide Raw Payload", "Thu gọn Payload gốc")
+                          : tr(locale, "查看原始告警 Payload (Expand)", "Show Raw Payload", "Xem Payload gốc")}
                       </button>
 
                       {expandedPayloads[sig.id] && (
@@ -292,7 +305,7 @@ export function IncidentTimeline({ signals, timeline, isLoading }: IncidentTimel
               </div>
             ))
           ) : (
-            <p className="text-sm text-muted-foreground py-2 pl-2">暂无事件记录。</p>
+            <p className="text-sm text-muted-foreground py-2 pl-2">{tr(locale, "暂无事件记录。", "No events yet.", "Chưa có sự kiện nào.")}</p>
           )}
         </div>
       )}

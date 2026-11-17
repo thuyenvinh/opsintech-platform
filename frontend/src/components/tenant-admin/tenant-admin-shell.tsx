@@ -3,6 +3,7 @@
 import { Bot, Boxes, Building2, Radio, ShieldAlert, ShieldCheck, Users, Wrench } from "lucide-react";
 
 import { BackofficeShellLayout } from "@/components/backoffice/backoffice-shell-layout";
+import { tr } from "@/core/i18n";
 import { useI18n } from "@/core/i18n/hooks";
 import { useCurrentTenant, useSwitchTenant, useTenantList } from "@/core/tenants";
 import { hasRouteAccess } from "@/core/tenants/route-type-requirements";
@@ -11,7 +12,7 @@ import { useWorkspaceTypeGuard } from "@/core/tenants/use-workspace-type-guard";
 export function TenantAdminShell({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { data: currentTenant } = useCurrentTenant();
   const { data: tenants = [] } = useTenantList();
   const { mutate: switchTenant, isPending: switching } = useSwitchTenant();
@@ -27,9 +28,9 @@ export function TenantAdminShell({
     { href: "/tenant-admin/models", label: t.tenantAdmin.shell.nav.models, icon: Bot },
     { href: "/tenant-admin/tools", label: t.tenantAdmin.shell.nav.tools, icon: Wrench },
     { href: "/tenant-admin/skills", label: t.tenantAdmin.shell.nav.skills, icon: Boxes },
-    { href: "/tenant-admin/agents", label: "智能体管理", icon: Bot },
+    { href: "/tenant-admin/agents", label: t.tenantAdmin.shell.nav.agents, icon: Bot },
     { href: "/tenant-admin/alerts", label: t.tenantAdmin.shell.nav.alerts, icon: ShieldAlert },
-    { href: "/tenant-admin/im", label: "渠道管理", icon: Radio },
+    { href: "/tenant-admin/im", label: tr(locale, "渠道管理", "IM Channels", "Kênh liên lạc (IM)"), icon: Radio },
   ];
 
   // Filter nav items by workspace type

@@ -18,13 +18,14 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useSession } from "@/core/auth/hooks";
+import { tr } from "@/core/i18n";
 import { useI18n } from "@/core/i18n/hooks";
 import { isPlatformAdminRole } from "@/core/permissions/roles";
 import { useAvailableSkills, useCreatePersonalSkill, useImportPersonalSkill, useDeletePersonalSkill } from "@/core/skills/hooks";
 import type { AvailableSkillResponse } from "@/core/skills/type";
 
 export default function SkillsCenterPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlFilter = searchParams.get("filter");
@@ -75,7 +76,7 @@ export default function SkillsCenterPage() {
       return;
     }
     setArchiveFile(null);
-    toast.error("只支持 .skill 或 .zip 格式");
+    toast.error(t.tenantAdmin.skills.fileInvalid);
   };
 
   const openArchivePicker = () => {
@@ -91,14 +92,14 @@ export default function SkillsCenterPage() {
   const handleImport = async () => {
     try {
       if (!archiveFile) {
-        toast.error("请选择要导入的技能包文件");
+        toast.error(t.tenantAdmin.skills.fileRequired);
         return;
       }
       await importPersonalSkill(archiveFile);
-      toast.success("导入成功");
+      toast.success(t.tenantAdmin.skills.importSuccess);
       setImportOpen(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "操作失败");
+      toast.error(err instanceof Error ? err.message : t.tenantAdmin.skills.importError);
     }
   };
 
@@ -109,13 +110,13 @@ export default function SkillsCenterPage() {
 
   const handleDelete = async (skillName: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm(`确定要删除私有 Skill "${skillName}" 吗？此操作不可恢复。`)) return;
+    if (!confirm(t.tenantAdmin.skills.deleteConfirm)) return;
     setDeletingSkill(skillName);
     try {
       await deletePersonalSkill(skillName);
-      toast.success(`已删除 ${skillName}`);
+      toast.success(t.tenantAdmin.skills.deleteSuccess);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "删除失败");
+      toast.error(err instanceof Error ? err.message : tr(locale, "删除失败", "Failed to delete", "Xóa thất bại"));
     } finally {
       setDeletingSkill(null);
     }
@@ -128,7 +129,12 @@ export default function SkillsCenterPage() {
         <div>
           <h1 className="text-xl font-semibold">{(t.sidebarNav as any).skillsPlaza || 'Skills Plaza'}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            浏览和使用前人沉淀的诊断 SOP，或分享你提炼的经验
+            {tr(
+              locale,
+              "浏览和使用前人沉淀的诊断 SOP，或分享你提炼的经验",
+              "Browse and use proven SOP skills, or create and share your own.",
+              "Khám phá và sử dụng các kỹ năng SOP có sẵn, hoặc tạo và chia sẻ kinh nghiệm của riêng bạn."
+            )}
           </p>
         </div>
       </div>
@@ -138,7 +144,7 @@ export default function SkillsCenterPage() {
         <div className="relative w-80">
           <SearchIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="搜索 Skill..."
+            placeholder={t.tenantAdmin.skills.searchPlaceholder}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-9"
@@ -146,24 +152,24 @@ export default function SkillsCenterPage() {
         </div>
         <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
           <TabsList>
-            <TabsTrigger value="all">全部</TabsTrigger>
-            <TabsTrigger value="personal">我的 Skill</TabsTrigger>
-            <TabsTrigger value="tenant">团队 Skill</TabsTrigger>
-            <TabsTrigger value="global">内置</TabsTrigger>
+            <TabsTrigger value="all">{tr(locale, "全部", "All", "Tất cả")}</TabsTrigger>
+            <TabsTrigger value="personal">{tr(locale, "我的 Skill", "My Skills", "Kỹ năng của tôi")}</TabsTrigger>
+            <TabsTrigger value="tenant">{tr(locale, "团队 Skill", "Team Skills", "Kỹ năng nhóm")}</TabsTrigger>
+            <TabsTrigger value="global">{t.tenantAdmin.skills.tabs.builtin}</TabsTrigger>
           </TabsList>
         </Tabs>
         <div className="ml-auto flex items-center gap-2">
           <Button variant="outline" onClick={handleOpenImport}>
             <Upload className="mr-2 h-4 w-4" />
-            导入 Skill
+            {t.tenantAdmin.skills.importTitle}
           </Button>
           <Button onClick={() => router.push("/workspace/skills/new")}>
             <Plus className="mr-2 h-4 w-4" />
-            新建私有 Skill
+            {t.tenantAdmin.skills.createTitle}
           </Button>
           {isAdmin && (
             <Button variant="outline" onClick={() => router.push("/tenant-admin/skills")}>
-              管理后台
+              {t.navMenu.manageWorkspace}
             </Button>
           )}
         </div>
@@ -177,12 +183,12 @@ export default function SkillsCenterPage() {
           </div>
         ) : error ? (
           <div className="flex h-64 items-center justify-center text-destructive">
-            加载失败：{error.message}
+            {tr(locale, "加载失败：", "Load failed: ", "Tải thất bại: ")}{error.message}
           </div>
         ) : filteredSkills.length === 0 ? (
           <div className="flex h-64 flex-col items-center justify-center gap-3 text-muted-foreground">
             <Bot className="h-10 w-10 opacity-30" />
-            <p>暂无 Skill</p>
+            <p>{t.tenantAdmin.skills.empty}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -202,9 +208,9 @@ export default function SkillsCenterPage() {
       <Dialog open={importOpen} onOpenChange={setImportOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>导入私有 Skill</DialogTitle>
+            <DialogTitle>{t.tenantAdmin.skills.importTitle}</DialogTitle>
             <DialogDescription>
-              选择本地的 .skill 或 .zip 压缩包导入
+              {t.tenantAdmin.skills.importDesc}
             </DialogDescription>
           </DialogHeader>
 
@@ -295,6 +301,7 @@ function SkillCard({
   onDelete?: (e: React.MouseEvent) => void;
   isDeleting?: boolean;
 }) {
+  const { t, locale } = useI18n();
   const canEdit = skill.managed_by_current_user && skill.scope !== "global";
 
   return (
@@ -307,7 +314,7 @@ function SkillCard({
           <button
             onClick={onClick}
             className="p-1.5 rounded-lg text-zinc-400 hover:text-primary hover:bg-primary/10 transition-colors"
-            title="编辑此 Skill"
+            title={t.tenantAdmin.skills.edit}
           >
             <Edit3 className="h-3.5 w-3.5" />
           </button>
@@ -317,7 +324,7 @@ function SkillCard({
             onClick={onDelete}
             disabled={isDeleting}
             className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
-            title="删除此 Skill"
+            title={t.tenantAdmin.skills.delete}
           >
             {isDeleting ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -333,35 +340,37 @@ function SkillCard({
             <h3 className="font-semibold text-sm truncate">{skill.name}</h3>
             {skill.scope === "global" && (
               <span className="shrink-0 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] text-blue-700 dark:text-blue-400">
-                内置
+                {t.tenantAdmin.skills.tabs.builtin}
               </span>
             )}
             {skill.scope === "tenant" && (
               <span className="shrink-0 rounded-full bg-purple-500/10 px-2 py-0.5 text-[10px] text-purple-700 dark:text-purple-400">
-                团队共享
+                {tr(locale, "团队共享", "Team Shared", "Chia sẻ nhóm")}
               </span>
             )}
             {skill.scope === "personal" && (
               <span className="shrink-0 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-700 dark:text-emerald-400">
-                私有
+                {tr(locale, "私有", "Personal", "Cá nhân")}
               </span>
             )}
           </div>
           <p className="mt-1.5 text-xs text-muted-foreground line-clamp-2">
-            {skill.description || "暂无描述"}
+            {skill.description || t.agents.noDescription}
           </p>
         </div>
       </div>
 
       <div className="mt-4 flex items-center gap-3 text-[10px] text-muted-foreground">
         {skill.bound_tools && skill.bound_tools.length > 0 && (
-          <span>🔧 {skill.bound_tools.length} 个工具</span>
+          <span>🔧 {tr(locale, `${skill.bound_tools.length} 个工具`, `${skill.bound_tools.length} tools`, `${skill.bound_tools.length} công cụ`)}</span>
         )}
         {skill.version !== undefined && skill.version > 0 && (
           <span>v{skill.version}</span>
         )}
         <span className={skill.enabled !== false ? "text-green-600" : "text-muted-foreground"}>
-          {skill.enabled !== false ? "● 已启用" : "○ 已禁用"}
+          {skill.enabled !== false
+            ? `● ${t.tenantAdmin.skills.statusEnabled}`
+            : `○ ${t.tenantAdmin.skills.statusDisabled}`}
         </span>
       </div>
     </div>

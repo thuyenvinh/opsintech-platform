@@ -1,4 +1,5 @@
 import { fetchAuthApi } from "@/core/api/auth-client";
+import { getActiveLocale, tr } from "@/core/i18n";
 
 import type {
   AlertRule,
@@ -20,7 +21,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function getErrorMessage(payload: unknown, fallback: string) {
+function getErrorMessage(payload: unknown, zh: string, en: string, vi: string) {
   if (isObject(payload)) {
     const detail = payload.detail;
     if (typeof detail === "string" && detail.trim()) {
@@ -31,7 +32,7 @@ function getErrorMessage(payload: unknown, fallback: string) {
       return message;
     }
   }
-  return fallback;
+  return tr(getActiveLocale(), zh, en, vi);
 }
 
 export interface ListIncidentsParams {
@@ -66,7 +67,7 @@ export async function listIncidents(params: ListIncidentsParams = {}): Promise<L
   }
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(json, "加载告警事件失败"));
+    throw new Error(getErrorMessage(json, "加载告警事件失败", "Failed to load incidents", "Tải danh sách sự cố thất bại"));
   }
 
   return json as ListIncidentsResponse;
@@ -83,7 +84,7 @@ export async function getIncident(incidentId: string): Promise<IncidentDetail> {
   }
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(json, "加载告警详情失败"));
+    throw new Error(getErrorMessage(json, "加载告警详情失败", "Failed to load incident details", "Tải chi tiết sự cố thất bại"));
   }
 
   return json as IncidentDetail;
@@ -134,7 +135,7 @@ export async function suppressIncident(incidentId: string): Promise<{ status: st
   }
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(json, "静默告警事件失败"));
+    throw new Error(getErrorMessage(json, "静默告警事件失败", "Failed to suppress incident", "Tắt tiếng sự cố thất bại"));
   }
 
   return json as { status: string; incident_id: string };
@@ -153,7 +154,7 @@ export async function unsuppressIncident(incidentId: string): Promise<{ status: 
   }
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(json, "恢复告警事件失败"));
+    throw new Error(getErrorMessage(json, "恢复告警事件失败", "Failed to unsuppress incident", "Khôi phục sự cố thất bại"));
   }
 
   return json as { status: string; incident_id: string };
@@ -172,7 +173,7 @@ export async function analyzeIncident(incidentId: string): Promise<{ status: str
   }
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(json, "发起 AI 诊断分析失败"));
+    throw new Error(getErrorMessage(json, "发起 AI 诊断分析失败", "Failed to start AI diagnosis", "Khởi chạy phân tích AI thất bại"));
   }
 
   return json as { status: string; incident_id: string };
@@ -187,7 +188,7 @@ export async function claimIncident(incidentId: string): Promise<{ status: strin
   try { json = await response.json(); } catch { json = null; }
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(json, "认领告警失败"));
+    throw new Error(getErrorMessage(json, "认领告警失败", "Failed to claim incident", "Nhận xử lý sự cố thất bại"));
   }
 
   return json as { status: string; incident_id: string; owner_user_id: string };
@@ -204,7 +205,7 @@ export async function assignIncident(incidentId: string, ownerUserId: string): P
   try { json = await response.json(); } catch { json = null; }
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(json, "指派告警失败"));
+    throw new Error(getErrorMessage(json, "指派告警失败", "Failed to assign incident", "Phân công sự cố thất bại"));
   }
 
   return json as { status: string; incident_id: string; owner_user_id: string };
@@ -221,7 +222,7 @@ export async function resolveIncident(incidentId: string, resolutionNote?: strin
   try { json = await response.json(); } catch { json = null; }
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(json, "恢复告警失败"));
+    throw new Error(getErrorMessage(json, "恢复告警失败", "Failed to resolve incident", "Đóng sự cố thất bại"));
   }
 
   return json as { status: string; incident_id: string };
@@ -238,7 +239,7 @@ export async function createTicket(incidentId: string): Promise<{ ticket_id: str
   try { json = await response.json(); } catch { json = null; }
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(json, "创建工单失败"));
+    throw new Error(getErrorMessage(json, "创建工单失败", "Failed to create ticket", "Tạo phiếu xử lý thất bại"));
   }
 
   return json as { ticket_id: string; ticket_url: string | null; provider: string; incident_id: string };
@@ -251,7 +252,7 @@ export async function getIncidentTimeline(incidentId: string): Promise<Array<{ t
   try { json = await response.json(); } catch { json = null; }
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(json, "加载事件时间线失败"));
+    throw new Error(getErrorMessage(json, "加载事件时间线失败", "Failed to load incident timeline", "Tải dòng thời gian sự cố thất bại"));
   }
 
   return json as Array<{ type: string; timestamp: string; title: string; detail: string | null; actor: string | null; metadata: Record<string, unknown> | null }>;
@@ -274,7 +275,7 @@ export async function getIncidentStatsSummary(): Promise<IncidentStatsSummary> {
   try { json = await response.json(); } catch { json = null; }
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(json, "加载仪表盘数据失败"));
+    throw new Error(getErrorMessage(json, "加载仪表盘数据失败", "Failed to load dashboard stats", "Tải dữ liệu bảng điều khiển thất bại"));
   }
 
   return json as IncidentStatsSummary;
@@ -298,7 +299,7 @@ export async function getSourceHealth(): Promise<SourceHealthItem[]> {
   try { json = await response.json(); } catch { json = null; }
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(json, "加载告警源健康状态失败"));
+    throw new Error(getErrorMessage(json, "加载告警源健康状态失败", "Failed to load alert source health", "Tải trạng thái nguồn cảnh báo thất bại"));
   }
 
   return json as SourceHealthItem[];
@@ -317,7 +318,7 @@ export async function listAlertSources(): Promise<AlertSource[]> {
   }
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(json, "加载告警源失败"));
+    throw new Error(getErrorMessage(json, "加载告警源失败", "Failed to load alert sources", "Tải danh sách nguồn cảnh báo thất bại"));
   }
 
   return json as AlertSource[];
@@ -340,7 +341,7 @@ export async function createAlertSource(data: AlertSourceCreate): Promise<AlertS
   }
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(json, "创建告警源失败"));
+    throw new Error(getErrorMessage(json, "创建告警源失败", "Failed to create alert source", "Tạo nguồn cảnh báo thất bại"));
   }
 
   return json as AlertSource;
@@ -357,7 +358,7 @@ export async function updateAlertSource(sourceId: string, data: AlertSourceUpdat
   try { json = await response.json(); } catch { json = null; }
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(json, "更新告警源失败"));
+    throw new Error(getErrorMessage(json, "更新告警源失败", "Failed to update alert source", "Cập nhật nguồn cảnh báo thất bại"));
   }
 
   return json as AlertSource;
@@ -371,7 +372,7 @@ export async function deleteAlertSource(sourceId: string): Promise<void> {
   if (!response.ok) {
     let json: unknown = null;
     try { json = await response.json(); } catch { json = null; }
-    throw new Error(getErrorMessage(json, "删除告警源失败"));
+    throw new Error(getErrorMessage(json, "删除告警源失败", "Failed to delete alert source", "Xóa nguồn cảnh báo thất bại"));
   }
 }
 
@@ -385,7 +386,7 @@ export async function listAlertRules(ruleType?: string): Promise<AlertRule[]> {
   try { json = await response.json(); } catch { json = null; }
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(json, "加载告警规则失败"));
+    throw new Error(getErrorMessage(json, "加载告警规则失败", "Failed to load alert rules", "Tải quy tắc cảnh báo thất bại"));
   }
 
   return json as AlertRule[];
@@ -402,7 +403,7 @@ export async function createAlertRule(data: AlertRuleCreate): Promise<AlertRule>
   try { json = await response.json(); } catch { json = null; }
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(json, "创建告警规则失败"));
+    throw new Error(getErrorMessage(json, "创建告警规则失败", "Failed to create alert rule", "Tạo quy tắc cảnh báo thất bại"));
   }
 
   return json as AlertRule;
@@ -419,7 +420,7 @@ export async function updateAlertRule(ruleId: string, data: AlertRuleUpdate): Pr
   try { json = await response.json(); } catch { json = null; }
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(json, "更新告警规则失败"));
+    throw new Error(getErrorMessage(json, "更新告警规则失败", "Failed to update alert rule", "Cập nhật quy tắc cảnh báo thất bại"));
   }
 
   return json as AlertRule;
@@ -433,7 +434,7 @@ export async function deleteAlertRule(ruleId: string): Promise<void> {
   if (!response.ok) {
     let json: unknown = null;
     try { json = await response.json(); } catch { json = null; }
-    throw new Error(getErrorMessage(json, "删除告警规则失败"));
+    throw new Error(getErrorMessage(json, "删除告警规则失败", "Failed to delete alert rule", "Xóa quy tắc cảnh báo thất bại"));
   }
 }
 
@@ -448,7 +449,7 @@ export async function getAlertingSettings(): Promise<AlertingSettings> {
   }
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(json, "加载告警设置失败"));
+    throw new Error(getErrorMessage(json, "加载告警设置失败", "Failed to load alerting settings", "Tải cài đặt cảnh báo thất bại"));
   }
 
   return json as AlertingSettings;
@@ -469,7 +470,7 @@ export async function updateAlertingSettings(data: AlertingSettings): Promise<Al
   }
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(json, "保存告警设置失败"));
+    throw new Error(getErrorMessage(json, "保存告警设置失败", "Failed to save alerting settings", "Lưu cài đặt cảnh báo thất bại"));
   }
 
   return json as AlertingSettings;
@@ -486,7 +487,7 @@ export async function getIncidentStats(): Promise<IncidentStats> {
   }
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(json, "加载告警统计数据失败"));
+    throw new Error(getErrorMessage(json, "加载告警统计数据失败", "Failed to load incident stats", "Tải thống kê sự cố thất bại"));
   }
 
   return json as IncidentStats;
@@ -503,7 +504,7 @@ export async function getChannelsStatus(): Promise<ChannelStatusResponse> {
   }
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(json, "获取通道状态失败"));
+    throw new Error(getErrorMessage(json, "获取通道状态失败", "Failed to get channel status", "Lấy trạng thái kênh thất bại"));
   }
 
   return json as ChannelStatusResponse;
@@ -524,7 +525,7 @@ export async function testNotification(data: TestNotificationRequest): Promise<T
   }
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(json, "测试通道发送失败"));
+    throw new Error(getErrorMessage(json, "测试通道发送失败", "Failed to send test notification", "Gửi thông báo thử nghiệm thất bại"));
   }
 
   return json as TestNotificationResponse;

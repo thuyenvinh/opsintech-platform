@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { tr } from "@/core/i18n";
 import { useI18n } from "@/core/i18n/hooks";
 import {
   useAvailableModels,
@@ -31,7 +32,7 @@ import { SettingsSection } from "./settings-section";
 const DEFAULT_USE_CLASS = "langchain_openai.ChatOpenAI";
 
 export function ModelLifecycleSettingsPage({ readOnly = false }: { readOnly?: boolean } = {}) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { data: currentTenant } = useCurrentTenant();
   const { models, isLoading, error } = useAvailableModels();
 
@@ -284,12 +285,17 @@ export function ModelLifecycleSettingsPage({ readOnly = false }: { readOnly?: bo
                   </SelectTrigger>
                   <SelectContent>
                     {PROVIDER_TEMPLATES.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+                      <SelectItem key={p.id} value={p.id}>{tr(locale, p.label, p.labelEn, p.labelVi)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 {providerId && (
-                  <p className="text-[11px] text-muted-foreground leading-tight">{getProviderById(providerId)?.note}</p>
+                  <p className="text-[11px] text-muted-foreground leading-tight">
+                    {(() => {
+                      const p = getProviderById(providerId);
+                      return p ? tr(locale, p.note, p.noteEn, p.noteVi) : "";
+                    })()}
+                  </p>
                 )}
               </div>
               <div className="space-y-2">

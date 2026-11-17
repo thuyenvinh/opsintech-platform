@@ -26,6 +26,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { tr } from "@/core/i18n";
 import { cn } from "@/lib/utils";
 import { useAvailableModels } from "@/core/models/hooks";
 
@@ -521,6 +522,206 @@ const LOCALIZED_MAP = {
       },
     },
   },
+  vi: {
+    ppt: {
+      title: "Cài đặt tạo PPT",
+      pages: "Số lượng trang slide",
+      style: "Phong cách thiết kế",
+      aspectRatio: "Tỷ lệ khung hình",
+      aspectRatioOptions: {
+        ppt169: "Màn hình ngang chuẩn 16:9 (ppt169)",
+        ppt43: "Màn hình ngang truyền thống 4:3 (ppt43)",
+        wechat: "Ảnh bìa WeChat 2.35:1",
+        xiaohongshu: "Khung dọc 3:4",
+        moments: "Hình vuông 1:1",
+        story: "Khung dọc Story 9:16",
+        banner: "Banner ngang rộng 16:9",
+        a4: "Báo cáo in A4 / PDF",
+        "16:9": "Màn hình ngang chuẩn 16:9 (ppt169)",
+        "4:3": "Màn hình ngang truyền thống 4:3 (ppt43)",
+      },
+      styleOptions: {
+        glassmorphism: "Kính mờ (Glassmorphism)",
+        "dark-premium": "Tối sang trọng (Dark Premium)",
+        "gradient-modern": "Chuyển sắc hiện đại (Gradient Modern)",
+        "minimal-swiss": "Tối giản Thụy Sĩ (Minimal Swiss)",
+        keynote: "Apple Keynote",
+        business: "Doanh nghiệp truyền thống (Business)",
+      },
+      template: "Mẫu bố cục (Template)",
+      templateOptions: {
+        free: "Thiết kế tự do (Free Design)",
+        academic_defense: "Bảo vệ học thuật (Academic Defense)",
+        ai_ops: "Vận hành thông minh (AI Ops)",
+        government_blue: "Xanh hành chính (Government Blue)",
+        government_red: "Đỏ hành chính (Government Red)",
+        medical_university: "Y khoa & Đại học (Medical University)",
+        pixel_retro: "Pixel cổ điển (Pixel Retro)",
+        psychology_attachment: "Tâm lý & Cảm xúc (Psychology)",
+      },
+      industry: "Bảng màu theo ngành",
+      industryOptions: {
+        none: "Màu tự do (Không đặt trước)",
+        finance: "Tài chính / Ngân hàng",
+        healthcare: "Y tế / Sức khỏe",
+        technology: "Công nghệ / Internet",
+        education: "Giáo dục / Đào tạo",
+        retail: "Bán lẻ / Tiêu dùng",
+        manufacturing: "Sản xuất / Công nghiệp",
+        energy: "Năng lượng / Môi trường",
+        realestate: "Bất động sản / Xây dựng",
+        legal: "Pháp lý / Tuân thủ",
+        media: "Truyền thông / Giải trí",
+        logistics: "Logistics / Chuỗi cung ứng",
+        agriculture: "Nông nghiệp / Thực phẩm",
+        tourism: "Du lịch / Khách sạn",
+        automotive: "Ô tô / Giao thông",
+      },
+      advancedSettings: "Tùy chọn nâng cao",
+      transition: "Hiệu ứng chuyển trang",
+      transitionOptions: {
+        none: "Không có",
+        fade: "Mờ dần (Fade)",
+        push: "Đẩy trang (Push)",
+        wipe: "Quét ngang (Wipe)",
+        split: "Chia tách (Split)",
+        strips: "Dải sọc (Strips)",
+        cover: "Che phủ (Cover)",
+        random: "Ngẫu nhiên (Random)",
+      },
+      animation: "Hiệu ứng xuất hiện",
+      animationOptions: {
+        none: "Không có",
+        auto: "Tự động phù hợp (Khuyên dùng)",
+        fade: "Mờ dần (Fade)",
+        fly: "Bay vào (Fly In)",
+        zoom: "Thu phóng (Zoom)",
+        appear: "Hiện trực tiếp (Appear)",
+      },
+      formula: "Hiển thị công thức toán học",
+      formulaOptions: {
+        mixed: "Kết hợp (Chuyển công thức phức tạp thành ảnh)",
+        "render-all": "Chuyển tất cả thành ảnh PNG",
+        "text-only": "Chỉ văn bản Unicode",
+      },
+      mergeParagraphs: "Gộp đoạn văn bản (Dễ chỉnh sửa)",
+      mergeParagraphsTip: "Gộp các dòng thành khối văn bản để dễ chỉnh sửa hơn trong PowerPoint.",
+      imageModel: "Mô hình tạo ảnh",
+      imageModelNone: "Không (Tắt tạo ảnh)",
+    },
+    research: {
+      title: "Cài đặt nghiên cứu sâu",
+      depth: "Độ sâu nghiên cứu",
+      depthOptions: {
+        fast: "Nhanh",
+        normal: "Tiêu chuẩn",
+        deep: "Chuyên sâu",
+      },
+      depthTips: {
+        fast: "2-3 lượt tìm kiếm, tổng quan nhanh",
+        normal: "5-8 lượt tìm kiếm, phù hợp nghiên cứu chung",
+        deep: "10+ lượt tìm kiếm, điều tra toàn diện",
+      },
+      timeRange: "Phạm vi thời gian",
+      timeOptions: {
+        all: "Mọi thời điểm",
+        "1day": "24 giờ qua",
+        "1week": "1 tuần qua",
+        "1year": "1 năm qua",
+      },
+      sources: "Nguồn thông tin",
+      sourceOptions: {
+        academic: "Tài liệu học thuật",
+        news: "Tin tức thời sự",
+        tech: "Tài liệu kỹ thuật",
+        business: "Báo cáo kinh doanh",
+      },
+    },
+    analysis: {
+      title: "Cài đặt phân tích dữ liệu",
+      preference: "Phương pháp phân tích",
+      prefOptions: {
+        auto: "Tự động đề xuất",
+        summary: "Thống kê mô tả",
+        sql: "DuckDB SQL",
+      },
+      prefTips: {
+        auto: "Tự động chọn công cụ phân tích tối ưu",
+        summary: "Tính toán chỉ số tổng hợp và mô tả",
+        sql: "Chạy truy vấn SQL phức tạp với DuckDB",
+      },
+      format: "Định dạng kết quả",
+      formatOptions: {
+        markdown: "Bảng Markdown",
+        csv: "Tải xuống CSV",
+        json: "Dữ liệu JSON",
+      },
+    },
+    chart: {
+      title: "Cài đặt biểu đồ trực quan",
+      type: "Loại biểu đồ",
+      typeOptions: {
+        auto: "Tự động thông minh",
+        line: "Biểu đồ đường",
+        bar: "Biểu đồ cột",
+        pie: "Biểu đồ tròn",
+        radar: "Biểu đồ radar",
+        sankey: "Biểu đồ luồng Sankey",
+        wordcloud: "Đám mây từ khóa",
+      },
+      theme: "Bảng màu",
+      themeOptions: {
+        light: "Sáng cổ điển",
+        dark: "Tối công nghệ",
+        vibrant: "Chuyển sắc rực rỡ",
+      },
+    },
+    consulting: {
+      title: "Cài đặt phân tích tư vấn",
+      type: "Loại báo cáo",
+      typeOptions: {
+        market: "Thị trường",
+        brand: "Chiến lược thương hiệu",
+        consumer: "Thấu hiểu khách hàng",
+        valuation: "Định giá",
+        "value-chain": "Chuỗi giá trị",
+      },
+      frameworks: "Khung phân tích",
+      frameworkOptions: {
+        SWOT: "Phân tích SWOT",
+        PESTEL: "Phân tích PESTEL",
+        porter: "5 áp lực cạnh tranh Porter",
+        bcg: "Ma trận BCG",
+        "3c": "Mô hình 3C",
+      },
+      lang: "Ngôn ngữ",
+      langOptions: {
+        zh: "Tiếng Trung",
+        en: "Tiếng Anh",
+      },
+    },
+    pm: {
+      title: "Cài đặt phân tích sản phẩm (PM)",
+      mode: "Giai đoạn phân tích",
+      modeOptions: {
+        discovery: "Đánh giá cơ hội",
+        competitive: "So sánh đối thủ",
+        requirements: "Yêu cầu & PRD",
+      },
+      framework: "Khung đánh giá",
+      frameworkOptions: {
+        kano: "Mô hình Kano",
+        rice: "Chấm điểm RICE",
+        "story-map": "Bản đồ User Story",
+      },
+      template: "Mẫu tài liệu PRD",
+      templateOptions: {
+        mvp: "Đặc tả MVP tinh gọn",
+        standard: "PRD Agile tiêu chuẩn",
+        detailed: "Đặc tả nghiệp vụ chi tiết",
+      },
+    },
+  },
 };
 
 interface SkillSettingsPanelProps {
@@ -614,7 +815,7 @@ export function SkillSettingsPanel({
     ...propSettings,
   }), [propSettings]);
   // Normalize locale key
-  const activeLocale = locale.startsWith("zh") ? "zh-CN" : "en-US";
+  const activeLocale = locale === "vi" ? "vi" : locale.startsWith("zh") ? "zh-CN" : "en-US";
   const t = LOCALIZED_MAP[activeLocale];
 
   const currentImageModel = settings["ppt-master"].imageModel;
@@ -749,12 +950,12 @@ export function SkillSettingsPanel({
                 <SelectContent className="max-h-60">
                   {Object.entries(t.ppt.styleOptions).map(([key, label]) => {
                     const descriptions: Record<string, string> = {
-                      glassmorphism: "「极光渐变 + 半透明磨砂卡片」",
-                      "dark-premium": "「高科技暗黑 + 奢华金线质感」",
-                      "gradient-modern": "「大跨度渐变 + 扁平活力化排版」",
-                      "minimal-swiss": "「冷淡瑞士风 + 经典无衬线大字」",
-                      keynote: "「标准灰白极简 + 呼吸感间距」",
-                      business: "「经典深蓝偏商务 + 专业分栏列表」",
+                      glassmorphism: tr(locale, "「极光渐变 + 半透明磨砂卡片」", "Aurora gradient + frosted glass cards", "Chuyển sắc cực quang + thẻ kính mờ"),
+                      "dark-premium": tr(locale, "「高科技暗黑 + 奢华金线质感」", "High-tech dark + luxury gold accents", "Tối công nghệ cao + viền vàng sang trọng"),
+                      "gradient-modern": tr(locale, "「大跨度渐变 + 扁平活力化排版」", "Bold gradients + vibrant flat layout", "Chuyển sắc mạnh + bố cục phẳng năng động"),
+                      "minimal-swiss": tr(locale, "「冷淡瑞士风 + 经典无衬线大字」", "Minimalist Swiss + bold sans typography", "Tối giản Thụy Sĩ + chữ không chân lớn"),
+                      keynote: tr(locale, "「标准灰白极简 + 呼吸感间距」", "Clean monochrome + generous whitespace", "Đơn sắc tinh gọn + khoảng trắng thoáng"),
+                      business: tr(locale, "「经典深蓝偏商务 + 专业分栏列表」", "Classic navy business + structured columns", "Xanh navy doanh nghiệp + bố cục chia cột"),
                     };
                     return (
                       <SelectItem key={key} value={key} className="text-xs cursor-pointer py-1.5">
@@ -784,14 +985,14 @@ export function SkillSettingsPanel({
                 <SelectContent className="max-h-60">
                   {Object.entries(t.ppt.templateOptions).map(([key, label]) => {
                     const descriptions: Record<string, string> = {
-                      free: "AI 自由设计：由 AI 根据内容自主匹配最佳视觉布局",
-                      academic_defense: "学术答辩：标准双栏排版，带目录及分章节标识",
-                      ai_ops: "智能运维：科技感蓝绿主题，集成流程与拓扑骨架",
-                      government_blue: "政务蓝：深蓝色调配合红旗、缎带装饰，庄重大气",
-                      government_red: "政务红：经典红金政务风，适合汇报与总结",
-                      medical_university: "医学健康：生命浅绿配色，网格数据对比与表格",
-                      pixel_retro: "像素复古：8-bit 像素游戏风，趣味拼贴与装饰线",
-                      psychology_attachment: "心理疗愈：温暖米粉色调，圆角卡片及治愈系插画",
+                      free: tr(locale, "AI 自由设计：由 AI 根据内容自主匹配最佳视觉布局", "AI Free Design: automatically match layout to content", "Thiết kế tự do AI: tự động chọn bố cục tối ưu theo nội dung"),
+                      academic_defense: tr(locale, "学术答辩：标准双栏排版，带目录及分章节标识", "Academic Defense: dual-column layout with TOC and sections", "Bảo vệ học thuật: bố cục 2 cột kèm mục lục và phân chương"),
+                      ai_ops: tr(locale, "智能运维：科技感蓝绿主题，集成流程与拓扑骨架", "AI Ops: tech cyan theme with workflow & topology diagrams", "Vận hành thông minh: chủ đề xanh công nghệ kèm sơ đồ quy trình"),
+                      government_blue: tr(locale, "政务蓝：深蓝色调配合红旗、缎带装饰，庄重大气", "Government Blue: formal deep blue tone", "Xanh hành chính: tông xanh đậm trang trọng"),
+                      government_red: tr(locale, "政务红：经典红金政务风，适合汇报与总结", "Government Red: classic red & gold report style", "Đỏ hành chính: phong cách đỏ vàng cổ điển cho báo cáo"),
+                      medical_university: tr(locale, "医学健康：生命浅绿配色，网格数据对比与表格", "Medical: soft green palette with data comparison grids", "Y khoa: tông xanh lá dịu với bảng đối chiếu dữ liệu"),
+                      pixel_retro: tr(locale, "像素复古：8-bit 像素游戏风，趣味拼贴与装饰线", "Pixel Retro: 8-bit retro style with playful borders", "Pixel cổ điển: phong cách game 8-bit sinh động"),
+                      psychology_attachment: tr(locale, "心理疗愈：温暖米粉色调，圆角卡片及治愈系插画", "Psychology: warm pastel tones with rounded cards", "Tâm lý: tông màu ấm dịu với thẻ bo tròn"),
                     };
                     return (
                       <SelectItem key={key} value={key} className="text-xs cursor-pointer py-1.5">
@@ -837,7 +1038,9 @@ export function SkillSettingsPanel({
                 className="inline-flex items-center gap-1 mt-1 text-[10px] font-medium text-muted-foreground hover:text-primary transition-colors hover:underline cursor-pointer"
               >
                 <UploadIcon className="size-3" />
-                {uploading ? "上传中..." : "上传自定义模板 (.pptx)"}
+                {uploading
+                  ? tr(locale, "上传中...", "Uploading...", "Đang tải lên...")
+                  : tr(locale, "上传自定义模板 (.pptx)", "Upload Custom Template (.pptx)", "Tải lên mẫu tùy chỉnh (.pptx)")}
               </button>
             </div>
 
@@ -1193,13 +1396,13 @@ export function SkillSettingsPanel({
                 <SelectContent>
                   {Object.entries(t.chart.typeOptions).map(([key, label]) => {
                     const descriptions: Record<string, string> = {
-                      auto: "自动选择：根据数据特征智能生成最佳图表类型",
-                      line: "折线图：最适合表现数据随连续时间变化的趋势变化",
-                      bar: "柱状图：适合比较不同类别/项目之间的数量高低",
-                      pie: "饼图：展示各组成部分占总体的比例或百分比关系",
-                      radar: "雷达图：适用于评估和展现多个维度的综合实力分布",
-                      sankey: "桑基图：展示数据/能量/流量流转与多层级分流走向",
-                      wordcloud: "词云图：直观展示文本关键词的词频热度与比重",
+                      auto: tr(locale, "自动选择：根据数据特征智能生成最佳图表类型", "Auto: choose best chart type for your data", "Tự động: chọn loại biểu đồ phù hợp nhất với dữ liệu"),
+                      line: tr(locale, "折线图：最适合表现数据随连续时间变化的趋势变化", "Line Chart: best for trends over continuous time", "Biểu đồ đường: phù hợp thể hiện xu hướng theo thời gian"),
+                      bar: tr(locale, "柱状图：适合比较不同类别/项目之间的数量高低", "Bar Chart: compare quantities across categories", "Biểu đồ cột: so sánh số lượng giữa các danh mục"),
+                      pie: tr(locale, "饼图：展示各组成部分占总体的比例或百分比关系", "Pie Chart: show percentage proportions of a whole", "Biểu đồ tròn: thể hiện tỷ lệ phần trăm trong tổng thể"),
+                      radar: tr(locale, "雷达图：适用于评估和展现多个维度的综合实力分布", "Radar Chart: evaluate multi-dimensional metrics", "Biểu đồ radar: đánh giá chỉ số trên nhiều khía cạnh"),
+                      sankey: tr(locale, "桑基图：展示数据/能量/流量流转与多层级分流走向", "Sankey: visualize multi-level flows and distribution", "Sankey: trực quan hóa luồng phân bổ đa tầng"),
+                      wordcloud: tr(locale, "词云图：直观展示文本关键词的词频热度与比重", "Word Cloud: visualize keyword frequency and weight", "Đám mây từ khóa: hiển thị tần suất và trọng số từ khóa"),
                     };
                     return (
                       <SelectItem key={key} value={key} className="text-xs cursor-pointer py-1.5">

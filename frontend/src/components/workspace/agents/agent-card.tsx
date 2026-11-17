@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useDeleteAgent, useToggleAgent, useSkills } from "@/core/agents";
 import type { Agent } from "@/core/agents";
+import { tr } from "@/core/i18n";
 import { useI18n } from "@/core/i18n/hooks";
 
 interface AgentCardProps {
@@ -48,7 +49,7 @@ interface AgentCardProps {
 }
 
 export function AgentCard({ agent, onEdit }: AgentCardProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const deleteAgent = useDeleteAgent();
   const toggleAgent = useToggleAgent();
   const { skills } = useSkills();
@@ -102,7 +103,7 @@ export function AgentCard({ agent, onEdit }: AgentCardProps) {
     if (agent.system_prompt) {
       navigator.clipboard.writeText(agent.system_prompt);
       setCopied(true);
-      toast.success("系统提示词已复制到剪贴板");
+      toast.success(t.clipboard.copiedToClipboard);
       setTimeout(() => setCopied(false), 2000);
     }
   };
@@ -156,7 +157,7 @@ export function AgentCard({ agent, onEdit }: AgentCardProps) {
           <div 
             className="flex items-start gap-2 text-[11px] text-muted-foreground relative overflow-hidden rounded-lg border border-zinc-100 dark:border-zinc-800/50 bg-zinc-50/40 dark:bg-zinc-900/25 p-2 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors cursor-pointer group/desc min-h-[42px]"
             onClick={() => setDescOpen(true)}
-            title="点击查看系统提示词"
+            title={tr(locale, "点击查看系统提示词", "Click to view system prompt", "Nhấp để xem system prompt")}
           >
             <InfoIcon className="h-3.5 w-3.5 text-indigo-500/80 shrink-0 mt-0.5 group-hover/desc:scale-110 transition-transform duration-200" />
             <p className="line-clamp-2 leading-relaxed text-zinc-600 dark:text-zinc-400 font-normal">
@@ -176,14 +177,14 @@ export function AgentCard({ agent, onEdit }: AgentCardProps) {
                     </span>
                   </TooltipTrigger>
                   <TooltipContent side="top" className="text-xs">
-                    推理模型：{agent.model}
+                    {tr(locale, "推理模型：", "Model: ", "Mô hình: ")}{agent.model}
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             ) : (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium border bg-zinc-50/30 text-zinc-400 border-zinc-200/20 dark:bg-zinc-900/10 dark:text-zinc-500 dark:border-zinc-800/30 transition-colors">
                 <CpuIcon className="h-3 w-3 shrink-0" />
-                <span>默认</span>
+                <span>{tr(locale, "默认", "Default", "Mặc định")}</span>
               </span>
             )}
             {mcpCount > 0 ? (
@@ -196,7 +197,7 @@ export function AgentCard({ agent, onEdit }: AgentCardProps) {
                     </span>
                   </TooltipTrigger>
                   <TooltipContent side="top" className="text-xs max-w-[240px]">
-                    <p className="font-medium mb-0.5">MCP 工具 ({mcpCount})</p>
+                    <p className="font-medium mb-0.5">{tr(locale, "MCP 工具", "MCP Tools", "Công cụ MCP")} ({mcpCount})</p>
                     <ul className="list-disc list-inside space-y-0.5">
                       {mcpNames.map((n) => <li key={n}>{n}</li>)}
                     </ul>
@@ -215,11 +216,11 @@ export function AgentCard({ agent, onEdit }: AgentCardProps) {
                   <TooltipTrigger asChild>
                     <span className="inline-flex cursor-default items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium border bg-amber-50/50 text-amber-650 border-amber-100/50 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30 transition-colors">
                       <CpuIcon className="h-3 w-3 shrink-0" />
-                      <span>内置:{publicCount}</span>
+                      <span>{tr(locale, "内置", "Built-in", "Sẵn có")}:{publicCount}</span>
                     </span>
                   </TooltipTrigger>
                   <TooltipContent side="top" className="text-xs max-w-[240px]">
-                    <p className="font-medium mb-0.5">内置技能 ({publicCount})</p>
+                    <p className="font-medium mb-0.5">{tr(locale, "内置技能", "Built-in Skills", "Kỹ năng sẵn có")} ({publicCount})</p>
                     <ul className="list-disc list-inside space-y-0.5">
                       {publicNames.map((n) => <li key={n}>{n}</li>)}
                     </ul>
@@ -229,7 +230,7 @@ export function AgentCard({ agent, onEdit }: AgentCardProps) {
             ) : (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium border bg-zinc-50/30 text-zinc-400 border-zinc-200/20 dark:bg-zinc-900/10 dark:text-zinc-500 dark:border-zinc-800/30 transition-colors">
                 <CpuIcon className="h-3 w-3 shrink-0" />
-                <span>内置:0</span>
+                <span>{tr(locale, "内置", "Built-in", "Sẵn có")}:0</span>
               </span>
             )}
             {customCount > 0 ? (
@@ -238,11 +239,11 @@ export function AgentCard({ agent, onEdit }: AgentCardProps) {
                   <TooltipTrigger asChild>
                     <span className="inline-flex cursor-default items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium border bg-emerald-50/50 text-emerald-650 border-emerald-100/50 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30 transition-colors">
                       <UserIcon className="h-3 w-3 shrink-0" />
-                      <span>自定义:{customCount}</span>
+                      <span>{tr(locale, "自定义", "Custom", "Tùy chỉnh")}:{customCount}</span>
                     </span>
                   </TooltipTrigger>
                   <TooltipContent side="top" className="text-xs max-w-[240px]">
-                    <p className="font-medium mb-0.5">自定义技能 ({customCount})</p>
+                    <p className="font-medium mb-0.5">{tr(locale, "自定义技能", "Custom Skills", "Kỹ năng tùy chỉnh")} ({customCount})</p>
                     <ul className="list-disc list-inside space-y-0.5">
                       {customNames.map((n) => <li key={n}>{n}</li>)}
                     </ul>
@@ -252,7 +253,7 @@ export function AgentCard({ agent, onEdit }: AgentCardProps) {
             ) : (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium border bg-zinc-50/30 text-zinc-400 border-zinc-200/20 dark:bg-zinc-900/10 dark:text-zinc-500 dark:border-zinc-800/30 transition-colors">
                 <UserIcon className="h-3 w-3 shrink-0" />
-                <span>自定义:0</span>
+                <span>{tr(locale, "自定义", "Custom", "Tùy chỉnh")}:0</span>
               </span>
             )}
           </div>
@@ -336,7 +337,7 @@ export function AgentCard({ agent, onEdit }: AgentCardProps) {
           <div className="space-y-4 pt-3 text-sm">
             {/* Description */}
             <div className="space-y-2">
-              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">智能体描述</h4>
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t.agents.edit.descriptionLabel}</h4>
               <p className="text-foreground leading-relaxed text-sm">
                 {agent.description || t.agents.noDescription}
               </p>
@@ -348,7 +349,7 @@ export function AgentCard({ agent, onEdit }: AgentCardProps) {
             {/* System Prompt */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">系统提示词</h4>
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t.agents.edit.systemPromptLabel}</h4>
                 {agent.system_prompt && (
                   <Button
                     variant="ghost"
@@ -359,12 +360,12 @@ export function AgentCard({ agent, onEdit }: AgentCardProps) {
                     {copied ? (
                       <>
                         <CheckIcon className="h-3 w-3 text-green-500 animate-in fade-in zoom-in duration-200" />
-                        <span>已复制</span>
+                        <span>{t.clipboard.copiedToClipboard}</span>
                       </>
                     ) : (
                       <>
                         <CopyIcon className="h-3 w-3" />
-                        <span>复制提示词</span>
+                        <span>{t.clipboard.copyToClipboard}</span>
                       </>
                     )}
                   </Button>
@@ -375,14 +376,16 @@ export function AgentCard({ agent, onEdit }: AgentCardProps) {
                   {agent.system_prompt}
                 </div>
               ) : (
-                <p className="text-xs text-muted-foreground italic">暂无系统提示词</p>
+                <p className="text-xs text-muted-foreground italic">
+                  {tr(locale, "暂无系统提示词", "No system prompt", "Chưa có system prompt")}
+                </p>
               )}
             </div>
           </div>
 
           <DialogFooter className="pt-2 border-t mt-4 sm:justify-end">
             <Button size="sm" onClick={() => setDescOpen(false)}>
-              关闭
+              {t.common.close}
             </Button>
           </DialogFooter>
         </DialogContent>

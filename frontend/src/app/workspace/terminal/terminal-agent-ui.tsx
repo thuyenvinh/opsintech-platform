@@ -31,6 +31,8 @@ import { MarkdownContent } from '@/components/workspace/messages/markdown-conten
 import { toast } from 'sonner';
 import { type IncidentContext, renderContextPrompt } from '@/core/alerting/incident-context';
 import { SaveAsSkillDialog, extractTerminalSession } from '@/components/workspace/terminal/save-as-skill-dialog';
+import { getActiveLocale, tr } from '@/core/i18n';
+import { useI18n } from '@/core/i18n/hooks';
 
 // ------------------------------------------------------------------
 // Message Utility Functions
@@ -118,21 +120,22 @@ function getToolInvocations(msg: any): any[] {
 function summarizeOutput(output: any): string {
   const text = typeof output === 'string' ? output : JSON.stringify(output ?? '');
   const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
-  if (lines.length === 0) return '命令已执行，无输出。';
+  if (lines.length === 0) return tr(getActiveLocale(), '命令已执行，无输出。', 'Command executed with no output.', 'Lệnh đã chạy, không có đầu ra.');
   const errorLine = lines.find(line => /error|failed|denied|exception|not found/i.test(line));
   const firstLine = errorLine || lines[0] || '';
   return firstLine.length > 160 ? `${firstLine.slice(0, 160)}...` : firstLine;
 }
 
 function riskLabel(level?: string): string {
-  if (level === 'critical') return '严重风险';
-  if (level === 'high') return '高风险';
-  if (level === 'medium') return '中风险';
-  return '低风险';
+  const loc = getActiveLocale();
+  if (level === 'critical') return tr(loc, '严重风险', 'Critical Risk', 'Rủi ro nghiêm trọng');
+  if (level === 'high') return tr(loc, '高风险', 'High Risk', 'Rủi ro cao');
+  if (level === 'medium') return tr(loc, '中风险', 'Medium Risk', 'Rủi ro trung bình');
+  return tr(loc, '低风险', 'Low Risk', 'Rủi ro thấp');
 }
 
 function assetLabel(asset: any): string {
-  return asset?.ip || asset?.hostname || asset?.name || asset?.id || '未知主机';
+  return asset?.ip || asset?.hostname || asset?.name || asset?.id || tr(getActiveLocale(), '未知主机', 'Unknown Host', 'Máy chủ không rõ');
 }
 
 // ------------------------------------------------------------------
@@ -140,13 +143,14 @@ function assetLabel(asset: any): string {
 // ------------------------------------------------------------------
 
 export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset: any; injectedContext?: IncidentContext | null }) {
+  const { locale } = useI18n();
   const terminalContext = useTerminalContext();
   const { models } = useAvailableModels();
   const [selectedModel, setSelectedModel] = useState<string>('gpt-4o');
   const [showSecuritySettings, setShowSecuritySettings] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [sessionId, setSessionId] = useState(() => ChatHistoryManager.generateId());
-  const [sessionTitle, setSessionTitle] = useState('新会话');
+  const [sessionTitle, setSessionTitle] = useState(() => tr(getActiveLocale(), '新会话', 'New Session', 'Phiên mới'));
   const [messageFeedback, setMessageFeedback] = useState<Record<string, 'up' | 'down'>>({});
   const [mode, setMode] = useState<'cmd' | 'agent'>(injectedContext ? 'agent' : 'cmd');
   const [showContextMenu, setShowContextMenu] = useState(false);
@@ -225,7 +229,7 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
   useEffect(() => {
     if (messages.length === 0) return;
     const firstUser = messages.find((m: any) => getMessageRole(m) === 'user');
-    const title = firstUser ? getMessageText(firstUser).slice(0, 28) || '新会话' : sessionTitle;
+    const title = firstUser ? getMessageText(firstUser).slice(0, 28) || tr(locale, '新会话', 'New Session', 'Phiên mới') : sessionTitle;
     setSessionTitle(title);
     ChatHistoryManager.saveSession({
       id: sessionId,
@@ -249,7 +253,7 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
 
   const restoreSession = useCallback((saved: any) => {
     setSessionId(saved.id);
-    setSessionTitle(saved.title || '未命名会话');
+    setSessionTitle(saved.title || tr(locale, '未命名会话', 'Untitled Session', 'Phiên chưa đặt tên'));
     setMode(saved.mode || 'cmd');
     hydrateMessages((saved.messages || []).map((m: any) => ({
       id: m.id,
@@ -342,27 +346,27 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
     if (!text || isLoading) return;
 
     if (mode === 'cmd' && !terminalContext?.activeSessionId) {
-      toast.error('手动模式下需要左侧有活跃的终端会话。请先在左侧打开并连接一个终端标签页。');
+      toast.error(tr(locale, '手动模式下需要左侧有活跃的终端会话。请先在左侧打开并连接一个终端标签页。', 'Manual mode requires an active terminal tab. Please connect to a host on the left first.', 'Chế độ thủ công yêu cầu một phiên Terminal đang hoạt động ở bên trái.'));
       return;
     }
 
     if (mode === 'agent' && selectedAgentAssets.length === 0) {
-      toast.error('自动模式下请先选择目标主机。您可以输入 @ 或点击输入框上方的 @ 按钮来选择主机。');
+      toast.error(tr(locale, '自动模式下请先选择目标主机。您可以输入 @ 或点击输入框上方的 @ 按钮来选择主机。', 'Auto mode requires selecting target hosts. Type @ or click @ Host above the input box.', 'Chế độ tự động yêu cầu chọn máy chủ đích. Nhập @ hoặc nhấn nút @ Máy chủ ở trên khung nhập.'));
       return;
     }
 
     agentSendMessage({ text: text });
     setInput('');
-  }, [input, isLoading, mode, selectedAgentAssets, terminalContext, agentSendMessage, setInput]);
+  }, [input, isLoading, mode, selectedAgentAssets, terminalContext, agentSendMessage, setInput, locale]);
 
   const handleNewSession = useCallback(() => {
     if (isLoading || isCommandRunning) {
-      toast.warning('当前会话仍在执行中，请等待完成或停止后再新建会话。');
+      toast.warning(tr(locale, '当前会话仍在执行中，请等待完成或停止后再新建会话。', 'Session is still running. Wait or stop it before starting a new one.', 'Phiên hiện tại đang chạy, vui lòng đợi hoàn tất hoặc dừng trước khi tạo phiên mới.'));
       return;
     }
 
     setSessionId(ChatHistoryManager.generateId());
-    setSessionTitle('新会话');
+    setSessionTitle(tr(locale, '新会话', 'New Session', 'Phiên mới'));
     hydrateMessages([]);
     setMessageFeedback({});
     setInput('');
@@ -402,7 +406,7 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
       {/* Header */}
       <div className="flex items-center justify-between h-12 px-4 shrink-0 bg-white/80 backdrop-blur-md z-10 border-b border-zinc-100">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-zinc-700" onClick={() => setShowHistory(!showHistory)} title="历史会话">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-zinc-700" onClick={() => setShowHistory(!showHistory)} title={tr(locale, '历史会话', 'Session History', 'Lịch sử phiên')}>
             <History className="w-4 h-4" />
           </Button>
           <span className="text-[13px] font-medium text-zinc-600">{sessionTitle}</span>
@@ -412,7 +416,7 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
               ? 'bg-zinc-100 text-zinc-600' 
               : 'bg-blue-50 text-blue-600'
           }`}>
-            {mode === 'cmd' ? '手动模式' : '自动模式'}
+            {mode === 'cmd' ? tr(locale, '手动模式', 'Manual', 'Thủ công') : tr(locale, '自动模式', 'Auto', 'Tự động')}
           </span>
         </div>
         <div className="flex items-center gap-1">
@@ -428,10 +432,10 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
               />
             ) : null;
           })()}
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-zinc-700" onClick={() => setShowSecuritySettings(true)} title="安全设置">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-zinc-700" onClick={() => setShowSecuritySettings(true)} title={tr(locale, '安全设置', 'Security Settings', 'Cài đặt bảo mật')}>
             <Settings className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-zinc-700" onClick={handleNewSession} title="新建会话">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-zinc-700" onClick={handleNewSession} title={tr(locale, '新建会话', 'New Session', 'Phiên mới')}>
             <Plus className="w-4 h-4" />
           </Button>
         </div>
@@ -440,7 +444,9 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
       {/* History Drawer */}
       {showHistory && (
         <div className="absolute top-12 left-4 w-64 bg-white border border-zinc-200 rounded-xl shadow-xl z-20 max-h-80 overflow-y-auto">
-          <div className="px-3 py-2 border-b border-zinc-100 text-xs font-semibold text-zinc-500">聊天历史</div>
+          <div className="px-3 py-2 border-b border-zinc-100 text-xs font-semibold text-zinc-500">
+            {tr(locale, '聊天历史', 'Chat History', 'Lịch sử trò chuyện')}
+          </div>
           {ChatHistoryManager.getSessionsPage(1).map((s) => (
             <div key={s.id} className="group flex items-center justify-between gap-1 px-2 hover:bg-zinc-50">
               {editingSessionId === s.id ? (
@@ -477,8 +483,8 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
                 />
               ) : (
                 <button onClick={() => restoreSession(s)} className="min-w-0 flex-1 text-left px-1 py-2 text-xs text-zinc-600">
-                  <div className="font-medium truncate">{s.title || '未命名会话'}</div>
-                  <div className="text-zinc-400 text-[10px] mt-0.5">{s.mode === 'agent' ? '自动模式' : '手动模式'} · {new Date(s.updatedAt).toLocaleDateString()}</div>
+                  <div className="font-medium truncate">{s.title || tr(locale, '未命名会话', 'Untitled Session', 'Phiên chưa đặt tên')}</div>
+                  <div className="text-zinc-400 text-[10px] mt-0.5">{s.mode === 'agent' ? tr(locale, '自动模式', 'Auto', 'Tự động') : tr(locale, '手动模式', 'Manual', 'Thủ công')} · {new Date(s.updatedAt).toLocaleDateString()}</div>
                 </button>
               )}
               {editingSessionId !== s.id && (
@@ -489,9 +495,9 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
                     onClick={(e) => {
                       e.stopPropagation();
                       setEditingSessionId(s.id);
-                      setEditingSessionTitle(s.title || '未命名会话');
+                      setEditingSessionTitle(s.title || tr(locale, '未命名会话', 'Untitled Session', 'Phiên chưa đặt tên'));
                     }}
-                    title="重命名"
+                    title={tr(locale, '重命名', 'Rename', 'Đổi tên')}
                   >
                     <Pencil className="w-3 h-3" />
                   </button>
@@ -500,13 +506,13 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
                     className="p-1 rounded text-zinc-400 hover:text-red-500 hover:bg-red-50"
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (confirm('确定要删除此会话历史吗？')) {
+                      if (confirm(tr(locale, '确定要删除此会话历史吗？', 'Delete this session history?', 'Xác nhận xóa lịch sử phiên này?'))) {
                         ChatHistoryManager.deleteSession(s.id);
                         setShowHistory(false);
                         setTimeout(() => setShowHistory(true), 0);
                       }
                     }}
-                    title="删除历史"
+                    title={tr(locale, '删除历史', 'Delete History', 'Xóa lịch sử')}
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -527,11 +533,15 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
             <p className="text-sm font-medium text-zinc-700 mb-1">OpsinTech Assistant</p>
             <p className="text-xs text-zinc-500 text-center max-w-[240px]">
               {mode === 'cmd' 
-                ? '输入你的需求，系统会生成命令，由你确认后在终端中执行。'
-                : '系统会在后台自主分析并执行安全命令，危险操作将要求你确认。'}
+                ? tr(locale, '输入你的需求，系统会生成命令，由你确认后在终端中执行。', 'Describe your goal; the system generates commands for you to confirm and run.', 'Nhập yêu cầu của bạn, hệ thống sẽ tạo lệnh để bạn xác nhận và chạy trên Terminal.')
+                : tr(locale, '系统会在后台自主分析并执行安全命令，危险操作将要求你确认。', 'The system analyzes and runs safe commands automatically; risky actions require approval.', 'Hệ thống tự động phân tích và chạy các lệnh an toàn; thao tác nguy hiểm sẽ hỏi ý kiến bạn.')}
             </p>
             <div className="mt-4 grid gap-2 w-full max-w-[320px]">
-              {['检查磁盘空间 and 使用率', '分析 Nginx 错误日志', '查看当前系统负载与服务状态'].map((example) => (
+              {[
+                tr(locale, '检查磁盘空间和使用率', 'Check disk space and usage', 'Kiểm tra dung lượng và mức sử dụng ổ đĩa'),
+                tr(locale, '分析 Nginx 错误日志', 'Analyze Nginx error logs', 'Phân tích nhật ký lỗi Nginx'),
+                tr(locale, '查看当前系统负载与服务状态', 'Check system load and service status', 'Kiểm tra tải hệ thống và trạng thái dịch vụ'),
+              ].map((example) => (
                 <button
                   key={example}
                   type="button"
@@ -588,7 +598,7 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
                           <details className="group text-[12px] text-zinc-500">
                             <summary className="flex items-center gap-1.5 cursor-pointer hover:text-zinc-700 select-none list-none [&::-webkit-details-marker]:hidden font-medium">
                               <ChevronDown className="w-3.5 h-3.5 transition-transform group-open:-rotate-180" />
-                              执行思路
+                              {tr(locale, '执行思路', 'Reasoning', 'Quá trình suy luận')}
                             </summary>
                             <div className="mt-2 pl-4 border-l-2 border-zinc-200 py-1 whitespace-pre-wrap text-zinc-500">
                               {reasoningText}
@@ -636,19 +646,19 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
                         {/* Commands / Tools */}
                         {(() => {
                           const toolNameMap: Record<string, string> = {
-                            'read_file': '读取文件',
-                            'write_file': '写入文件',
-                            'grep_search': '文本检索',
-                            'web_fetch': '网页获取',
-                            'execute_command': '执行命令',
-                            'ask_followup_question': '追问问题',
+                            'read_file': tr(locale, '读取文件', 'Read File', 'Đọc tệp'),
+                            'write_file': tr(locale, '写入文件', 'Write File', 'Ghi tệp'),
+                            'grep_search': tr(locale, '文本检索', 'Text Search', 'Tìm kiếm văn bản'),
+                            'web_fetch': tr(locale, '网页获取', 'Web Fetch', 'Tải trang web'),
+                            'execute_command': tr(locale, '执行命令', 'Execute Command', 'Thực thi lệnh'),
+                            'ask_followup_question': tr(locale, '追问问题', 'Follow-up Question', 'Câu hỏi tiếp theo'),
                           };
                           const toolStateMap: Record<string, string> = {
-                            'input-streaming': '正在生成输入',
-                            'input-available': '等待确认执行',
-                            'output-available': '执行完成',
-                            'output-error': '执行失败',
-                            'auto-executing': '正在自动执行',
+                            'input-streaming': tr(locale, '正在生成输入', 'Generating input', 'Đang tạo đầu vào'),
+                            'input-available': tr(locale, '等待确认执行', 'Awaiting approval', 'Đang chờ xác nhận'),
+                            'output-available': tr(locale, '执行完成', 'Completed', 'Hoàn thành'),
+                            'output-error': tr(locale, '执行失败', 'Failed', 'Thất bại'),
+                            'auto-executing': tr(locale, '正在自动执行', 'Auto-executing', 'Đang tự động chạy'),
                           };
 
                           return toolInvocations.map((tool: any) => {
@@ -669,7 +679,7 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
                                   <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 bg-[#161b22] rounded-t-xl">
                                     <div className="flex items-center gap-2 text-[11px] font-medium text-zinc-400">
                                       <TerminalIcon className="w-3.5 h-3.5 text-zinc-500" />
-                                      终端命令
+                                      {tr(locale, '终端命令', 'Terminal Command', 'Lệnh Terminal')}
                                       {targetIp && (
                                         <span className="text-[10px] text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded font-mono">
                                           {targetIp}
@@ -681,15 +691,15 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
                                     <div className="flex items-center gap-2">
                                       {isError ? (
                                         <span className="text-[10px] text-red-400 flex items-center gap-1">
-                                          <AlertTriangle className="w-3 h-3"/> 执行失败
+                                          <AlertTriangle className="w-3 h-3"/> {tr(locale, '执行失败', 'Failed', 'Thất bại')}
                                         </span>
                                       ) : isDone ? (
                                         <span className="text-[10px] text-emerald-400 flex items-center gap-1">
-                                          <Check className="w-3 h-3"/> 已执行
+                                          <Check className="w-3 h-3"/> {tr(locale, '已执行', 'Executed', 'Đã chạy')}
                                         </span>
                                       ) : isAutoExecuting || isCommandRunning ? (
                                         <span className="text-[10px] text-blue-400 flex items-center gap-1">
-                                          <Loader2 className="w-3 h-3 animate-spin"/> {isAutoExecuting ? '自动执行中' : '执行中'}
+                                          <Loader2 className="w-3 h-3 animate-spin"/> {isAutoExecuting ? tr(locale, '自动执行中', 'Auto-running', 'Đang tự động chạy') : tr(locale, '执行中', 'Running', 'Đang chạy')}
                                         </span>
                                       ) : isCall ? (
                                         <div className="flex items-center gap-1">
@@ -699,18 +709,18 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
                                             onClick={() => rejectPendingCommand(tool.toolCallId, tool.toolName)}
                                             className="h-6 px-2 text-[10px] text-zinc-400 hover:text-red-400 hover:bg-red-500/10"
                                           >
-                                            拒绝
+                                            {tr(locale, '拒绝', 'Reject', 'Từ chối')}
                                           </Button>
                                           <Button
                                             size="sm"
                                             onClick={() => executePendingCommand(tool.toolCallId, tool.toolName, tool.args?.command || '')}
                                             className="h-6 px-3 text-[10px] bg-blue-600 hover:bg-blue-500 text-white"
                                           >
-                                            执行 <CornerDownLeft className="w-3 h-3 ml-1"/>
+                                            {tr(locale, '执行', 'Run', 'Chạy')} <CornerDownLeft className="w-3 h-3 ml-1"/>
                                           </Button>
                                         </div>
                                       ) : (
-                                        <span className="text-[10px] text-zinc-500">等待中</span>
+                                        <span className="text-[10px] text-zinc-500">{tr(locale, '等待中', 'Pending', 'Đang chờ')}</span>
                                       )}
                                     </div>
                                   </div>
@@ -719,10 +729,10 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
                                     <div className="mx-3 mt-3 rounded-lg border border-amber-400/30 bg-amber-400/10 p-3 text-[12px] text-amber-100">
                                       <div className="flex items-center gap-2 font-medium text-amber-200">
                                         <AlertTriangle className="w-3.5 h-3.5" />
-                                        需要确认 · {riskLabel(tool.approval.riskLevel)}
+                                        {tr(locale, '需要确认', 'Approval Required', 'Cần xác nhận')} · {riskLabel(tool.approval.riskLevel)}
                                       </div>
                                       <div className="mt-2 text-amber-100/90">
-                                        {tool.approval.reason || '该操作需要你确认后才能继续执行。'}
+                                        {tool.approval.reason || tr(locale, '该操作需要你确认后才能继续执行。', 'This action requires your confirmation to proceed.', 'Thao tác này cần bạn xác nhận để tiếp tục.')}
                                       </div>
                                       <div className="mt-2 flex flex-wrap gap-1.5">
                                         {(tool.approval.targetAssets || []).map((asset: any) => (
@@ -732,7 +742,7 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
                                         ))}
                                         {tool.approval.isStateChanging && (
                                           <span className="rounded bg-red-500/20 px-2 py-0.5 text-[10px] text-red-100">
-                                            会修改远程状态
+                                            {tr(locale, '会修改远程状态', 'Modifies remote state', 'Thay đổi trạng thái từ xa')}
                                           </span>
                                         )}
                                       </div>
@@ -752,7 +762,7 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
                                     </div>
                                   ) : (
                                     <div className="p-3 text-[13px] font-mono text-zinc-500 whitespace-pre-wrap">
-                                      (等待命令...)
+                                      ({tr(locale, '等待命令...', 'Waiting for command...', 'Đang chờ lệnh...')})
                                     </div>
                                   )}
                                   
@@ -760,12 +770,12 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
                                   {(isDone || isError) && tool.output && (
                                     <div className="border-t border-white/10 bg-[#0a0c10]">
                                       <div className="px-3 pt-3 text-[11px] text-zinc-300">
-                                        <span className="text-zinc-500">结果摘要：</span>{summarizeOutput(tool.output)}
+                                        <span className="text-zinc-500">{tr(locale, '结果摘要：', 'Summary: ', 'Tóm tắt: ')}</span>{summarizeOutput(tool.output)}
                                       </div>
                                       <details className="group" open={isError}>
                                         <summary className="px-3 py-2 text-[10px] text-zinc-500 hover:text-zinc-300 font-mono cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden flex items-center">
                                           <ChevronDown className="w-3 h-3 mr-1.5 transition-transform group-open:-rotate-180" />
-                                          {isError ? '错误详情' : '查看原始输出'}
+                                          {isError ? tr(locale, '错误详情', 'Error Details', 'Chi tiết lỗi') : tr(locale, '查看原始输出', 'Raw Output', 'Xem kết quả gốc')}
                                         </summary>
                                         <div className={`px-3 pb-3 text-[11px] font-mono whitespace-pre-wrap break-all max-h-64 overflow-y-auto ${
                                           isError ? 'text-red-400' : 'text-zinc-400'
@@ -783,7 +793,9 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
                             if (tool.toolName === 'ask_followup_question' && isCall) {
                               return (
                                 <div key={tool.toolCallId} className="w-full mt-1 p-3 rounded-xl border border-blue-200 bg-blue-50/50">
-                                  <p className="text-[13px] font-medium text-blue-800 mb-2">{tool.args?.question || '需要补充信息'}</p>
+                                  <p className="text-[13px] font-medium text-blue-800 mb-2">
+                                    {tool.args?.question || tr(locale, '需要补充信息', 'Additional information required', 'Cần bổ sung thông tin')}
+                                  </p>
                                   {tool.args?.options?.length > 0 && (
                                     <div className="flex flex-wrap gap-2">
                                       {tool.args.options.map((opt: string, i: number) => (
@@ -814,15 +826,15 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
                                     </div>
                                     <div className="flex items-center gap-2">
                                       {isError ? (
-                                        <span className="text-[10px] text-red-400">失败</span>
+                                        <span className="text-[10px] text-red-400">{tr(locale, '失败', 'Failed', 'Thất bại')}</span>
                                       ) : isDone ? (
-                                        <span className="text-[10px] text-emerald-500 flex items-center gap-1"><Check className="w-3 h-3"/> 完成</span>
+                                        <span className="text-[10px] text-emerald-500 flex items-center gap-1"><Check className="w-3 h-3"/> {tr(locale, '完成', 'Done', 'Xong')}</span>
                                       ) : isAutoExecuting ? (
-                                        <span className="text-[10px] text-blue-400 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin"/> 执行中</span>
+                                        <span className="text-[10px] text-blue-400 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin"/> {tr(locale, '执行中', 'Running', 'Đang chạy')}</span>
                                       ) : isCall ? (
                                         <div className="flex items-center gap-1">
-                                          <Button variant="ghost" size="sm" onClick={() => rejectPendingCommand(tool.toolCallId, tool.toolName)} className="h-6 px-2 text-[10px] text-zinc-400 hover:text-red-400">拒绝</Button>
-                                          <Button size="sm" onClick={() => executePendingCommand(tool.toolCallId, tool.toolName, '')} className="h-6 px-3 text-[10px] bg-blue-600 hover:bg-blue-500 text-white">执行</Button>
+                                          <Button variant="ghost" size="sm" onClick={() => rejectPendingCommand(tool.toolCallId, tool.toolName)} className="h-6 px-2 text-[10px] text-zinc-400 hover:text-red-400">{tr(locale, '拒绝', 'Reject', 'Từ chối')}</Button>
+                                          <Button size="sm" onClick={() => executePendingCommand(tool.toolCallId, tool.toolName, '')} className="h-6 px-3 text-[10px] bg-blue-600 hover:bg-blue-500 text-white">{tr(locale, '执行', 'Run', 'Chạy')}</Button>
                                         </div>
                                       ) : (
                                         <span className="text-[10px] text-zinc-400">...</span>
@@ -857,7 +869,7 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
             {isLoading && !messages.find((m: any) => m.role === 'assistant' || m.type === 'ai' && !getMessageText(m)) && (
               <div className="flex items-center gap-2 text-zinc-400 text-xs mt-2">
                 <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
-                <span>Agent 正在分析...</span>
+                <span>{tr(locale, 'Agent 正在分析...', 'Agent is analyzing...', 'Agent đang phân tích...')}</span>
               </div>
             )}
 
@@ -918,9 +930,9 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
                         setContextMenuSearch('');
                       }}
                       className="inline-flex items-center text-zinc-400 hover:text-zinc-700 text-[13px] px-2 py-0.5 rounded font-semibold transition-colors hover:bg-zinc-50 border border-zinc-100 hover:border-zinc-200 shadow-sm shrink-0"
-                      title="选择目标主机"
+                      title={tr(locale, '选择目标主机', 'Select target host', 'Chọn máy chủ đích')}
                     >
-                      <span className="text-blue-500 mr-0.5 font-bold">@</span> 主机
+                      <span className="text-blue-500 mr-0.5 font-bold">@</span> {tr(locale, '主机', 'Host', 'Máy chủ')}
                     </button>
 
                     {/* Dropdown — Premium design with modern colors, shadows, and spacing */}
@@ -934,7 +946,7 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
                             <div className="relative flex-1">
                               <Input
                                 type="text"
-                                placeholder="搜索主机名称或 IP..."
+                                placeholder={tr(locale, '搜索主机名称或 IP...', 'Search host name or IP...', 'Tìm tên máy chủ hoặc IP...')}
                                 value={contextMenuSearch}
                                 onChange={(e) => setContextMenuSearch(e.target.value)}
                                 className="h-8 pl-2 pr-7 text-[12px] bg-white border-zinc-200 focus-visible:ring-1 focus-visible:ring-blue-500 rounded-lg shadow-inner"
@@ -960,7 +972,7 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
                               className={`p-1.5 rounded-lg border border-zinc-200 hover:border-zinc-300 bg-white hover:bg-zinc-50 text-zinc-500 hover:text-zinc-700 transition-colors shadow-sm ${
                                 isRefreshingAssets ? 'opacity-70 cursor-not-allowed' : ''
                               }`}
-                              title="刷新主机列表"
+                              title={tr(locale, '刷新主机列表', 'Refresh host list', 'Làm mới danh sách máy chủ')}
                             >
                               <RotateCcw className={`w-3.5 h-3.5 ${isRefreshingAssets ? 'animate-spin' : ''}`} />
                             </button>
@@ -971,7 +983,7 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
                             {filteredAssets.length === 0 ? (
                               <div className="px-3 py-8 text-[12px] text-zinc-400 text-center flex flex-col items-center justify-center gap-2">
                                 <Monitor className="w-8 h-8 text-zinc-200 stroke-[1.5]" />
-                                <span>{assets.length === 0 ? '暂无已配置的主机' : '未找到匹配的主机'}</span>
+                                <span>{assets.length === 0 ? tr(locale, '暂无已配置的主机', 'No hosts configured', 'Chưa có máy chủ nào được cấu hình') : tr(locale, '未找到匹配的主机', 'No matching hosts', 'Không tìm thấy máy chủ phù hợp')}</span>
                               </div>
                             ) : (
                               filteredAssets.map(asset => {
@@ -1018,7 +1030,9 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
                           <div className="px-3.5 py-2.5 border-t border-zinc-100 bg-zinc-50/50 flex items-center justify-between shrink-0">
                             <div className="flex items-center gap-2">
                               <span className="text-[11px] font-medium text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded-full">
-                                {selectedAgentAssets.length > 0 ? `已选 ${selectedAgentAssets.length} 台` : '未选择目标'}
+                                {selectedAgentAssets.length > 0
+                                  ? tr(locale, `已选 ${selectedAgentAssets.length} 台`, `${selectedAgentAssets.length} selected`, `Đã chọn ${selectedAgentAssets.length}`)
+                                  : tr(locale, '未选择目标', 'No target', 'Chưa chọn đích')}
                               </span>
                               {selectedAgentAssets.length > 0 && (
                                 <button
@@ -1026,7 +1040,7 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
                                   onClick={() => setSelectedAgentAssets([])}
                                   className="text-[11px] text-zinc-400 hover:text-red-500 transition-colors"
                                 >
-                                  清空
+                                  {tr(locale, '清空', 'Clear', 'Xóa hết')}
                                 </button>
                               )}
                             </div>
@@ -1035,7 +1049,7 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
                               onClick={() => setShowContextMenu(false)}
                               className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 bg-white hover:bg-zinc-100/80 px-3 py-1 rounded-lg border border-zinc-200 shadow-sm transition-all active:scale-[0.98]"
                             >
-                              完成
+                              {tr(locale, '完成', 'Done', 'Xong')}
                             </button>
                           </div>
                         </div>
@@ -1093,9 +1107,9 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
               placeholder={
                 mode === 'cmd' 
                   ? (terminalContext?.activeSessionId
-                    ? "输入你的运维需求，系统将生成命令，经你确认后在终端中执行... (⌘+/)"
-                    : "请先在左侧打开并连接一个终端标签页，然后在此输入运维需求...")
-                  : "输入你的运维目标，系统将自动进行诊断并在后台执行安全命令..."
+                    ? tr(locale, "输入你的运维需求，系统将生成命令，经你确认后在终端中执行... (⌘+/)", "Describe your ops task; commands will be generated for your approval... (⌘+/)", "Nhập yêu cầu vận hành, hệ thống sẽ tạo lệnh để bạn xác nhận... (⌘+/)")
+                    : tr(locale, "请先在左侧打开并连接一个终端标签页，然后在此输入运维需求...", "Open and connect a terminal tab on the left first...", "Vui lòng mở và kết nối một tab Terminal ở bên trái trước..."))
+                  : tr(locale, "输入你的运维目标，系统将自动进行诊断并在后台执行安全命令...", "Describe your ops goal; safe commands will run automatically...", "Nhập mục tiêu vận hành, hệ thống sẽ tự động chẩn đoán và chạy lệnh an toàn...")
               }
               className="w-full bg-transparent border-0 resize-none px-4 py-2 text-[14px] text-zinc-800 placeholder:text-zinc-400 disabled:opacity-50 focus:outline-none focus:ring-0 min-h-[50px] max-h-[200px]"
               rows={input.split('\n').length > 1 ? Math.min(input.split('\n').length, 8) : 1}
@@ -1116,11 +1130,11 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
                             : 'text-zinc-500 hover:text-zinc-700'
                         }`}
                       >
-                        <Sparkles className="w-3 h-3"/> 自动模式
+                        <Sparkles className="w-3 h-3"/> {tr(locale, '自动模式', 'Auto', 'Tự động')}
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-[260px]">
-                      自动模式：系统在后台自主分析并自动执行安全命令，高/中危操作将暂停由您审批确认。
+                      {tr(locale, '自动模式：系统在后台自主分析并自动执行安全命令，高/中危操作将暂停由您审批确认。', 'Auto mode: runs safe commands automatically and pauses for approval on medium/high-risk actions.', 'Chế độ tự động: tự động chạy lệnh an toàn, tạm dừng xin xác nhận với thao tác rủi ro cao/trung bình.')}
                     </TooltipContent>
                   </Tooltip>
                   <Tooltip>
@@ -1134,11 +1148,11 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
                             : 'text-zinc-500 hover:text-zinc-700'
                         }`}
                       >
-                        手动模式
+                        {tr(locale, '手动模式', 'Manual', 'Thủ công')}
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-[260px]">
-                      手动模式：系统在后台分析并生成建议命令，需您手动确认后方可在终端中执行。
+                      {tr(locale, '手动模式：系统在后台分析并生成建议命令，需您手动确认后方可在终端中执行。', 'Manual mode: generates suggested commands for you to review and run.', 'Chế độ thủ công: tạo lệnh gợi ý để bạn xem xét và xác nhận thực thi.')}
                     </TooltipContent>
                   </Tooltip>
                 </div>
@@ -1160,8 +1174,8 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
               <div className="flex items-center gap-1.5">
                 <span className="hidden sm:inline text-[11px] text-zinc-400">
                   {mode === 'agent'
-                    ? `目标主机: ${targetAgentAssets.length || 0} 台`
-                    : activeAsset ? `目标主机: ${assetLabel(activeAsset)}` : '未连接主机'}
+                    ? tr(locale, `目标主机: ${targetAgentAssets.length || 0} 台`, `Target hosts: ${targetAgentAssets.length || 0}`, `Máy chủ đích: ${targetAgentAssets.length || 0}`)
+                    : activeAsset ? `${tr(locale, '目标主机', 'Target', 'Máy chủ')}: ${assetLabel(activeAsset)}` : tr(locale, '未连接主机', 'No host connected', 'Chưa kết nối máy chủ')}
                 </span>
                 <button type="button" className="text-zinc-400 hover:text-zinc-600 p-1.5 rounded-md hover:bg-zinc-50"><ImageIcon className="w-4 h-4" /></button>
                 <Button type="submit" disabled={!input?.trim() || isLoading} size="icon" className="h-8 w-8 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white shadow-sm ml-1">

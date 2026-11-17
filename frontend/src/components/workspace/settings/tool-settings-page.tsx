@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { tr } from "@/core/i18n";
 import { useI18n } from "@/core/i18n/hooks";
 import { 
   useAvailableMcpConfig, 
@@ -103,7 +104,7 @@ export function ToolSettingsPage({ readOnly = false }: { readOnly?: boolean } = 
 }
 
 function McpEditDialog({ open, onOpenChange, serverState, isTenantAdmin, readOnly = false }: McpEditDialogProps & { isTenantAdmin: boolean; readOnly?: boolean }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [state, setState] = useState(serverState);
   const { mutateAsync: pingAsync, isPending: isPinging } = usePingMCPServer();
   const { mutateAsync: createAsync, isPending: isCreating } = useCreateMCPServer();
@@ -122,7 +123,7 @@ function McpEditDialog({ open, onOpenChange, serverState, isTenantAdmin, readOnl
 
   const handleSave = async () => {
     if (readOnly) {
-      toast.error("个人设置为只读视图，请前往工作空间治理进行编辑");
+      toast.error(tr(locale, "个人设置为只读视图，请前往工作空间治理进行编辑", "Personal settings are read-only; please edit in Workspace Governance", "Cài đặt cá nhân chỉ cho phép xem, vui lòng chỉnh sửa tại Quản trị không gian làm việc"));
       return;
     }
 
@@ -142,16 +143,16 @@ function McpEditDialog({ open, onOpenChange, serverState, isTenantAdmin, readOnl
       if (serverState?.name && existingServer) {
         if (existingServer.scope === "tenant") {
           if (!isTenantAdmin) {
-            toast.error("仅工作空间管理员可编辑工作空间共享工具");
+            toast.error(tr(locale, "仅工作空间管理员可编辑工作空间共享工具", "Only workspace admins can edit workspace-shared tools", "Chỉ quản trị viên không gian làm việc mới có thể chỉnh sửa công cụ dùng chung"));
             return;
           }
           await updateTenantAsync({ name: state.name, config: normalizedConfig });
         } else {
-          toast.error("仅工作空间管理员可管理工作空间共享工具");
+          toast.error(tr(locale, "仅工作空间管理员可管理工作空间共享工具", "Only workspace admins can manage workspace-shared tools", "Chỉ quản trị viên không gian làm việc mới có thể quản lý công cụ dùng chung"));
           return;
         }
       } else {
-        toast.error("工具创建入口已禁用");
+        toast.error(tr(locale, "工具创建入口已禁用", "Tool creation is disabled", "Tính năng tạo công cụ đã bị tắt"));
         return;
       }
       toast.success("Saved successfully");
@@ -437,7 +438,7 @@ function MCPServerList({
               ) : (
                 <div className="text-xs text-muted-foreground flex items-center gap-1.5 h-8 px-2">
                   <Lock className="h-3.5 w-3.5" />
-                  只读
+                  {t.settings.tools.readOnly}
                 </div>
               )}
             </div>

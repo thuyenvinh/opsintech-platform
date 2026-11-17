@@ -7,6 +7,7 @@ import {
   OverviewSectionCard,
 } from "@/components/backoffice/overview-primitives";
 import { useAlertRules } from "@/core/alerting";
+import { tr } from "@/core/i18n";
 import { useI18n } from "@/core/i18n/hooks";
 import { useAvailableMcpConfig } from "@/core/mcp/hooks";
 import { useAvailableModels } from "@/core/models/hooks";
@@ -14,7 +15,7 @@ import { useAvailableSkills } from "@/core/skills/hooks";
 import { useCurrentTenant, useTenantMembers } from "@/core/tenants/hooks";
 
 export function TenantAdminDashboard() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { data: currentTenant } = useCurrentTenant();
   const { data: members = [] } = useTenantMembers();
   const { models = [] } = useAvailableModels();
@@ -57,9 +58,14 @@ export function TenantAdminDashboard() {
         <MetricCard icon={Boxes} label={t.tenantAdmin.dashboard.enabledSkills} value={enabledTenantSkills.length} />
         <MetricCard
           icon={ShieldAlert}
-          label="告警治理规则"
+          label={tr(locale, "告警治理规则", "Alert Governance Rules", "Quy tắc quản trị cảnh báo")}
           value={activeRules}
-          hint={`${suppressionCount} 静默 · ${aggregationCount} 聚合`}
+          hint={tr(
+            locale,
+            `${suppressionCount} 静默 · ${aggregationCount} 聚合`,
+            `${suppressionCount} suppressed · ${aggregationCount} aggregated`,
+            `${suppressionCount} tắt tiếng · ${aggregationCount} gom nhóm`
+          )}
         />
         <MetricCard icon={AlertTriangle} label={t.tenantAdmin.dashboard.riskAlerts} value={risks.length} />
       </div>

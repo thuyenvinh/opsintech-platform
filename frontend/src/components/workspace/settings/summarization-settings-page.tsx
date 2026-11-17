@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { fetchAuthApi } from "@/core/api/auth-client";
+import { tr } from "@/core/i18n";
 import { useI18n } from "@/core/i18n/hooks";
 
 import { SettingsSection } from "./settings-section";
@@ -40,7 +41,7 @@ async function updateSettings(
 }
 
 export function SummarizationSettingsPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery<SummarizationSettings>({
@@ -79,7 +80,7 @@ export function SummarizationSettingsPage() {
         description={t.settings.summarization.description}
       >
         <div className="text-destructive text-sm">
-          {error instanceof Error ? error.message : "加载失败"}
+          {error instanceof Error ? error.message : tr(locale, "加载失败", "Failed to load", "Tải thất bại")}
         </div>
       </SettingsSection>
     );
@@ -229,7 +230,7 @@ export function SummarizationSettingsPage() {
           <div className="text-destructive text-sm">
             {mutation.error instanceof Error
               ? mutation.error.message
-              : "保存失败"}
+              : tr(locale, "保存失败", "Failed to save", "Lưu thất bại")}
           </div>
         )}
       </div>

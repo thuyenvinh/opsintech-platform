@@ -1,6 +1,7 @@
 "use client";
 
 import type { IncidentDetail } from "./types";
+import { getActiveLocale, tr } from "@/core/i18n";
 
 /**
  * 精简后的 Incident 上下文，用于传递给 Terminal AI 助手。
@@ -20,9 +21,10 @@ export interface IncidentContext {
  * 从 IncidentDetail 构建精简上下文
  */
 export function buildIncidentContext(incident: IncidentDetail): IncidentContext {
+  const locale = getActiveLocale();
   return {
     incident_id: incident.id,
-    title: incident.title ?? "未命名告警",
+    title: incident.title ?? tr(locale, "未命名告警", "Untitled Incident", "Sự cố chưa đặt tên"),
     severity: incident.severity,
     service: incident.service ?? null,
     environment: incident.environment ?? null,
@@ -36,27 +38,35 @@ export function buildIncidentContext(incident: IncidentDetail): IncidentContext 
  * 定位是"排查引导"而非"修复指令"。
  */
 export function renderContextPrompt(ctx: IncidentContext): string {
+  const locale = getActiveLocale();
   const parts: string[] = [];
 
-  parts.push(`[告警上下文]`);
-  parts.push(`告警：${ctx.title}`);
-  parts.push(`级别：${ctx.severity}`);
+  parts.push(tr(locale, "[告警上下文]", "[Incident Context]", "[Ngữ cảnh sự cố]"));
+  parts.push(tr(locale, `告警：${ctx.title}`, `Incident: ${ctx.title}`, `Sự cố: ${ctx.title}`));
+  parts.push(tr(locale, `级别：${ctx.severity}`, `Severity: ${ctx.severity}`, `Mức độ: ${ctx.severity}`));
   
   if (ctx.service) {
-    const envStr = ctx.environment ? ` | 环境：${ctx.environment}` : "";
-    parts.push(`服务：${ctx.service}${envStr}`);
+    const envStr = ctx.environment
+      ? tr(locale, ` | 环境：${ctx.environment}`, ` | Environment: ${ctx.environment}`, ` | Môi trường: ${ctx.environment}`)
+      : "";
+    parts.push(tr(locale, `服务：${ctx.service}${envStr}`, `Service: ${ctx.service}${envStr}`, `Dịch vụ: ${ctx.service}${envStr}`));
   }
 
   if (ctx.ai_summary_truncated) {
-    parts.push(`AI摘要：${ctx.ai_summary_truncated}`);
+    parts.push(tr(locale, `AI摘要：${ctx.ai_summary_truncated}`, `AI Summary: ${ctx.ai_summary_truncated}`, `Tóm tắt AI: ${ctx.ai_summary_truncated}`));
   }
 
   if (ctx.ai_suggestion) {
-    parts.push(`排查方向：${ctx.ai_suggestion}`);
+    parts.push(tr(locale, `排查方向：${ctx.ai_suggestion}`, `Suggestion: ${ctx.ai_suggestion}`, `Hướng kiểm tra: ${ctx.ai_suggestion}`));
   }
 
   parts.push("");
-  parts.push("请根据以上告警信息，帮我逐步排查此问题。先从确认服务基本状态开始。");
+  parts.push(tr(
+    locale,
+    "请根据以上告警信息，帮我逐步排查此问题。先从确认服务基本状态开始。",
+    "Please help me troubleshoot this incident step by step based on the context above. Start by checking the basic service status.",
+    "Vui lòng giúp tôi kiểm tra từng bước sự cố này dựa trên thông tin trên. Hãy bắt đầu bằng việc kiểm tra trạng thái cơ bản của dịch vụ.",
+  ));
 
   return parts.join("\n");
 }

@@ -3,6 +3,8 @@ import { useState } from "react";
 
 
 import { CodeBlock } from "@/components/ai-elements/code-block";
+import { tr } from "@/core/i18n";
+import { useI18n } from "@/core/i18n/hooks";
 
 interface DiagnosisToolArgsProps {
   toolName: string;
@@ -10,6 +12,7 @@ interface DiagnosisToolArgsProps {
 }
 
 export function DiagnosisToolArgs({ toolName, args }: DiagnosisToolArgsProps) {
+  const { locale } = useI18n();
   const [expanded, setExpanded] = useState(false);
 
   if (!args || Object.keys(args).length === 0) {
@@ -21,14 +24,14 @@ export function DiagnosisToolArgs({ toolName, args }: DiagnosisToolArgsProps) {
     if (toolName === "bash" && typeof args.command === "string") {
       return (
         <span className="font-mono text-zinc-600 dark:text-zinc-300 truncate block text-[10px]">
-          命令: <code className="bg-zinc-100 dark:bg-zinc-900 px-1 py-0.5 rounded text-indigo-600 dark:text-indigo-400 font-semibold">{args.command}</code>
+          {tr(locale, "命令", "Command", "Lệnh")}: <code className="bg-zinc-100 dark:bg-zinc-900 px-1 py-0.5 rounded text-indigo-600 dark:text-indigo-400 font-semibold">{args.command}</code>
         </span>
       );
     }
     if ((toolName === "read_file" || toolName === "write_file") && typeof args.path === "string") {
       return (
         <span className="font-mono text-zinc-600 dark:text-zinc-300 truncate block text-[10px]">
-          路径: <code className="bg-zinc-100 dark:bg-zinc-900 px-1 py-0.5 rounded text-indigo-600 dark:text-indigo-400 font-semibold">{args.path}</code>
+          {tr(locale, "路径", "Path", "Đường dẫn")}: <code className="bg-zinc-100 dark:bg-zinc-900 px-1 py-0.5 rounded text-indigo-600 dark:text-indigo-400 font-semibold">{args.path}</code>
         </span>
       );
     }
@@ -47,7 +50,7 @@ export function DiagnosisToolArgs({ toolName, args }: DiagnosisToolArgsProps) {
 
     return (
       <span className="text-zinc-500 dark:text-zinc-400 truncate block font-mono text-[10px]">
-        参数: {summaryText || "{}"}
+        {tr(locale, "参数", "Args", "Tham số")}: {summaryText || "{}"}
       </span>
     );
   };

@@ -5,6 +5,7 @@
  * Reads current todos and returns formatted output with focus chain state.
  */
 
+import { getActiveLocale, tr } from '@/core/i18n';
 import { TodoWriteTool, type TodoItem } from './todo-write-tool';
 
 // In-memory todo store — keyed by taskId.
@@ -17,14 +18,25 @@ export class TodoReadTool {
    */
   execute(_params: {}, taskId: string): string {
     const todos = todoStore.get(taskId) || [];
+    const locale = getActiveLocale();
 
     if (todos.length === 0) {
-      return '当前没有待办任务。如果需要管理复杂任务，可以使用 todo_write 创建一个任务清单。';
+      return tr(
+        locale,
+        '当前没有待办任务。如果需要管理复杂任务，可以使用 todo_write 创建一个任务清单。',
+        'No todo tasks currently. To manage complex tasks, use todo_write to create a task list.',
+        'Hiện không có công việc cần làm nào. Để quản lý các tác vụ phức tạp, hãy dùng todo_write để tạo danh sách công việc.',
+      );
     }
 
     if (todos.length < 3) {
       const list = todos.map((t) => `- ${t.status === 'in_progress' ? '🔄' : t.status === 'completed' ? '✅' : '📋'} ${t.content}`).join('\n');
-      return `当前仅有 ${todos.length} 个任务，不构成复杂任务清单。请直接执行。\n${list}`;
+      return tr(
+        locale,
+        `当前仅有 ${todos.length} 个任务，不构成复杂任务清单。请直接执行。\n${list}`,
+        `Only ${todos.length} task(s) currently, which does not form a complex task list. Please execute directly.\n${list}`,
+        `Hiện chỉ có ${todos.length} công việc, chưa thành danh sách phức tạp. Vui lòng thực hiện trực tiếp.\n${list}`,
+      );
     }
 
     const writeTool = new TodoWriteTool();

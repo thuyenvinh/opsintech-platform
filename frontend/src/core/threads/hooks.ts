@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import type { PromptInputMessage } from "@/components/ai-elements/prompt-input";
 import { getSession } from "@/core/auth/auth-api";
+import { getActiveLocale, tr } from "@/core/i18n";
 import { getCurrentTenantId } from "@/core/tenants/store";
 
 import { getAPIClient } from "../api";
@@ -163,41 +164,42 @@ function getStreamErrorMessage(error: unknown): string {
   })();
 
   const lowerMessage = rawMessage.toLowerCase();
+  const locale = getActiveLocale();
 
   if (isRateLimitLikeError(error)) {
-    return "模型请求已限速，请稍后重试。";
+    return tr(locale, "模型请求已限速，请稍后重试。", "Model request rate limited. Please try again later.", "Yêu cầu tới mô hình bị giới hạn tần suất. Vui lòng thử lại sau.");
   }
 
   if (lowerMessage.includes("authentication") || lowerMessage.includes("invalid api key") || lowerMessage.includes("unauthorized")) {
-    return "模型认证失败，请检查 API 密钥配置。";
+    return tr(locale, "模型认证失败，请检查 API 密钥配置。", "Model authentication failed. Please check your API key configuration.", "Xác thực mô hình thất bại. Vui lòng kiểm tra cấu hình API key.");
   }
 
   if (lowerMessage.includes("context_length") || lowerMessage.includes("max context") || lowerMessage.includes("token limit")) {
-    return "输入内容过长，超出模型上下文限制，请缩短输入后重试。";
+    return tr(locale, "输入内容过长，超出模型上下文限制，请缩短输入后重试。", "Input content is too long and exceeds the model context limit. Please shorten your input and try again.", "Nội dung đầu vào quá dài, vượt quá giới hạn ngữ cảnh của mô hình. Vui lòng rút gọn và thử lại.");
   }
 
   if (lowerMessage.includes("null") && lowerMessage.includes("choices")) {
-    return "模型返回了无效响应，请重试。";
+    return tr(locale, "模型返回了无效响应，请重试。", "The model returned an invalid response. Please try again.", "Mô hình trả về phản hồi không hợp lệ. Vui lòng thử lại.");
   }
 
   if (lowerMessage.includes("no model") && lowerMessage.includes("specified")) {
-    return "未选择模型，请先选择一个可用的模型。";
+    return tr(locale, "未选择模型，请先选择一个可用的模型。", "No model selected. Please select an available model first.", "Chưa chọn mô hình. Vui lòng chọn một mô hình khả dụng trước.");
   }
 
   if (lowerMessage.includes("model") && (lowerMessage.includes("not found") || lowerMessage.includes("not available") || lowerMessage.includes("does not exist"))) {
-    return "请求的模型不可用，请选择其他模型。";
+    return tr(locale, "请求的模型不可用，请选择其他模型。", "The requested model is unavailable. Please select a different model.", "Mô hình được yêu cầu hiện không khả dụng. Vui lòng chọn mô hình khác.");
   }
 
   if (lowerMessage.includes("connection") || lowerMessage.includes("timeout") || lowerMessage.includes("econnrefused")) {
-    return "无法连接到模型服务，请检查网络或稍后重试。";
+    return tr(locale, "无法连接到模型服务，请检查网络或稍后重试。", "Unable to connect to the model service. Please check your network or try again later.", "Không thể kết nối đến dịch vụ mô hình. Vui lòng kiểm tra mạng hoặc thử lại sau.");
   }
 
   if (lowerMessage.includes("insufficient_quota") || lowerMessage.includes("billing")) {
-    return "模型配额不足，请联系管理员。";
+    return tr(locale, "模型配额不足，请联系管理员。", "Model quota exceeded. Please contact the administrator.", "Đã vượt quá hạn mức sử dụng mô hình. Vui lòng liên hệ quản trị viên.");
   }
 
   if (lowerMessage.includes("internal error") || lowerMessage.includes("an internal error occurred")) {
-    return "服务暂时不可用，请稍后重试。如果问题持续，请联系管理员。";
+    return tr(locale, "服务暂时不可用，请稍后重试。如果问题持续，请联系管理员。", "Service temporarily unavailable. Please try again later.", "Dịch vụ tạm thời không khả dụng. Vui lòng thử lại sau hoặc liên hệ quản trị viên.");
   }
 
   if (typeof error === "string" && error.trim()) {
@@ -219,7 +221,7 @@ function getStreamErrorMessage(error: unknown): string {
       return nestedError;
     }
   }
-  return "请求失败，请稍后重试。";
+  return tr(locale, "请求失败，请稍后重试。", "Request failed. Please try again later.", "Yêu cầu thất bại. Vui lòng thử lại sau.");
 }
 
 export function useThreadStream({

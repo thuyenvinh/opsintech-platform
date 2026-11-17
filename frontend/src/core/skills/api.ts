@@ -1,4 +1,5 @@
 import { getAuthHeaders } from "@/core/api/auth-client";
+import { getActiveLocale, tr } from "@/core/i18n";
 import { getBackendBaseURL } from "@/core/config";
 
 import type { Skill, AvailableSkillResponse, SummarizeDiagnosisRequest, SummarizeDiagnosisResponse } from "./type";
@@ -227,7 +228,14 @@ export async function importPersonalSkill(file: File) {
 
   if (!response.ok) {
     if (response.status === 413) {
-      throw new Error("技能包过大（超过网关限制），请压缩后重试或联系管理员提升上传上限");
+      throw new Error(
+        tr(
+          getActiveLocale(),
+          "技能包过大（超过网关限制），请压缩后重试或联系管理员提升上传上限",
+          "Skill package is too large (exceeds gateway limit). Please compress and retry or contact admin.",
+          "Gói kỹ năng quá lớn (vượt giới hạn gateway). Vui lòng nén lại và thử lại hoặc liên hệ quản trị viên."
+        )
+      );
     }
     const payload = await response.json().catch(() => ({}));
     throw new Error(payload.detail ?? `Failed to import personal skill: ${response.status}`);
@@ -248,7 +256,14 @@ export async function importTenantSkill(file: File) {
 
   if (!response.ok) {
     if (response.status === 413) {
-      throw new Error("技能包过大（超过网关限制），请压缩后重试或联系管理员提升上传上限");
+      throw new Error(
+        tr(
+          getActiveLocale(),
+          "技能包过大（超过网关限制），请压缩后重试或联系管理员提升上传上限",
+          "Skill package is too large (exceeds gateway limit). Please compress and retry or contact admin.",
+          "Gói kỹ năng quá lớn (vượt giới hạn gateway). Vui lòng nén lại và thử lại hoặc liên hệ quản trị viên."
+        )
+      );
     }
     const payload = await response.json().catch(() => ({}));
     throw new Error(payload.detail ?? `Failed to import tenant skill: ${response.status}`);

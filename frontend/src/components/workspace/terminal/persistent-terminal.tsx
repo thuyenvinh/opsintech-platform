@@ -22,6 +22,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { decodeContextFromURL, type IncidentContext } from '@/core/alerting/incident-context';
+import { tr } from '@/core/i18n';
+import { useI18n } from '@/core/i18n/hooks';
 import { toast } from 'sonner';
 
 /**
@@ -48,6 +50,7 @@ function tryMatchAsset(ctx: IncidentContext, assets: any[]): any | null {
 }
 
 export function PersistentTerminal() {
+  const { locale } = useI18n();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -121,7 +124,12 @@ export function PersistentTerminal() {
       handleSelectAsset(matched);
     } else if (assets.length === 0) {
       // No hosts registered at all — guide user to add one
-      toast.warning('当前没有已注册的主机，请先在左侧主机管理中添加目标主机和 SSH 凭证。');
+      toast.warning(tr(
+        locale,
+        '当前没有已注册的主机，请先在左侧主机管理中添加目标主机和 SSH 凭证。',
+        'No registered hosts found. Please add a target host and SSH credentials in the left sidebar.',
+        'Chưa có máy chủ nào được đăng ký. Vui lòng thêm máy chủ và thông tin SSH ở thanh bên trái.',
+      ));
     }
     // If assets exist but no match, user can manually pick from sidebar
 
@@ -229,7 +237,7 @@ export function PersistentTerminal() {
                 <button
                   onClick={handleToggleSidebar}
                   className="flex items-center justify-center h-8 w-8 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-200/50 rounded-lg mb-1 mr-1 shrink-0 transition-colors"
-                  title="展开主机管理"
+                  title={tr(locale, '展开主机管理', 'Expand host sidebar', 'Mở rộng danh sách máy chủ')}
                 >
                   <PanelLeftOpenIcon className="w-4 h-4" />
                 </button>
@@ -274,20 +282,20 @@ export function PersistentTerminal() {
                 <DropdownMenuTrigger asChild>
                   <button 
                     className="flex items-center justify-center w-7 h-7 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-200/50 rounded-md transition-colors"
-                    title="切换终端主题"
+                    title={tr(locale, '切换终端主题', 'Switch terminal theme', 'Đổi giao diện Terminal')}
                   >
                     <Palette className="w-3.5 h-3.5" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-32">
                   <DropdownMenuItem onClick={() => handleThemeChange('light')}>
-                    <span className={terminalTheme === 'light' ? 'font-medium' : ''}>亮色 (Light)</span>
+                    <span className={terminalTheme === 'light' ? 'font-medium' : ''}>{tr(locale, '亮色 (Light)', 'Light', 'Sáng (Light)')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleThemeChange('dark')}>
-                    <span className={terminalTheme === 'dark' ? 'font-medium' : ''}>暗色 (Dark)</span>
+                    <span className={terminalTheme === 'dark' ? 'font-medium' : ''}>{tr(locale, '暗色 (Dark)', 'Dark', 'Tối (Dark)')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleThemeChange('hacker')}>
-                    <span className={terminalTheme === 'hacker' ? 'text-emerald-500 font-medium' : ''}>骇客 (Hacker)</span>
+                    <span className={terminalTheme === 'hacker' ? 'text-emerald-500 font-medium' : ''}>{tr(locale, '骇客 (Hacker)', 'Hacker', 'Hacker')}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -299,7 +307,7 @@ export function PersistentTerminal() {
                 }`}
               >
                 <Bot className="w-3.5 h-3.5" />
-                {isAgentOpen ? '收起助手' : 'AI 助手'}
+                {isAgentOpen ? tr(locale, '收起助手', 'Hide Assistant', 'Thu gọn trợ lý') : tr(locale, 'AI 助手', 'AI Assistant', 'Trợ lý AI')}
               </button>
             </div>
           </div>
@@ -327,8 +335,8 @@ export function PersistentTerminal() {
                 <div className="w-16 h-16 rounded-full bg-zinc-50 border border-zinc-100 flex items-center justify-center mb-4 shadow-sm">
                   <Monitor className="w-8 h-8 text-zinc-300" />
                 </div>
-                <p className="text-sm font-medium text-zinc-500">未选择主机</p>
-                <p className="text-xs mt-1">请在左侧侧边栏选择一台主机以建立 SSH 连接</p>
+                <p className="text-sm font-medium text-zinc-500">{tr(locale, '未选择主机', 'No host selected', 'Chưa chọn máy chủ')}</p>
+                <p className="text-xs mt-1">{tr(locale, '请在左侧侧边栏选择一台主机以建立 SSH 连接', 'Select a host from the left sidebar to open an SSH session', 'Vui lòng chọn một máy chủ ở thanh bên trái để kết nối SSH')}</p>
               </div>
             )}
           </div>

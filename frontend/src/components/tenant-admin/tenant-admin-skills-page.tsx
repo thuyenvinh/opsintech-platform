@@ -503,7 +503,7 @@ function SkillSection({
               <th className="w-[20%] px-4 py-3 font-medium">{t.tenantAdmin.skills.toolsLabel}</th>
               <th className="w-[15%] px-4 py-3 font-medium">{t.tenantAdmin.skills.strategyLabel}</th>
               <th className="w-[10%] px-4 py-3 font-medium">{t.tenantAdmin.skills.statusAll}</th>
-              {hasOperations && <th className="w-[10%] px-4 py-3 text-right font-medium">操作</th>}
+              {hasOperations && <th className="w-[10%] px-4 py-3 text-right font-medium">{t.tenantAdmin.agents.columns.actions}</th>}
             </tr>
           </thead>
           <tbody className="divide-y">

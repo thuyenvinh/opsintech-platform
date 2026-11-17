@@ -4,6 +4,7 @@
  * Ported from Chaterm's src/main/agent/services/todo_reminder_service.ts
  */
 
+import { getActiveLocale, tr } from '@/core/i18n';
 import type { TodoItem } from './todo-write-tool';
 
 export interface TodoChange {
@@ -28,7 +29,12 @@ export class TodoReminderService {
       changes.push({
         type: 'list_created',
         todoId: 'all',
-        todoContent: `创建了包含 ${newTodos.length} 个任务的任务清单`,
+        todoContent: tr(
+          getActiveLocale(),
+          `创建了包含 ${newTodos.length} 个任务的任务清单`,
+          `Created a todo list with ${newTodos.length} task(s)`,
+          `Đã tạo danh sách gồm ${newTodos.length} công việc`,
+        ),
       });
       this.updateSnapshot(newTodos);
       return changes;
@@ -38,7 +44,12 @@ export class TodoReminderService {
       changes.push({
         type: 'list_cleared',
         todoId: 'all',
-        todoContent: '任务清单已清空',
+        todoContent: tr(
+          getActiveLocale(),
+          '任务清单已清空',
+          'Todo list cleared',
+          'Đã xóa sạch danh sách công việc',
+        ),
       });
       this.updateSnapshot(newTodos);
       return changes;
@@ -97,15 +108,16 @@ export class TodoReminderService {
     const newItems = changes.filter((c) => c.type === 'added' || c.type === 'list_created');
 
     const parts: string[] = [];
+    const locale = getActiveLocale();
 
     if (completedItems.length > 0) {
       const names = completedItems.map((c) => c.todoContent).join(', ');
-      parts.push(`✅ 已完成: ${names}`);
+      parts.push(`✅ ${tr(locale, '已完成', 'Completed', 'Đã hoàn thành')}: ${names}`);
     }
 
     if (newItems.length > 0) {
       const names = newItems.map((c) => c.todoContent).join(', ');
-      parts.push(`📋 新增任务: ${names}`);
+      parts.push(`📋 ${tr(locale, '新增任务', 'Added', 'Công việc mới')}: ${names}`);
     }
 
     return parts.join('\n');

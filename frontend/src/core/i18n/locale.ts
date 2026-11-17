@@ -46,3 +46,25 @@ export function detectLocale(): Locale {
 
   return normalizeLocale(browserLang);
 }
+
+export function getActiveLocale(): Locale {
+  if (typeof document !== "undefined") {
+    const match = document.cookie.match(/(?:^|;\s*)locale=([^;]*)/);
+    if (match?.[1]) {
+      return normalizeLocale(decodeURIComponent(match[1]));
+    }
+    return detectLocale();
+  }
+  return DEFAULT_LOCALE;
+}
+
+export function tr(
+  locale: Locale | string | null | undefined,
+  zh: string,
+  en: string,
+  vi: string,
+): string {
+  if (locale === "vi") return vi;
+  if (locale?.toLowerCase().startsWith("zh")) return zh;
+  return en;
+}

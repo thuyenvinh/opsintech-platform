@@ -28,9 +28,12 @@ import {
   createPersonalSkill,
   generateInstructions,
 } from "@/core/skills/api";
+import { tr } from "@/core/i18n";
+import { useI18n } from "@/core/i18n/hooks";
 import type { SkillDetail } from "@/core/skills/type";
 
 export default function SkillDetailPage() {
+  const { t, locale } = useI18n();
   const params = useParams();
   const router = useRouter();
   const skillName = params.name as string;
@@ -74,7 +77,7 @@ export default function SkillDetailPage() {
     modelName: selectedModel,
     skillInstructions: instructions,
     onExecuteCommand: async () => {
-      toast.error("Sandbox 环境不支持手动执行终端命令");
+      toast.error(tr(locale, "Sandbox 环境不支持手动执行终端命令", "Sandbox does not support manual terminal commands", "Môi trường Sandbox không hỗ trợ chạy lệnh terminal thủ công"));
       return "";
     },
   });
@@ -109,7 +112,7 @@ export default function SkillDetailPage() {
         setBoundToolsText((data.bound_tools || []).join(", "));
         setStrategy(data.strategy || "default");
       })
-      .catch(() => toast.error("加载 Skill 详情失败"))
+      .catch(() => toast.error(tr(locale, "加载 Skill 详情失败", "Failed to load skill detail", "Tải chi tiết kỹ năng thất bại")))
       .finally(() => setLoading(false));
   }, [skillName, isNew]);
 
@@ -117,17 +120,17 @@ export default function SkillDetailPage() {
     if (!skill) return;
     if (isNew) {
       if (!newName.trim()) {
-        toast.error("请输入 Skill 英文名称");
+        toast.error(t.tenantAdmin.skills.nameRequired);
         return;
       }
       if (!/^[a-z0-9_]+$/.test(newName)) {
-        toast.error("名称只能包含小写字母、数字和下划线");
+        toast.error(tr(locale, "名称只能包含小写字母、数字和下划线", "Name can only contain lowercase letters, digits, and underscores", "Tên chỉ được chứa chữ thường, số và dấu gạch dưới"));
         return;
       }
     }
 
     if (!description.trim()) {
-      toast.error("请输入简短描述");
+      toast.error(t.tenantAdmin.skills.descriptionRequired);
       return;
     }
 
@@ -142,7 +145,7 @@ export default function SkillDetailPage() {
           bound_tools: boundToolsText.split(",").map((t) => t.trim()).filter(Boolean),
           strategy: strategy || null,
         });
-        toast.success("创建成功");
+        toast.success(t.tenantAdmin.skills.createSuccess);
         setDirty(false);
         router.push("/workspace/skills");
         return;
@@ -165,10 +168,10 @@ export default function SkillDetailPage() {
       }
 
       setDirty(false);
-      toast.success("保存成功");
+      toast.success(t.tenantAdmin.skills.updateSuccess);
       router.push("/workspace/skills");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "保存失败");
+      toast.error(err instanceof Error ? err.message : tr(locale, "保存失败", "Failed to save", "Lưu thất bại"));
     } finally {
       setSaving(false);
     }
@@ -176,7 +179,7 @@ export default function SkillDetailPage() {
 
   const handleAIGenerate = async () => {
     if (!genPrompt.trim()) {
-      toast.error("请输入你想让 Skill 做什么");
+      toast.error(tr(locale, "请输入你想让 Skill 做什么", "Please describe what you want this skill to do", "Vui lòng mô tả điều bạn muốn kỹ năng này thực hiện"));
       return;
     }
     setAiLoading(true);
@@ -184,9 +187,9 @@ export default function SkillDetailPage() {
       const result = await generateInstructions(genPrompt.trim(), selectedModel);
       setInstructions(result.instructions);
       setDirty(true);
-      toast.success("AI 已生成 Instructions，请检查并调整");
+      toast.success(tr(locale, "AI 已生成 Instructions，请检查并调整", "AI generated instructions; please review and adjust", "AI đã tạo hướng dẫn, vui lòng kiểm tra và điều chỉnh"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "生成失败");
+      toast.error(err instanceof Error ? err.message : tr(locale, "生成失败", "Generation failed", "Tạo thất bại"));
     } finally {
       setAiLoading(false);
     }
@@ -209,7 +212,7 @@ export default function SkillDetailPage() {
   if (!skill) {
     return (
       <div className="flex size-full items-center justify-center text-muted-foreground">
-        Skill 未找到
+        {tr(locale, "Skill 未找到", "Skill not found", "Không tìm thấy kỹ năng")}
       </div>
     );
   }
@@ -232,7 +235,7 @@ export default function SkillDetailPage() {
           </Button>
           <div>
             {isNew ? (
-              <h1 className="text-xl font-semibold">新建 Skill</h1>
+              <h1 className="text-xl font-semibold">{t.tenantAdmin.skills.createTitle}</h1>
             ) : (
               <>
                 <h1 className="text-xl font-semibold">{skill.name}</h1>
@@ -247,7 +250,7 @@ export default function SkillDetailPage() {
                     <span>{skill.category}</span>
                   )}
                   {skill.usage_count !== undefined && skill.usage_count > 0 && (
-                    <span>· 使用 {skill.usage_count} 次</span>
+                    <span>· {tr(locale, `使用 ${skill.usage_count} 次`, `Used ${skill.usage_count} times`, `Đã dùng ${skill.usage_count} lần`)}</span>
                   )}
                 </div>
               </>
@@ -261,7 +264,7 @@ export default function SkillDetailPage() {
             disabled={aiLoading || testLoading}
           >
             <SelectTrigger className="w-[180px] h-9">
-              <SelectValue placeholder="选择模型" />
+              <SelectValue placeholder={t.inputBox.selectModel} />
             </SelectTrigger>
             <SelectContent>
               {availableModels?.map((model) => (
@@ -280,7 +283,7 @@ export default function SkillDetailPage() {
             disabled={!canEdit || saving}
           >
             <Save className="mr-2 h-4 w-4" />
-            {saving ? "保存中..." : "保存"}
+            {saving ? t.tenantAdmin.skills.saving : t.tenantAdmin.skills.save}
           </Button>
         </div>
       </div>
@@ -291,9 +294,9 @@ export default function SkillDetailPage() {
         <div className="flex w-3/5 flex-col bg-card rounded-xl border shadow-sm overflow-hidden">
           {/* Header for Left Panel */}
           <div className="flex items-center gap-2 border-b px-4 py-3 bg-muted/30">
-            <span className="text-sm font-medium">配置说明</span>
+            <span className="text-sm font-medium">{tr(locale, "配置说明", "Configuration", "Cấu hình")}</span>
             <span className="text-[10px] text-muted-foreground ml-auto">
-              编写 Skill 的核心逻辑和执行步骤
+              {tr(locale, "编写 Skill 的核心逻辑和执行步骤", "Write core logic and execution steps for this skill", "Viết logic cốt lõi và các bước thực thi cho kỹ năng")}
             </span>
           </div>
 
@@ -301,27 +304,29 @@ export default function SkillDetailPage() {
             {/* Name (New Mode) */}
             {isNew && (
               <div>
-                <label className="text-sm font-medium">名称<span className="text-red-500 ml-1">*</span></label>
+                <label className="text-sm font-medium">{t.tenantAdmin.skills.nameLabel}<span className="text-red-500 ml-1">*</span></label>
                 <Input
                   value={newName}
                   onChange={e => { setNewName(e.target.value); setDirty(true); }}
-                  placeholder="输入小写英文名称"
+                  placeholder={tr(locale, "输入小写英文名称", "Enter lowercase English name", "Nhập tên tiếng Anh viết thường")}
                   className="mt-1.5 font-semibold text-sm"
                 />
-                <span className="text-[10px] text-muted-foreground mt-1 block">仅限小写字母、数字、下划线</span>
+                <span className="text-[10px] text-muted-foreground mt-1 block">
+                  {tr(locale, "仅限小写字母、数字、下划线", "Lowercase letters, digits, underscores only", "Chỉ cho phép chữ thường, số và dấu gạch dưới")}
+                </span>
               </div>
             )}
 
             {/* Description */}
             <div>
-              <label className="text-sm font-medium">描述<span className="text-red-500 ml-1">*</span></label>
+              <label className="text-sm font-medium">{t.tenantAdmin.skills.descriptionLabel}<span className="text-red-500 ml-1">*</span></label>
               <Input
                 value={description}
                 onChange={(e) => {
                   setDescription(e.target.value);
                   setDirty(true);
                 }}
-                placeholder="简短描述这个 Skill 做什么"
+                placeholder={t.tenantAdmin.skills.descriptionPlaceholder}
                 disabled={!canEdit}
                 className="mt-1.5"
               />
@@ -330,9 +335,9 @@ export default function SkillDetailPage() {
           {/* Instructions Section */}
           <div className="flex-1 flex flex-col min-h-0 gap-3">
             <label className="text-sm font-medium flex items-center justify-between">
-              <span>Instructions<span className="text-red-500 ml-1">*</span></span>
+              <span>{t.tenantAdmin.skills.instructionsLabel}<span className="text-red-500 ml-1">*</span></span>
               {dirty && (
-                <span className="text-[10px] text-amber-600">未保存</span>
+                <span className="text-[10px] text-amber-600">{tr(locale, "未保存", "Unsaved", "Chưa lưu")}</span>
               )}
             </label>
 
@@ -340,16 +345,16 @@ export default function SkillDetailPage() {
             <div className="rounded-lg border bg-card p-4 shrink-0">
               <div className="flex items-center gap-2 text-sm font-medium mb-2">
                 <Sparkles className="h-4 w-4 text-primary" />
-                AI 自动生成
+                {t.tenantAdmin.skills.aiGenerate}
               </div>
               <p className="text-xs text-muted-foreground mb-3">
-                描述你想让 Agent 掌握什么能力，AI 会自动为你生成结构化的执行流与规则
+                {tr(locale, "描述你想让 Agent 掌握什么能力，AI 会自动为你生成结构化的执行流与规则", "Describe what you want the agent to do and AI will generate structured instructions.", "Mô tả năng lực bạn muốn trợ lý thực hiện, AI sẽ tự động tạo luồng thực thi và quy tắc.")}
               </p>
               <div className="flex gap-2">
                 <Input
                   value={genPrompt}
                   onChange={(e) => setGenPrompt(e.target.value)}
-                  placeholder='例如："帮我总结每周的研发工作周报" 或 "分析代码库并提供审查意见"'
+                  placeholder={t.tenantAdmin.skills.aiGeneratePlaceholder}
                   className="flex-1"
                   disabled={!canEdit}
                 />
@@ -361,7 +366,7 @@ export default function SkillDetailPage() {
                   {aiLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    "生成"
+                    tr(locale, "生成", "Generate", "Tạo")
                   )}
                 </Button>
               </div>
@@ -374,7 +379,7 @@ export default function SkillDetailPage() {
                 setInstructions(e.target.value);
                 setDirty(true);
               }}
-              placeholder={`## 目标\n\n### 第一阶段：准备工作\n1. 执行 ...\n2. 检查 ...\n\n### 第二阶段：核心执行\n1. ...\n`}
+              placeholder={t.tenantAdmin.skills.instructionsPlaceholder}
               className="flex-1 min-h-[300px] font-mono text-sm"
               disabled={!canEdit}
             />
@@ -386,9 +391,9 @@ export default function SkillDetailPage() {
         <div className="flex w-2/5 flex-col bg-card rounded-xl border shadow-sm overflow-hidden">
           <div className="flex items-center gap-2 border-b px-4 py-3 bg-muted/30">
             <Bot className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium">测试沙盒</span>
+            <span className="text-sm font-medium">{t.tenantAdmin.skills.testChat}</span>
             <span className="text-[10px] text-muted-foreground ml-auto">
-              使用当前配置的指令进行排练
+              {t.tenantAdmin.skills.testChatHint}
             </span>
           </div>
 
@@ -396,7 +401,7 @@ export default function SkillDetailPage() {
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.length === 0 && (
               <div className="text-center text-sm text-muted-foreground mt-10">
-                发送问题，例如：“帮我排查一下 192.168.1.1 上的 Pod 状态”
+                {t.tenantAdmin.skills.testChatHint}
               </div>
             )}
             {messages.map((msg, idx) => {
@@ -445,7 +450,7 @@ export default function SkillDetailPage() {
               <div className="flex justify-start">
                 <div className="max-w-[80%] flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Agent 思考中...
+                  {t.messageList.streamingThinking}
                 </div>
               </div>
             )}
@@ -456,11 +461,11 @@ export default function SkillDetailPage() {
               <Input
                 value={testInput}
                 onChange={(e) => handleInputChange(e as any)}
-                placeholder='输入测试告警，例如："K8s Pod CPU 高"'
+                placeholder={t.tenantAdmin.skills.testChatPlaceholder}
                 className="flex-1"
               />
               <Button type="submit" disabled={testLoading || !testInput.trim()}>
-                发送
+                {tr(locale, "发送", "Send", "Gửi")}
               </Button>
             </form>
           </div>

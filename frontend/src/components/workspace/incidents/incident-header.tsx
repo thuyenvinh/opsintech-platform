@@ -20,6 +20,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDate, getSeverityBadgeStyles } from "@/core/alerting";
 import type { IncidentDetail } from "@/core/alerting/types";
+import { tr } from "@/core/i18n";
+import { useI18n } from "@/core/i18n/hooks";
 
 interface IncidentHeaderProps {
   incident: IncidentDetail;
@@ -58,6 +60,7 @@ export function IncidentHeader({
   creatingTicket,
   currentThreadId,
 }: IncidentHeaderProps) {
+  const { locale } = useI18n();
   return (
     <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-background p-6 shadow-sm dark:border-zinc-800/80">
       <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
@@ -81,17 +84,17 @@ export function IncidentHeader({
             {incident.status === "firing" ? (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-medium text-rose-700 dark:bg-rose-950/20 dark:text-rose-400">
                 <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
-                发生中
+                {tr(locale, "发生中", "Firing", "Đang xảy ra")}
               </span>
             ) : incident.status === "resolved" ? (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400">
                 <CheckCircle2Icon className="h-3.5 w-3.5" />
-                已恢复
+                {tr(locale, "已恢复", "Resolved", "Đã khôi phục")}
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
                 <VolumeXIcon className="h-3.5 w-3.5" />
-                已静默
+                {tr(locale, "已静默", "Suppressed", "Đã tắt tiếng")}
               </span>
             )}
 
@@ -110,32 +113,32 @@ export function IncidentHeader({
                 className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-medium text-sky-700 hover:text-sky-800 dark:bg-sky-950/20 dark:text-sky-400 dark:hover:text-sky-300 transition-colors"
               >
                 <TicketIcon className="h-3 w-3" />
-                工单: {incident.ticket_id}
+                {tr(locale, "工单", "Ticket", "Phiếu")}: {incident.ticket_id}
                 <ExternalLinkIcon className="h-3 w-3" />
               </a>
             )}
           </div>
 
           <h2 className="mt-3 text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50 leading-snug">
-            {incident.title ?? "未命名告警事件"}
+            {incident.title ?? tr(locale, "未命名告警事件", "Untitled Incident", "Sự cố chưa đặt tên")}
           </h2>
 
           <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
             {incident.service && (
               <span className="flex items-center gap-1.5">
                 <TagIcon className="h-3.5 w-3.5" />
-                服务: <span className="font-semibold text-zinc-700 dark:text-zinc-300">{incident.service}</span>
+                {tr(locale, "服务", "Service", "Dịch vụ")}: <span className="font-semibold text-zinc-700 dark:text-zinc-300">{incident.service}</span>
               </span>
             )}
 
             <span className="flex items-center gap-1.5">
               <ClockIcon className="h-3.5 w-3.5" />
-              首次检测: {formatDate(incident.first_seen_at, true)}
+              {tr(locale, "首次检测", "First seen", "Phát hiện lần đầu")}: {formatDate(incident.first_seen_at, true)}
             </span>
 
             <span className="flex items-center gap-1.5">
               <ClockIcon className="h-3.5 w-3.5" />
-              最近发生: {formatDate(incident.last_seen_at, true)}
+              {tr(locale, "最近发生", "Last seen", "Gần nhất")}: {formatDate(incident.last_seen_at, true)}
             </span>
           </div>
         </div>
@@ -150,7 +153,7 @@ export function IncidentHeader({
               disabled={claiming}
             >
               <UserPlusIcon className="h-3.5 w-3.5" />
-              {claiming ? "认领中..." : "认领"}
+              {claiming ? tr(locale, "认领中...", "Claiming...", "Đang nhận...") : tr(locale, "认领", "Claim", "Nhận xử lý")}
             </Button>
           )}
 
@@ -163,7 +166,7 @@ export function IncidentHeader({
               disabled={suppressing}
             >
               <VolumeXIcon className="h-3.5 w-3.5 text-zinc-500" />
-              标记误报 (Suppress)
+              {tr(locale, "标记误报 (Suppress)", "Suppress", "Đánh dấu báo động giả")}
             </Button>
           )}
 
@@ -176,7 +179,7 @@ export function IncidentHeader({
               disabled={unsuppressing}
             >
               <RefreshCwIcon className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-              撤销误报 (Revert Suppression)
+              {tr(locale, "撤销误报 (Revert Suppression)", "Unsuppress", "Hoàn tác tắt tiếng")}
             </Button>
           )}
 
@@ -189,7 +192,7 @@ export function IncidentHeader({
               disabled={resolving}
             >
               <CheckCircle2Icon className="h-3.5 w-3.5" />
-              {resolving ? "恢复中..." : "标记已恢复"}
+              {resolving ? tr(locale, "恢复中...", "Resolving...", "Đang đóng...") : tr(locale, "标记已恢复", "Resolve", "Đánh dấu đã xử lý")}
             </Button>
           )}
 
@@ -201,10 +204,10 @@ export function IncidentHeader({
             >
               <SparklesIcon className="h-3.5 w-3.5" />
               {diagnosing || incident.diagnosis_status === "running"
-                ? "诊断中..."
+                ? tr(locale, "诊断中...", "Diagnosing...", "Đang chẩn đoán...")
                 : currentThreadId || incident.diagnosis_status === "completed"
-                  ? "查看诊断过程"
-                  : "开始深度诊断"}
+                  ? tr(locale, "查看诊断过程", "View Diagnosis", "Xem quá trình chẩn đoán")
+                  : tr(locale, "开始深度诊断", "Start Deep Diagnosis", "Bắt đầu chẩn đoán sâu")}
               <ArrowRightIcon className="h-3.5 w-3.5" />
             </Button>
           )}
@@ -218,7 +221,7 @@ export function IncidentHeader({
               disabled={creatingTicket}
             >
               <TicketIcon className="h-3.5 w-3.5" />
-              {creatingTicket ? "创建中..." : "创建工单"}
+              {creatingTicket ? tr(locale, "创建中...", "Creating...", "Đang tạo...") : tr(locale, "创建工单", "Create Ticket", "Tạo phiếu")}
             </Button>
           )}
 
@@ -229,7 +232,7 @@ export function IncidentHeader({
             onClick={onExportReport}
           >
             <DownloadIcon className="h-3.5 w-3.5" />
-            导出诊断报告
+            {tr(locale, "导出诊断报告", "Export Report", "Xuất báo cáo chẩn đoán")}
           </Button>
 
           {incident.status === "firing" && (incident.ai_summary || incident.ai_suggestion) && (
@@ -239,7 +242,7 @@ export function IncidentHeader({
               onClick={onGoToTerminal}
             >
               <TerminalIcon className="h-3.5 w-3.5" />
-              到终端排查
+              {tr(locale, "到终端排查", "Troubleshoot in Terminal", "Kiểm tra trên Terminal")}
             </Button>
           )}
         </div>

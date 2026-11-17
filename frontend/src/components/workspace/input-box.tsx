@@ -982,7 +982,7 @@ export function InputBox({
               const Icon = activeSuggestion.icon;
               return (
                 <div key={activeSuggestion.skillName} className="h-7 flex items-center gap-0.5 bg-primary/10 border border-primary/20 rounded-md px-1 animate-in fade-in-0 zoom-in-95 duration-200">
-                  <Tooltip content={settingsPanelOpen ? "点击隐藏设置" : "点击显示设置"}>
+                  <Tooltip content={settingsPanelOpen ? t.announcementsBanner.collapseDetails : t.announcementsBanner.expandDetails}>
                     <button
                       type="button"
                       onClick={() => setSettingsPanelOpen(!settingsPanelOpen)}
@@ -996,7 +996,7 @@ export function InputBox({
                     </button>
                   </Tooltip>
                   <div className="bg-primary/15 h-3 w-px mx-0.5" />
-                  <Tooltip content="取消使用技能">
+                  <Tooltip content={t.common.close}>
                     <button
                       type="button"
                       onClick={handleClearSkill}

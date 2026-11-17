@@ -2,6 +2,7 @@ export interface McpTemplate {
   id: string;
   label: string;
   labelEn: string;
+  labelVi: string;
   type: "stdio" | "sse" | "http";
   command?: string;
   args: string[];
@@ -10,6 +11,7 @@ export interface McpTemplate {
   headers: Record<string, string>;
   description: string;
   descriptionEn: string;
+  descriptionVi: string;
 }
 
 export const MCP_TEMPLATES: McpTemplate[] = [
@@ -17,6 +19,7 @@ export const MCP_TEMPLATES: McpTemplate[] = [
     id: "filesystem",
     label: "Filesystem",
     labelEn: "Filesystem",
+    labelVi: "Filesystem",
     type: "stdio",
     command: "npx",
     args: ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/allowed/dir"],
@@ -24,11 +27,13 @@ export const MCP_TEMPLATES: McpTemplate[] = [
     headers: {},
     description: "文件系统读写操作（需替换目录路径）",
     descriptionEn: "Filesystem read/write (replace directory path)",
+    descriptionVi: "Đọc/ghi hệ thống tệp (cần thay đường dẫn thư mục)",
   },
   {
     id: "github",
     label: "GitHub",
     labelEn: "GitHub",
+    labelVi: "GitHub",
     type: "stdio",
     command: "npx",
     args: ["-y", "@modelcontextprotocol/server-github"],
@@ -36,11 +41,13 @@ export const MCP_TEMPLATES: McpTemplate[] = [
     headers: {},
     description: "GitHub 仓库操作、Issues、PR 管理",
     descriptionEn: "GitHub repository, issues, PR management",
+    descriptionVi: "Thao tác kho lưu trữ GitHub, quản lý Issues, PR",
   },
   {
     id: "postgres",
     label: "PostgreSQL",
     labelEn: "PostgreSQL",
+    labelVi: "PostgreSQL",
     type: "stdio",
     command: "npx",
     args: ["-y", "@modelcontextprotocol/server-postgres"],
@@ -48,11 +55,13 @@ export const MCP_TEMPLATES: McpTemplate[] = [
     headers: {},
     description: "PostgreSQL 数据库查询与管理",
     descriptionEn: "PostgreSQL database query and management",
+    descriptionVi: "Truy vấn và quản lý cơ sở dữ liệu PostgreSQL",
   },
   {
     id: "slack",
     label: "Slack",
     labelEn: "Slack",
+    labelVi: "Slack",
     type: "stdio",
     command: "npx",
     args: ["-y", "@modelcontextprotocol/server-slack"],
@@ -60,11 +69,13 @@ export const MCP_TEMPLATES: McpTemplate[] = [
     headers: {},
     description: "Slack 消息发送与频道管理",
     descriptionEn: "Slack message and channel management",
+    descriptionVi: "Gửi tin nhắn Slack và quản lý kênh",
   },
   {
     id: "brave-search",
     label: "Brave Search",
     labelEn: "Brave Search",
+    labelVi: "Brave Search",
     type: "stdio",
     command: "npx",
     args: ["-y", "@modelcontextprotocol/server-brave-search"],
@@ -72,11 +83,13 @@ export const MCP_TEMPLATES: McpTemplate[] = [
     headers: {},
     description: "Brave 搜索引擎集成",
     descriptionEn: "Brave search engine integration",
+    descriptionVi: "Tích hợp công cụ tìm kiếm Brave",
   },
   {
     id: "memory",
     label: "Memory",
     labelEn: "Memory",
+    labelVi: "Memory",
     type: "stdio",
     command: "npx",
     args: ["-y", "@modelcontextprotocol/server-memory"],
@@ -84,11 +97,13 @@ export const MCP_TEMPLATES: McpTemplate[] = [
     headers: {},
     description: "知识图谱记忆系统",
     descriptionEn: "Knowledge graph memory system",
+    descriptionVi: "Hệ thống bộ nhớ đồ thị tri thức",
   },
   {
     id: "puppeteer",
     label: "Puppeteer",
     labelEn: "Puppeteer",
+    labelVi: "Puppeteer",
     type: "stdio",
     command: "npx",
     args: ["-y", "@modelcontextprotocol/server-puppeteer"],
@@ -96,11 +111,13 @@ export const MCP_TEMPLATES: McpTemplate[] = [
     headers: {},
     description: "浏览器自动化与网页抓取",
     descriptionEn: "Browser automation and web scraping",
+    descriptionVi: "Tự động hóa trình duyệt và thu thập dữ liệu web",
   },
   {
     id: "fetch",
     label: "Fetch",
     labelEn: "Fetch",
+    labelVi: "Fetch",
     type: "stdio",
     command: "uvx",
     args: ["mcp-server-fetch"],
@@ -108,11 +125,13 @@ export const MCP_TEMPLATES: McpTemplate[] = [
     headers: {},
     description: "网页内容抓取与解析",
     descriptionEn: "Web content fetching and parsing",
+    descriptionVi: "Tải và phân tích nội dung trang web",
   },
   {
     id: "custom-stdio",
     label: "自定义 stdio",
     labelEn: "Custom stdio",
+    labelVi: "stdio tùy chỉnh",
     type: "stdio",
     command: "",
     args: [],
@@ -120,11 +139,13 @@ export const MCP_TEMPLATES: McpTemplate[] = [
     headers: {},
     description: "",
     descriptionEn: "",
+    descriptionVi: "",
   },
   {
     id: "custom-sse",
     label: "自定义 SSE",
     labelEn: "Custom SSE",
+    labelVi: "SSE tùy chỉnh",
     type: "sse",
     url: "http://localhost:8000/sse",
     headers: {},
@@ -132,11 +153,13 @@ export const MCP_TEMPLATES: McpTemplate[] = [
     env: {},
     description: "",
     descriptionEn: "",
+    descriptionVi: "",
   },
   {
     id: "custom-http",
     label: "自定义 HTTP",
     labelEn: "Custom HTTP",
+    labelVi: "HTTP tùy chỉnh",
     type: "http",
     url: "https://api.example.com/mcp",
     headers: {},
@@ -144,6 +167,7 @@ export const MCP_TEMPLATES: McpTemplate[] = [
     env: {},
     description: "",
     descriptionEn: "",
+    descriptionVi: "",
   },
 ];
 

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useThread } from "@/components/workspace/messages/context";
 import { getAuthToken } from "@/core/auth/auth-api";
+import { getActiveLocale, tr } from "@/core/i18n";
 
 import { loadArtifactContent, loadArtifactContentFromToolCall } from "./loader";
 
@@ -88,7 +89,7 @@ export function useArtifactContent({
     content: (isWriteFile || isMCPResult) && content ? content : data,
     isLoading: isQueryEnabled ? isLoading : false,
     error: (isWriteFile || isMCPResult) && !isQueryEnabled && !content
-      ? new Error("文件内容已被摘要压缩，请从 sandbox 文件系统重新读取")
+      ? new Error(tr(getActiveLocale(), "文件内容已被摘要压缩，请从 sandbox 文件系统重新读取", "File content has been summarized; please re-read from sandbox filesystem", "Nội dung tệp đã được nén tóm tắt, vui lòng đọc lại từ hệ thống tệp sandbox"))
       : error,
   };
 }

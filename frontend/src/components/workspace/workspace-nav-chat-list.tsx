@@ -42,7 +42,20 @@ export function WorkspaceNavChatList() {
       ? "ファイルセンター"
       : locale === "ko"
       ? "파일 센터"
+      : locale === "vi"
+      ? "Trung tâm tệp"
       : "File Center";
+
+  const terminalLabel =
+    locale === "zh-CN"
+      ? "智能终端"
+      : locale === "ja"
+      ? "スマートターミナル"
+      : locale === "ko"
+      ? "스마트 터미널"
+      : locale === "vi"
+      ? "Terminal thông minh"
+      : "Smart Terminal";
 
   const allLinks = [
     {
@@ -70,7 +83,7 @@ export function WorkspaceNavChatList() {
       active: pathname.startsWith("/workspace/skills"),
     },
     {
-      name: "智能终端",
+      name: terminalLabel,
       href: "/workspace/terminal",
       icon: TerminalSquare,
       active: pathname.startsWith("/workspace/terminal"),

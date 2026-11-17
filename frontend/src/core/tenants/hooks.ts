@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
+import { getActiveLocale, tr } from "@/core/i18n";
+
 import {
   addTenantMember,
   addTenantMembersByEmail,
@@ -56,7 +58,7 @@ export function useSwitchTenant() {
     mutationFn: (tenantId: string) => switchTenant(tenantId),
     onSuccess: (tenant: CurrentTenant) => {
       setCurrentTenantId(tenant.tenant_id);
-      toast.success("工作空间已切换");
+      toast.success(tr(getActiveLocale(), "工作空间已切换", "Workspace switched", "Đã chuyển không gian làm việc"));
       void queryClient.invalidateQueries({ queryKey: ["tenants"] });
       void queryClient.invalidateQueries({ queryKey: ["threads"] });
       void queryClient.invalidateQueries({ queryKey: ["memory"] });
@@ -75,7 +77,7 @@ export function useSwitchTenant() {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "切换工作空间失败",
+        error instanceof Error ? error.message : tr(getActiveLocale(), "切换工作空间失败", "Failed to switch workspace", "Chuyển không gian làm việc thất bại"),
       );
     },
   });

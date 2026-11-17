@@ -3,6 +3,8 @@ import React, { useEffect, useRef } from "react";
 
 import { PptxViewer, RECOMMENDED_ZIP_LIMITS } from "@aiden0z/pptx-renderer";
 import { Button } from "@/components/ui/button";
+import { tr } from "@/core/i18n";
+import { useI18n } from "@/core/i18n/hooks";
 
 interface PptxSlideViewerProps {
   pptxBuffer: ArrayBuffer | null;
@@ -17,6 +19,7 @@ export function PptxSlideViewer({
   onDownload,
   fileName,
 }: PptxSlideViewerProps) {
+  const { t, locale } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<PptxViewer | null>(null);
 
@@ -55,7 +58,7 @@ export function PptxSlideViewer({
     return (
       <div className="flex size-full flex-col items-center justify-center gap-4 bg-background">
         <LoaderIcon className="size-8 animate-spin text-primary" />
-        <p className="text-xs text-muted-foreground">正在加载... &nbsp;{fileName}</p>
+        <p className="text-xs text-muted-foreground">{t.common.loading} &nbsp;{fileName}</p>
       </div>
     );
   }
@@ -64,11 +67,11 @@ export function PptxSlideViewer({
     return (
       <div className="flex size-full flex-col items-center justify-center p-8 text-center bg-background">
         <div className="flex flex-col items-center gap-4 max-w-sm">
-          <p className="text-sm font-medium text-foreground">无法加载 PPTX</p>
-          <p className="text-xs text-muted-foreground">文件可能已损坏或无法读取。</p>
+          <p className="text-sm font-medium text-foreground">{tr(locale, "无法加载 PPTX", "Unable to load PPTX", "Không thể tải tệp PPTX")}</p>
+          <p className="text-xs text-muted-foreground">{tr(locale, "文件可能已损坏或无法读取。", "The file may be corrupted or unreadable.", "Tệp có thể bị hỏng hoặc không thể đọc được.")}</p>
           <Button variant="default" size="sm" onClick={onDownload}>
             <DownloadIcon className="mr-2 size-4" />
-            下载源文件
+            {t.common.downloadFile}
           </Button>
         </div>
       </div>

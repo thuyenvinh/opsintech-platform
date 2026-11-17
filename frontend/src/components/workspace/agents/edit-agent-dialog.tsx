@@ -20,6 +20,7 @@ import { useAgent, useSkills, useUpdateAgent } from "@/core/agents";
 import { useCurrentTenant } from "@/core/tenants/hooks";
 import { isTenantAdminRole } from "@/core/permissions/scope";
 import type { UpdateAgentRequest } from "@/core/agents";
+import { tr } from "@/core/i18n";
 import { useI18n } from "@/core/i18n/hooks";
 import { useAvailableMcpConfig } from "@/core/mcp/hooks";
 import { useAvailableModels } from "@/core/models/hooks";
@@ -33,7 +34,7 @@ interface EditAgentDialogProps {
 }
 
 export function EditAgentDialog({ agentName, open, onOpenChange, onSuccess }: EditAgentDialogProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   const { agent, isLoading } = useAgent(agentName ?? "");
   const { skills } = useSkills();
@@ -165,10 +166,10 @@ export function EditAgentDialog({ agentName, open, onOpenChange, onSuccess }: Ed
   const renderToolList = () => {
     if (activeTab === "mcp") {
       if (isLoadingMcps) {
-        return <div className="text-xs text-muted-foreground py-8 text-center">正在加载 MCP 扩展...</div>;
+        return <div className="text-xs text-muted-foreground py-8 text-center">{tr(locale, "正在加载 MCP 扩展...", "Loading MCP tools...", "Đang tải công cụ MCP...")}</div>;
       }
       if (!availableMcps || availableMcps.length === 0) {
-        return <div className="text-xs text-muted-foreground py-8 text-center">暂无已启用的 MCP 扩展工具</div>;
+        return <div className="text-xs text-muted-foreground py-8 text-center">{tr(locale, "暂无已启用的 MCP 扩展工具", "No enabled MCP tools", "Chưa có công cụ MCP nào được bật")}</div>;
       }
       return availableMcps.map((mcp) => (
         <label
@@ -195,7 +196,7 @@ export function EditAgentDialog({ agentName, open, onOpenChange, onSuccess }: Ed
     } else if (activeTab === "custom") {
       const customSkills = skillsByCategory["custom"] ?? [];
       if (customSkills.length === 0) {
-        return <div className="text-xs text-muted-foreground py-8 text-center">暂无自定义技能 SOP</div>;
+        return <div className="text-xs text-muted-foreground py-8 text-center">{tr(locale, "暂无自定义技能 SOP", "No custom SOP skills", "Chưa có kỹ năng tùy chỉnh nào")}</div>;
       }
       return customSkills.map((skill) => (
         <label
@@ -219,7 +220,7 @@ export function EditAgentDialog({ agentName, open, onOpenChange, onSuccess }: Ed
     } else {
       const publicSkills = skillsByCategory["public"] ?? [];
       if (publicSkills.length === 0) {
-        return <div className="text-xs text-muted-foreground py-8 text-center">暂无内置技能 SOP</div>;
+        return <div className="text-xs text-muted-foreground py-8 text-center">{tr(locale, "暂无内置技能 SOP", "No built-in SOP skills", "Chưa có kỹ năng sẵn có nào")}</div>;
       }
       return publicSkills.map((skill) => (
         <label
@@ -279,22 +280,22 @@ export function EditAgentDialog({ agentName, open, onOpenChange, onSuccess }: Ed
               <BotIcon className="h-5 w-5" />
             </div>
             <DialogTitle className="text-base font-semibold text-foreground">
-              {agent ? t.agents.edit.pageTitle.replace("{name}", agent.name) : "编辑智能体"}
+              {agent ? t.agents.edit.pageTitle.replace("{name}", agent.name) : t.agents.editLabel}
             </DialogTitle>
           </div>
         </header>
 
         {isLoading ? (
           <div className="flex-1 flex items-center justify-center bg-zinc-50/10 dark:bg-zinc-950/10">
-            <div className="text-muted-foreground text-sm">正在加载智能体数据...</div>
+            <div className="text-muted-foreground text-sm">{t.common.loading}</div>
           </div>
         ) : !agent ? (
           <div className="flex-1 flex items-center justify-center p-6 bg-zinc-50/10 dark:bg-zinc-950/10">
             <div className="flex flex-col items-center gap-3 border rounded-xl bg-card p-8 shadow-sm">
               <AlertCircleIcon className="h-8 w-8 text-destructive animate-bounce" />
-              <div className="text-sm font-medium">未找到该智能体</div>
+              <div className="text-sm font-medium">{tr(locale, "未找到该智能体", "Agent not found", "Không tìm thấy trợ lý này")}</div>
               <Button size="sm" onClick={() => onOpenChange(false)}>
-                关闭窗口
+                {t.common.close}
               </Button>
             </div>
           </div>
@@ -305,16 +306,16 @@ export function EditAgentDialog({ agentName, open, onOpenChange, onSuccess }: Ed
               {/* Left Column (42% width) */}
               <div className="w-full md:w-[42%] p-6 flex flex-col gap-5 overflow-y-auto min-h-0 h-full">
                 <div className="flex items-center justify-between pb-2 border-b shrink-0">
-                  <h2 className="text-sm font-semibold text-foreground">基础设定</h2>
+                  <h2 className="text-sm font-semibold text-foreground">{t.admin.models.createDialog.basicInfo}</h2>
                   <div className="flex items-center gap-4">
                     {isTenantAdmin && (
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-muted-foreground">共享工作空间</span>
+                        <span className="text-xs text-muted-foreground">{t.fileCenter.visibility.tenantShared}</span>
                         <Switch checked={isShared} onCheckedChange={setIsShared} />
                       </div>
                     )}
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-semibold text-primary">启</span>
+                      <span className="text-xs font-semibold text-primary">{t.tenantAdmin.models.statusEnabled}</span>
                       <Switch checked={enabled} onCheckedChange={setEnabled} />
                     </div>
                   </div>
@@ -323,7 +324,7 @@ export function EditAgentDialog({ agentName, open, onOpenChange, onSuccess }: Ed
                 {/* Read-only Identity Name */}
                 <div className="space-y-2 shrink-0">
                   <label className="text-xs font-medium text-muted-foreground flex items-center gap-0.5">
-                    <span className="text-destructive font-bold">*</span> 名称 (不可修改)
+                    <span className="text-destructive font-bold">*</span> {t.tenantAdmin.agents.columns.name}
                   </label>
                   <Input
                     disabled
@@ -335,20 +336,20 @@ export function EditAgentDialog({ agentName, open, onOpenChange, onSuccess }: Ed
                 {/* Model Selection */}
                 <div className="space-y-2 shrink-0">
                   <label className="text-xs font-medium text-muted-foreground flex items-center gap-0.5">
-                    <SparklesIcon className="h-3.5 w-3.5 text-amber-500" /> 模型选择
+                    <SparklesIcon className="h-3.5 w-3.5 text-amber-500" /> {t.inputBox.selectModel}
                   </label>
                   <Select
                     value={selectedModel}
                     onValueChange={setSelectedModel}
                   >
                     <SelectTrigger className="w-full h-9">
-                      <SelectValue placeholder={isLoadingModels ? "加载模型中..." : "选择默认推理模型 (可选)"} />
+                      <SelectValue placeholder={isLoadingModels ? t.common.loading : t.agents.edit.modelDefault} />
                     </SelectTrigger>
                     <SelectContent>
                       {isLoadingModels ? (
-                        <div className="px-2 py-3 text-xs text-muted-foreground text-center">加载中...</div>
+                        <div className="px-2 py-3 text-xs text-muted-foreground text-center">{t.common.loading}</div>
                       ) : availableModels.length === 0 ? (
-                        <div className="px-2 py-3 text-xs text-muted-foreground text-center">暂无可选模型</div>
+                        <div className="px-2 py-3 text-xs text-muted-foreground text-center">{t.chatHeader.noModel}</div>
                       ) : (
                         availableModels.map((m) => (
                           <SelectItem key={m.name} value={m.name}>
@@ -364,26 +365,26 @@ export function EditAgentDialog({ agentName, open, onOpenChange, onSuccess }: Ed
                     </SelectContent>
                   </Select>
                   <p className="text-[10px] text-muted-foreground leading-normal">
-                    不选择则使用工作空间默认模型
+                    {t.agents.edit.modelDefault}
                   </p>
                 </div>
 
                 {/* System Prompt */}
                 <div className="space-y-2 flex-1 flex flex-col min-h-[160px]">
                   <label className="text-xs font-medium text-muted-foreground flex items-center gap-0.5">
-                    <span className="text-destructive font-bold">*</span> 系统提示词 (System Prompt)
+                    <span className="text-destructive font-bold">*</span> {t.agents.edit.systemPromptLabel}
                   </label>
                   <Textarea
                     value={systemPrompt}
                     onChange={(e) => setSystemPrompt(e.target.value)}
-                    placeholder="设定智能体的人格、职责 and 行为规范..."
+                    placeholder={t.agents.edit.systemPromptPlaceholder}
                     className="flex-1 font-mono text-sm leading-relaxed resize-none border border-input focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-primary"
                   />
                 </div>
 
                 {/* Tags */}
                 <div className="space-y-2 shrink-0">
-                  <label className="text-xs font-medium text-muted-foreground">标签</label>
+                  <label className="text-xs font-medium text-muted-foreground">{t.agents.edit.tagsLabel}</label>
                   <div className="relative flex flex-wrap gap-1.5 w-full rounded-md border border-input bg-background pl-2 pr-10 py-1.5 min-h-[36px] shadow-sm transition-colors focus-within:ring-1 focus-within:ring-ring focus-within:border-primary">
                     {tags.map((tag) => (
                       <span
@@ -404,7 +405,7 @@ export function EditAgentDialog({ agentName, open, onOpenChange, onSuccess }: Ed
                       value={tagInput}
                       onChange={(e) => setTagInput(e.target.value)}
                       onKeyDown={handleTagKeyDown}
-                      placeholder={tags.length === 0 ? "添加标签 (按回车添加)" : ""}
+                      placeholder={tags.length === 0 ? t.agents.edit.tagsPlaceholder : ""}
                       className="flex-1 bg-transparent border-none outline-none p-0 text-sm focus:ring-0 placeholder:text-muted-foreground/60 min-w-[100px] h-6"
                     />
                     <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-muted-foreground">
@@ -415,11 +416,11 @@ export function EditAgentDialog({ agentName, open, onOpenChange, onSuccess }: Ed
 
                 {/* Description */}
                 <div className="space-y-2 shrink-0">
-                  <label className="text-xs font-medium text-muted-foreground">描述</label>
+                  <label className="text-xs font-medium text-muted-foreground">{t.agents.edit.descriptionLabel}</label>
                   <Textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="简要描述智能体功能..."
+                    placeholder={t.agents.edit.descriptionPlaceholder}
                     className="min-h-[72px] text-sm leading-relaxed resize-none"
                   />
                 </div>
@@ -428,14 +429,14 @@ export function EditAgentDialog({ agentName, open, onOpenChange, onSuccess }: Ed
               {/* Right Column (58% width) */}
               <div className="w-full md:w-[58%] p-6 flex flex-col gap-6 overflow-hidden h-full">
                 <div className="pb-2 border-b shrink-0">
-                  <h2 className="text-sm font-semibold text-foreground">能力配置</h2>
+                  <h2 className="text-sm font-semibold text-foreground">{tr(locale, "能力配置", "Capabilities", "Cấu hình năng lực")}</h2>
                 </div>
 
                 {/* Toolsets */}
                 <div className="space-y-3 flex-1 flex flex-col overflow-hidden min-h-0">
                   <div className="flex flex-col gap-0.5 border-l-2 border-primary pl-2.5 shrink-0">
-                    <h3 className="text-sm font-semibold text-foreground">工具集</h3>
-                    <p className="text-xs text-muted-foreground">配置智能体可调用的外部工具能力</p>
+                    <h3 className="text-sm font-semibold text-foreground">{t.tenantAdmin.agents.columns.tools}</h3>
+                    <p className="text-xs text-muted-foreground">{tr(locale, "配置智能体可调用的外部工具能力", "Configure external tools and skills for this agent", "Cấu hình công cụ và kỹ năng mà trợ lý có thể sử dụng")}</p>
                   </div>
 
                   {/* Tabs */}
@@ -452,7 +453,7 @@ export function EditAgentDialog({ agentName, open, onOpenChange, onSuccess }: Ed
                       )}
                       onClick={() => setActiveTab("mcp")}
                     >
-                      MCP工具
+                      {tr(locale, "MCP工具", "MCP Tools", "Công cụ MCP")}
                     </Button>
                     <Button
                       type="button"
@@ -466,7 +467,7 @@ export function EditAgentDialog({ agentName, open, onOpenChange, onSuccess }: Ed
                       )}
                       onClick={() => setActiveTab("custom")}
                     >
-                      自定义技能
+                      {t.tenantAdmin.skills.tabs.custom}
                     </Button>
                     <Button
                       type="button"
@@ -480,7 +481,7 @@ export function EditAgentDialog({ agentName, open, onOpenChange, onSuccess }: Ed
                       )}
                       onClick={() => setActiveTab("public")}
                     >
-                      内置技能
+                      {t.tenantAdmin.skills.tabs.builtin}
                     </Button>
                   </div>
 
@@ -491,7 +492,7 @@ export function EditAgentDialog({ agentName, open, onOpenChange, onSuccess }: Ed
                         checked={isAllSelected}
                         onCheckedChange={handleToggleSelectAll}
                       />
-                      <span>全选</span>
+                      <span>{t.common.selectAll}</span>
                     </label>
 
                     <div className="space-y-1.5 overflow-y-auto pr-1 flex-1">
@@ -510,7 +511,7 @@ export function EditAgentDialog({ agentName, open, onOpenChange, onSuccess }: Ed
                 size="sm"
                 onClick={() => onOpenChange(false)}
               >
-                取消
+                {t.common.cancel}
               </Button>
               <Button
                 type="button"
@@ -519,7 +520,7 @@ export function EditAgentDialog({ agentName, open, onOpenChange, onSuccess }: Ed
                 onClick={handleSave}
                 disabled={updateAgent.isPending}
               >
-                {updateAgent.isPending ? "保存中..." : "保存配置"}
+                {updateAgent.isPending ? t.agents.edit.saving : t.agents.edit.save}
               </Button>
             </footer>
           </>

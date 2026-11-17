@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { tr } from "@/core/i18n";
+import { useI18n } from "@/core/i18n/hooks";
 import { isTenantAdminRole } from "@/core/permissions/scope";
 import type { TenantMemberRole } from "@/core/tenants/api";
 import {
@@ -21,6 +23,7 @@ import {
 import { SettingsSection } from "./settings-section";
 
 export function TenantGovernanceSettingsPage() {
+  const { locale } = useI18n();
   const { data: currentTenant } = useCurrentTenant();
   const isTenantAdmin = isTenantAdminRole(currentTenant?.role);
   const { data: members = [], isLoading, error } = useTenantMembers({
@@ -37,67 +40,76 @@ export function TenantGovernanceSettingsPage() {
 
   const handleAdd = async () => {
     if (!newUserId.trim()) {
-      toast.error("请输入要添加的用户 ID");
+      toast.error(tr(locale, "请输入要添加的用户 ID", "Please enter a user ID to add", "Vui lòng nhập ID người dùng cần thêm"));
       return;
     }
     try {
       await addMember({ user_id: newUserId.trim(), role: newRole });
-      toast.success("成员已添加");
+      toast.success(tr(locale, "成员已添加", "Member added", "Đã thêm thành viên"));
       setNewUserId("");
       setNewRole("tenant_member");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "添加成员失败");
+      toast.error(err instanceof Error ? err.message : tr(locale, "添加成员失败", "Failed to add member", "Thêm thành viên thất bại"));
     }
   };
 
   const handleRoleChange = async (userId: string, role: TenantMemberRole) => {
     try {
       await updateRole({ userId, role });
-      toast.success("成员角色已更新");
+      toast.success(tr(locale, "成员角色已更新", "Member role updated", "Đã cập nhật vai trò thành viên"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "更新角色失败");
+      toast.error(err instanceof Error ? err.message : tr(locale, "更新角色失败", "Failed to update role", "Cập nhật vai trò thất bại"));
     }
   };
 
   const handleRemove = async (userId: string) => {
-    if (!confirm(`确认移除成员 ${userId} ?`)) return;
+    if (!confirm(tr(locale, `确认移除成员 ${userId} ?`, `Confirm removing member ${userId}?`, `Xác nhận gỡ thành viên ${userId}?`))) return;
     try {
       await removeMember(userId);
-      toast.success("成员已移除");
+      toast.success(tr(locale, "成员已移除", "Member removed", "Đã gỡ thành viên"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "移除成员失败");
+      toast.error(err instanceof Error ? err.message : tr(locale, "移除成员失败", "Failed to remove member", "Gỡ thành viên thất bại"));
     }
   };
 
   const handleStatusToggle = async (userId: string, nextStatus: "active" | "inactive") => {
     try {
       await updateStatus({ userId, status: nextStatus });
-      toast.success(nextStatus === "active" ? "成员已启用" : "成员已停用");
+      toast.success(
+        nextStatus === "active"
+          ? tr(locale, "成员已启用", "Member activated", "Đã kích hoạt thành viên")
+          : tr(locale, "成员已停用", "Member deactivated", "Đã vô hiệu hóa thành viên")
+      );
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "更新成员状态失败");
+      toast.error(err instanceof Error ? err.message : tr(locale, "更新成员状态失败", "Failed to update member status", "Cập nhật trạng thái thành viên thất bại"));
     }
   };
 
   return (
     <SettingsSection
-      title="工作空间治理"
-      description="工作空间管理员可在此管理当前工作空间成员。平台管理员不承担工作空间日常成员运营。"
+      title={tr(locale, "工作空间治理", "Workspace Governance", "Quản trị không gian làm việc")}
+      description={tr(
+        locale,
+        "工作空间管理员可在此管理当前工作空间成员。平台管理员不承担工作空间日常成员运营。",
+        "Workspace admins can manage current workspace members here. Platform admins do not manage daily workspace member operations.",
+        "Quản trị viên không gian làm việc có thể quản lý thành viên tại đây. Quản trị viên nền tảng không trực tiếp vận hành thành viên hàng ngày."
+      )}
       action={
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <UsersIcon className="h-4 w-4" />
-          当前角色: {(currentTenant?.role ?? "tenant_member").toUpperCase()}
+          {tr(locale, "当前角色", "Current Role", "Vai trò hiện tại")}: {(currentTenant?.role ?? "tenant_member").toUpperCase()}
         </div>
       }
     >
       {!isTenantAdmin ? (
         <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-          仅工作空间管理员可访问该页面。
+          {tr(locale, "仅工作空间管理员可访问该页面。", "Only workspace admins can access this page.", "Chỉ quản trị viên không gian làm việc mới có thể truy cập trang này.")}
         </div>
       ) : (
         <div className="space-y-4">
           <div className="grid gap-3 rounded-lg border p-4 md:grid-cols-[1fr_180px_auto]">
             <Input
-              placeholder="输入要添加的用户 ID"
+              placeholder={tr(locale, "输入要添加的用户 ID", "Enter user ID to add", "Nhập ID người dùng cần thêm")}
               value={newUserId}
               onChange={(e) => setNewUserId(e.target.value)}
               disabled={adding}
@@ -117,7 +129,7 @@ export function TenantGovernanceSettingsPage() {
             </Select>
             <Button onClick={() => void handleAdd()} disabled={adding || !newUserId.trim()}>
               <UserPlusIcon className="mr-2 h-4 w-4" />
-              添加成员
+              {tr(locale, "添加成员", "Add Member", "Thêm thành viên")}
             </Button>
           </div>
 
@@ -131,23 +143,23 @@ export function TenantGovernanceSettingsPage() {
             <table className="w-full text-left text-sm">
               <thead className="border-b bg-muted/30 text-muted-foreground">
                 <tr>
-                  <th className="px-4 py-2 font-medium">成员</th>
-                  <th className="px-4 py-2 font-medium">角色</th>
-                  <th className="px-4 py-2 font-medium">状态</th>
-                  <th className="px-4 py-2 text-right font-medium">操作</th>
+                  <th className="px-4 py-2 font-medium">{tr(locale, "成员", "Member", "Thành viên")}</th>
+                  <th className="px-4 py-2 font-medium">{tr(locale, "角色", "Role", "Vai trò")}</th>
+                  <th className="px-4 py-2 font-medium">{tr(locale, "状态", "Status", "Trạng thái")}</th>
+                  <th className="px-4 py-2 text-right font-medium">{tr(locale, "操作", "Actions", "Thao tác")}</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading ? (
                   <tr>
                     <td className="px-4 py-6 text-muted-foreground" colSpan={4}>
-                      加载中...
+                      {tr(locale, "加载中...", "Loading...", "Đang tải...")}
                     </td>
                   </tr>
                 ) : members.length === 0 ? (
                   <tr>
                     <td className="px-4 py-6 text-muted-foreground" colSpan={4}>
-                      当前工作空间暂无成员
+                      {tr(locale, "当前工作空间暂无成员", "No members in current workspace", "Chưa có thành viên trong không gian làm việc này")}
                     </td>
                   </tr>
                 ) : (
@@ -199,7 +211,9 @@ export function TenantGovernanceSettingsPage() {
                                 )
                               }
                             >
-                              {member.status === "active" ? "停用" : "启用"}
+                              {member.status === "active"
+                                ? tr(locale, "停用", "Deactivate", "Vô hiệu hóa")
+                                : tr(locale, "启用", "Activate", "Kích hoạt")}
                             </Button>
                             <Button
                               variant="ghost"
@@ -208,7 +222,7 @@ export function TenantGovernanceSettingsPage() {
                               onClick={() => void handleRemove(member.user_id)}
                             >
                               <Trash2Icon className="mr-1 h-4 w-4" />
-                              移除
+                              {tr(locale, "移除", "Remove", "Gỡ bỏ")}
                             </Button>
                           </div>
                         </td>

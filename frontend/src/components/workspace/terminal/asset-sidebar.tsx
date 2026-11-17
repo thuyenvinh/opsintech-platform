@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AddHostDialog } from './add-host-dialog';
 import { AddCredentialDialog } from './add-credential-dialog';
+import { tr, type Locale } from '@/core/i18n';
+import { useI18n } from '@/core/i18n/hooks';
 
 export function AssetSidebar({ 
   onSelectAsset,
@@ -23,6 +25,7 @@ export function AssetSidebar({
   groups?: any[];
   onDataChanged?: () => void;
 }) {
+  const { locale } = useI18n();
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   const [showAddHost, setShowAddHost] = useState(false);
@@ -65,7 +68,7 @@ export function AssetSidebar({
   };
 
   const handleDeleteAsset = async (id: string) => {
-    if (!confirm('确定要删除该主机吗？')) return;
+    if (!confirm(tr(locale, '确定要删除该主机吗？', 'Delete this host?', 'Xác nhận xóa máy chủ này?'))) return;
     try {
       await fetch(`/api/v1/assets/local/${id}`, {
         method: 'DELETE'
@@ -111,13 +114,13 @@ export function AssetSidebar({
         <div className="p-4 flex flex-col gap-3 border-b border-transparent">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <h2 className="font-medium text-sm text-zinc-900">主机管理</h2>
+              <h2 className="font-medium text-sm text-zinc-900">{tr(locale, '主机管理', 'Hosts', 'Quản lý máy chủ')}</h2>
               <Button 
                 variant="ghost" 
                 size="icon" 
                 className="h-6 w-6 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-200/50 rounded-md"
                 onClick={onToggleCollapse}
-                title="折叠主机管理"
+                title={tr(locale, '折叠主机管理', 'Collapse host sidebar', 'Thu gọn danh sách máy chủ')}
               >
                 <PanelLeftCloseIcon className="w-3.5 h-3.5" />
               </Button>
@@ -132,7 +135,7 @@ export function AssetSidebar({
         <div className="relative">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
           <Input
-            placeholder="搜索"
+            placeholder={tr(locale, '搜索', 'Search', 'Tìm kiếm')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 bg-white border-zinc-200 h-8 text-xs rounded-lg shadow-sm"
@@ -181,7 +184,7 @@ export function AssetSidebar({
                 className="w-full flex items-center justify-between px-1 mb-1.5 group"
               >
                 <span className="text-[11px] font-medium text-zinc-400 group-hover:text-zinc-600 tracking-wider">
-                  未分组 <span className="opacity-70 ml-0.5">({ungroupedAssets.length})</span>
+                  {tr(locale, '未分组', 'Ungrouped', 'Chưa phân nhóm')} <span className="opacity-70 ml-0.5">({ungroupedAssets.length})</span>
                 </span>
                 <div className="text-zinc-300 group-hover:text-zinc-500">
                   {expandedGroups['ungrouped'] ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
@@ -208,7 +211,7 @@ export function AssetSidebar({
 
         {filteredAssets.length === 0 && (
           <div className="text-center py-6 text-zinc-400 text-xs">
-            暂无主机，点击上方 + 号添加
+            {tr(locale, '暂无主机，点击上方 + 号添加', 'No hosts yet. Click + above to add.', 'Chưa có máy chủ nào, nhấn + phía trên để thêm')}
           </div>
         )}
       </div>
@@ -247,6 +250,7 @@ function AssetItem({
   onEditClick: () => void;
   onDeleteClick: () => void;
 }) {
+  const { locale } = useI18n();
   return (
     <div className="w-full flex items-center justify-between p-2.5 bg-white border border-zinc-200/80 shadow-sm hover:border-zinc-300 hover:shadow-md rounded-xl group transition-all">
       <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -266,7 +270,7 @@ function AssetItem({
             size="icon" 
             className="h-6 w-6 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
             onClick={() => onSelectAsset(asset)}
-            title="建立连接"
+            title={tr(locale, '建立连接', 'Connect', 'Kết nối')}
           >
             <TerminalSquare className="h-3.5 w-3.5" />
           </Button>
@@ -277,8 +281,8 @@ function AssetItem({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-32">
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(); }}>编辑</DropdownMenuItem>
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDeleteClick(); }} className="text-red-600 focus:text-red-600">删除</DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(); }}>{tr(locale, '编辑', 'Edit', 'Chỉnh sửa')}</DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDeleteClick(); }} className="text-red-600 focus:text-red-600">{tr(locale, '删除', 'Delete', 'Xóa')}</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
       </div>

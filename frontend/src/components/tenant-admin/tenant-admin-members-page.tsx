@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { tr } from "@/core/i18n";
 import { useI18n } from "@/core/i18n/hooks";
 import { isTenantAdminRole } from "@/core/permissions/scope";
 import type { TenantMemberRole, TenantSelectableUser } from "@/core/tenants/api";
@@ -376,7 +377,7 @@ function AddMembersDialog({
 }
 
 export function TenantAdminMembersPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { data: currentTenant } = useCurrentTenant();
   const isTenantAdmin = isTenantAdminRole(currentTenant?.role);
 
@@ -487,7 +488,7 @@ export function TenantAdminMembersPage() {
         <div className="relative flex-1 max-w-md">
           <SearchIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="搜索成员姓名、邮箱或用户ID..."
+            placeholder={t.tenantAdmin.members.searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 h-9"
@@ -498,13 +499,15 @@ export function TenantAdminMembersPage() {
         <div className="flex flex-wrap items-center gap-3">
           {/* Role Filter */}
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">角色:</span>
+            <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">
+              {t.tenantAdmin.members.roleLabel}:
+            </span>
             <Select value={roleFilter} onValueChange={setRoleFilter}>
               <SelectTrigger className="w-[120px] h-9">
-                <SelectValue placeholder="全部角色" />
+                <SelectValue placeholder={tr(locale, "全部角色", "All Roles", "Tất cả vai trò")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">全部角色</SelectItem>
+                <SelectItem value="all">{tr(locale, "全部角色", "All Roles", "Tất cả vai trò")}</SelectItem>
                 <SelectItem value="tenant_admin">{t.tenantAdmin.members.roleAdmin}</SelectItem>
                 <SelectItem value="tenant_member">{t.tenantAdmin.members.roleMember}</SelectItem>
               </SelectContent>
@@ -513,13 +516,15 @@ export function TenantAdminMembersPage() {
 
           {/* Status Filter */}
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">状态:</span>
+            <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">
+              {t.tenantAdmin.members.columns.status}:
+            </span>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[120px] h-9">
-                <SelectValue placeholder="全部状态" />
+                <SelectValue placeholder={t.tenantAdmin.models.statusAll} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">全部状态</SelectItem>
+                <SelectItem value="all">{t.tenantAdmin.models.statusAll}</SelectItem>
                 <SelectItem value="active">{t.tenantAdmin.members.statusActive}</SelectItem>
                 <SelectItem value="inactive">{t.tenantAdmin.members.statusInactive}</SelectItem>
               </SelectContent>
@@ -538,7 +543,7 @@ export function TenantAdminMembersPage() {
               }}
               className="h-9 px-3 text-xs"
             >
-              重置
+              {tr(locale, "重置", "Reset", "Đặt lại")}
             </Button>
           )}
         </div>
@@ -565,7 +570,7 @@ export function TenantAdminMembersPage() {
               <tr>
                 <td className="px-4 py-6 text-muted-foreground" colSpan={4}>
                   {searchQuery || roleFilter !== "all" || statusFilter !== "all"
-                    ? "未找到匹配的成员"
+                    ? tr(locale, "未找到匹配的成员", "No matching members found", "Không tìm thấy thành viên phù hợp")
                     : t.tenantAdmin.members.empty}
                 </td>
               </tr>

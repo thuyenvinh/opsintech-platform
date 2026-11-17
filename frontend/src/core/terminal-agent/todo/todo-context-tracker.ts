@@ -5,6 +5,8 @@
  * Tracks context usage percentage and provides threshold-based suggestions.
  */
 
+import { getActiveLocale, tr } from '@/core/i18n';
+
 const CONTEXT_THRESHOLDS = {
   WARNING: 50,   // Time to start thinking about wrapping up
   CRITICAL: 70,  // Should plan new task handoff soon
@@ -28,12 +30,18 @@ export class TodoContextTracker {
    */
   updateUsage(usagePercent: number): ContextSuggestion {
     this.currentUsage = Math.min(100, Math.max(0, usagePercent));
+    const locale = getActiveLocale();
 
     if (this.currentUsage >= CONTEXT_THRESHOLDS.MAXIMUM) {
       return {
         suggest: true,
         level: 'maximum',
-        reason: `上下文使用率达到 ${this.currentUsage}%，已超过最大阈值。建议立即创建新任务来继续剩余工作。`,
+        reason: tr(
+          locale,
+          `上下文使用率达到 ${this.currentUsage}%，已超过最大阈值。建议立即创建新任务来继续剩余工作。`,
+          `Context usage reached ${this.currentUsage}%, exceeding the maximum threshold. Recommend creating a new task immediately to continue remaining work.`,
+          `Mức sử dụng ngữ cảnh đạt ${this.currentUsage}%, vượt ngưỡng tối đa. Nên tạo tác vụ mới ngay để tiếp tục phần việc còn lại.`,
+        ),
       };
     }
 
@@ -41,7 +49,12 @@ export class TodoContextTracker {
       return {
         suggest: true,
         level: 'critical',
-        reason: `上下文使用率达到 ${this.currentUsage}%，已接近临界值。请计划在完成当前任务后创建新任务。`,
+        reason: tr(
+          locale,
+          `上下文使用率达到 ${this.currentUsage}%，已接近临界值。请计划在完成当前任务后创建新任务。`,
+          `Context usage reached ${this.currentUsage}%, approaching critical threshold. Plan to create a new task after completing the current one.`,
+          `Mức sử dụng ngữ cảnh đạt ${this.currentUsage}%, gần chạm ngưỡng tới hạn. Hãy lên kế hoạch tạo tác vụ mới sau khi hoàn thành công việc hiện tại.`,
+        ),
       };
     }
 
@@ -49,7 +62,12 @@ export class TodoContextTracker {
       return {
         suggest: false,
         level: 'warning',
-        reason: `上下文使用率 ${this.currentUsage}%，请注意监控。`,
+        reason: tr(
+          locale,
+          `上下文使用率 ${this.currentUsage}%，请注意监控。`,
+          `Context usage at ${this.currentUsage}%, please monitor closely.`,
+          `Mức sử dụng ngữ cảnh ở mức ${this.currentUsage}%, vui lòng theo dõi.`,
+        ),
       };
     }
 

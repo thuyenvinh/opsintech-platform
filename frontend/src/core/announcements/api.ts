@@ -1,4 +1,5 @@
 import { fetchAuthApi } from "@/core/api/auth-client";
+import { getActiveLocale, tr } from "@/core/i18n";
 
 import type {
   AdminTenantTarget,
@@ -25,7 +26,7 @@ async function jsonOrError<T>(res: Response, fallback: string): Promise<T> {
 
 export async function loadActiveAnnouncements(limit = 3): Promise<AnnouncementItem[]> {
   const res = await fetchAuthApi(`/api/announcements/active?limit=${limit}`);
-  const payload = await jsonOrError<AnnouncementListResponse>(res, "加载活动通知失败");
+  const payload = await jsonOrError<AnnouncementListResponse>(res, tr(getActiveLocale(), "加载活动通知失败", "Failed to load active announcements", "Tải thông báo đang hoạt động thất bại"));
   return payload.items ?? [];
 }
 
@@ -40,23 +41,23 @@ export async function loadAnnouncements(input?: {
     limit: String(limit),
   });
   const res = await fetchAuthApi(`/api/announcements?${params.toString()}`);
-  const payload = await jsonOrError<AnnouncementListResponse>(res, "加载通知列表失败");
+  const payload = await jsonOrError<AnnouncementListResponse>(res, tr(getActiveLocale(), "加载通知列表失败", "Failed to load announcements", "Tải danh sách thông báo thất bại"));
   return payload.items ?? [];
 }
 
 export async function markAnnouncementRead(announcementId: number): Promise<AnnouncementActionResponse> {
   const res = await fetchAuthApi(`/api/announcements/${announcementId}/read`, { method: "POST" });
-  return jsonOrError<AnnouncementActionResponse>(res, "标记已读失败");
+  return jsonOrError<AnnouncementActionResponse>(res, tr(getActiveLocale(), "标记已读失败", "Failed to mark as read", "Đánh dấu đã đọc thất bại"));
 }
 
 export async function dismissAnnouncement(announcementId: number): Promise<AnnouncementActionResponse> {
   const res = await fetchAuthApi(`/api/announcements/${announcementId}/dismiss`, { method: "POST" });
-  return jsonOrError<AnnouncementActionResponse>(res, "忽略通知失败");
+  return jsonOrError<AnnouncementActionResponse>(res, tr(getActiveLocale(), "忽略通知失败", "Failed to dismiss announcement", "Bỏ qua thông báo thất bại"));
 }
 
 export async function loadAdminAnnouncements(): Promise<AnnouncementItem[]> {
   const res = await fetchAuthApi("/api/admin/announcements");
-  const payload = await jsonOrError<AnnouncementListResponse>(res, "加载通知管理列表失败");
+  const payload = await jsonOrError<AnnouncementListResponse>(res, tr(getActiveLocale(), "加载通知管理列表失败", "Failed to load admin announcements", "Tải danh sách quản lý thông báo thất bại"));
   return payload.items ?? [];
 }
 
@@ -66,12 +67,12 @@ export async function createAdminAnnouncement(input: CreateAnnouncementInput): P
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
-  return jsonOrError<AnnouncementItem>(res, "创建通知失败");
+  return jsonOrError<AnnouncementItem>(res, tr(getActiveLocale(), "创建通知失败", "Failed to create announcement", "Tạo thông báo thất bại"));
 }
 
 export async function loadAdminAnnouncementDetail(announcementId: number): Promise<AnnouncementItem> {
   const res = await fetchAuthApi(`/api/admin/announcements/${announcementId}`);
-  return jsonOrError<AnnouncementItem>(res, "加载通知详情失败");
+  return jsonOrError<AnnouncementItem>(res, tr(getActiveLocale(), "加载通知详情失败", "Failed to load announcement detail", "Tải chi tiết thông báo thất bại"));
 }
 
 export async function updateAdminAnnouncement(
@@ -83,28 +84,28 @@ export async function updateAdminAnnouncement(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
-  return jsonOrError<AnnouncementItem>(res, "更新通知失败");
+  return jsonOrError<AnnouncementItem>(res, tr(getActiveLocale(), "更新通知失败", "Failed to update announcement", "Cập nhật thông báo thất bại"));
 }
 
 export async function deleteAdminAnnouncement(announcementId: number): Promise<AnnouncementActionResponse> {
   const res = await fetchAuthApi(`/api/admin/announcements/${announcementId}`, {
     method: "DELETE",
   });
-  return jsonOrError<AnnouncementActionResponse>(res, "删除通知失败");
+  return jsonOrError<AnnouncementActionResponse>(res, tr(getActiveLocale(), "删除通知失败", "Failed to delete announcement", "Xóa thông báo thất bại"));
 }
 
 export async function publishAdminAnnouncement(announcementId: number): Promise<AnnouncementActionResponse> {
   const res = await fetchAuthApi(`/api/admin/announcements/${announcementId}/publish`, { method: "POST" });
-  return jsonOrError<AnnouncementActionResponse>(res, "发布通知失败");
+  return jsonOrError<AnnouncementActionResponse>(res, tr(getActiveLocale(), "发布通知失败", "Failed to publish announcement", "Xuất bản thông báo thất bại"));
 }
 
 export async function archiveAdminAnnouncement(announcementId: number): Promise<AnnouncementActionResponse> {
   const res = await fetchAuthApi(`/api/admin/announcements/${announcementId}/archive`, { method: "POST" });
-  return jsonOrError<AnnouncementActionResponse>(res, "归档通知失败");
+  return jsonOrError<AnnouncementActionResponse>(res, tr(getActiveLocale(), "归档通知失败", "Failed to archive announcement", "Lưu trữ thông báo thất bại"));
 }
 
 export async function loadAdminTenantTargets(): Promise<AdminTenantTarget[]> {
   const res = await fetchAuthApi("/api/admin/tenants");
-  const payload = await jsonOrError<{ tenants?: Array<{ id: string; name: string }> }>(res, "加载工作空间列表失败");
+  const payload = await jsonOrError<{ tenants?: Array<{ id: string; name: string }> }>(res, tr(getActiveLocale(), "加载工作空间列表失败", "Failed to load workspaces", "Tải danh sách không gian làm việc thất bại"));
   return (payload.tenants ?? []).map((item) => ({ id: item.id, name: item.name }));
 }

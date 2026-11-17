@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, CheckCircle2, XCircle, Eye, EyeOff, X } from 'lucide-react';
+import { tr } from '@/core/i18n';
+import { useI18n } from '@/core/i18n/hooks';
 
 export interface AddHostDialogProps {
   open: boolean;
@@ -17,6 +19,7 @@ export interface AddHostDialogProps {
 }
 
 export function AddHostDialog({ open, onOpenChange, onAddHost, onEditHost, editAsset, credentials = [], groups = [], onAddCredentialClick }: AddHostDialogProps) {
+  const { locale } = useI18n();
   const [formData, setFormData] = useState({
     name: '',
     ip: '',
@@ -95,14 +98,14 @@ export function AddHostDialog({ open, onOpenChange, onAddHost, onEditHost, editA
 
       if (data.status === 'ok') {
         setTestStatus('success');
-        setTestLog(data.message || '连接测试成功');
+        setTestLog(data.message || tr(locale, '连接测试成功', 'Connection test succeeded', 'Kiểm tra kết nối thành công'));
       } else {
         setTestStatus('error');
-        setTestLog(data.message || JSON.stringify(data) || '连接测试失败');
+        setTestLog(data.message || JSON.stringify(data) || tr(locale, '连接测试失败', 'Connection test failed', 'Kiểm tra kết nối thất bại'));
       }
     } catch (e: any) {
       setTestStatus('error');
-      setTestLog(e.message || '网络请求失败');
+      setTestLog(e.message || tr(locale, '网络请求失败', 'Network request failed', 'Yêu cầu mạng thất bại'));
     }
   };
 
@@ -122,12 +125,12 @@ export function AddHostDialog({ open, onOpenChange, onAddHost, onEditHost, editA
         } else {
           const err = await res.json().catch(() => ({}));
           setTestStatus('error');
-          setTestLog(`新建分组失败: ${err.message || res.statusText}`);
+          setTestLog(`${tr(locale, '新建分组失败', 'Failed to create group', 'Tạo nhóm thất bại')}: ${err.message || res.statusText}`);
           return;
         }
       } catch (e: any) {
         setTestStatus('error');
-        setTestLog(`新建分组失败: ${e.message}`);
+        setTestLog(`${tr(locale, '新建分组失败', 'Failed to create group', 'Tạo nhóm thất bại')}: ${e.message}`);
         return;
       }
     }
@@ -150,20 +153,20 @@ export function AddHostDialog({ open, onOpenChange, onAddHost, onEditHost, editA
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{editAsset ? '编辑主机' : '添加主机'}</DialogTitle>
+          <DialogTitle>{editAsset ? tr(locale, '编辑主机', 'Edit Host', 'Chỉnh sửa máy chủ') : tr(locale, '添加主机', 'Add Host', 'Thêm máy chủ')}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <label className="text-sm font-medium">名称/别名</label>
+            <label className="text-sm font-medium">{tr(locale, '名称/别名', 'Name / Alias', 'Tên / Bí danh')}</label>
             <Input 
-              placeholder="例如：生产环境-DB" 
+              placeholder={tr(locale, '例如：生产环境-DB', 'e.g. Prod-DB', 'vd: Production-DB')} 
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             />
           </div>
           <div className="grid grid-cols-3 gap-4">
             <div className="col-span-2 grid gap-2">
-              <label className="text-sm font-medium">IP 地址</label>
+              <label className="text-sm font-medium">{tr(locale, 'IP 地址', 'IP Address', 'Địa chỉ IP')}</label>
               <Input 
                 placeholder="192.168.1.1" 
                 value={formData.ip}
@@ -171,7 +174,7 @@ export function AddHostDialog({ open, onOpenChange, onAddHost, onEditHost, editA
               />
             </div>
             <div className="col-span-1 grid gap-2">
-              <label className="text-sm font-medium">端口</label>
+              <label className="text-sm font-medium">{tr(locale, '端口', 'Port', 'Cổng')}</label>
               <Input 
                 placeholder="22" 
                 value={formData.port}
@@ -181,7 +184,7 @@ export function AddHostDialog({ open, onOpenChange, onAddHost, onEditHost, editA
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <label className="text-sm font-medium">用户名</label>
+              <label className="text-sm font-medium">{tr(locale, '用户名', 'Username', 'Tên đăng nhập')}</label>
               <Input 
                 placeholder="root" 
                 value={formData.username}
@@ -189,12 +192,12 @@ export function AddHostDialog({ open, onOpenChange, onAddHost, onEditHost, editA
               />
             </div>
             <div className="grid gap-2">
-              <label className="text-sm font-medium">所属分组</label>
+              <label className="text-sm font-medium">{tr(locale, '所属分组', 'Group', 'Nhóm')}</label>
               {isCreatingGroup ? (
                 <div className="flex items-center gap-2">
                   <Input 
                     autoFocus 
-                    placeholder="输入新分组名称" 
+                    placeholder={tr(locale, '输入新分组名称', 'Enter new group name', 'Nhập tên nhóm mới')} 
                     value={newGroupName} 
                     onChange={(e) => setNewGroupName(e.target.value)} 
                   />
@@ -219,25 +222,25 @@ export function AddHostDialog({ open, onOpenChange, onAddHost, onEditHost, editA
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="未分组" />
+                    <SelectValue placeholder={tr(locale, '未分组', 'Ungrouped', 'Chưa phân nhóm')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">未分组</SelectItem>
+                    <SelectItem value="none">{tr(locale, '未分组', 'Ungrouped', 'Chưa phân nhóm')}</SelectItem>
                     {groups.map(g => (
                       <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
                     ))}
-                    <SelectItem value="new_group" className="text-blue-600 font-medium">+ 新建分组...</SelectItem>
+                    <SelectItem value="new_group" className="text-blue-600 font-medium">{tr(locale, '+ 新建分组...', '+ New Group...', '+ Tạo nhóm mới...')}</SelectItem>
                   </SelectContent>
                 </Select>
               )}
             </div>
           </div>
           <div className="grid gap-2">
-            <label className="text-sm font-medium">服务器密码</label>
+            <label className="text-sm font-medium">{tr(locale, '服务器密码', 'Password', 'Mật khẩu máy chủ')}</label>
             <div className="relative mt-1">
               <Input 
                 type={showPassword ? "text" : "password"}
-                placeholder="直接输入服务器密码" 
+                placeholder={tr(locale, '直接输入服务器密码', 'Enter server password', 'Nhập mật khẩu máy chủ')} 
                 className="pr-10"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -258,7 +261,7 @@ export function AddHostDialog({ open, onOpenChange, onAddHost, onEditHost, editA
               testStatus === 'error' ? 'bg-red-50 text-red-700 border border-red-200' :
               'bg-blue-50 text-blue-700 border border-blue-200'
             }`}>
-              {testStatus === 'testing' && <span className="flex items-center gap-2"><Loader2 className="w-3.5 h-3.5 animate-spin" /> 正在测试连接...</span>}
+              {testStatus === 'testing' && <span className="flex items-center gap-2"><Loader2 className="w-3.5 h-3.5 animate-spin" /> {tr(locale, '正在测试连接...', 'Testing connection...', 'Đang kiểm tra kết nối...')}</span>}
               {testStatus === 'success' && <span className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5" /> {testLog}</span>}
               {testStatus === 'error' && <span className="flex items-start gap-2"><XCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" /> <span className="whitespace-pre-wrap">{testLog}</span></span>}
             </div>
@@ -271,11 +274,11 @@ export function AddHostDialog({ open, onOpenChange, onAddHost, onEditHost, editA
               onClick={handleTestConnection}
               disabled={!formData.ip || !formData.username || !formData.password || testStatus === 'testing'}
             >
-              测试连接
+              {tr(locale, '测试连接', 'Test Connection', 'Kiểm tra kết nối')}
             </Button>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" onClick={() => onOpenChange(false)}>取消</Button>
-              <Button onClick={handleSubmit} disabled={!formData.name || !formData.ip || !formData.password}>确定</Button>
+              <Button variant="ghost" onClick={() => onOpenChange(false)}>{tr(locale, '取消', 'Cancel', 'Hủy')}</Button>
+              <Button onClick={handleSubmit} disabled={!formData.name || !formData.ip || !formData.password}>{tr(locale, '确定', 'Confirm', 'Xác nhận')}</Button>
           </div>
         </DialogFooter>
       </DialogContent>

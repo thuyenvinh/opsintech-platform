@@ -37,6 +37,8 @@ import {
 } from "@/core/alerting";
 import { useAvailableModels } from "@/core/models/hooks";
 import { useAgents } from "@/core/agents";
+import { tr } from "@/core/i18n";
+import { useI18n } from "@/core/i18n/hooks";
 
 // 定义预设映射的类型
 type PresetType = "generic" | "grafana" | "prometheus";
@@ -78,6 +80,7 @@ const PRESET_MAPPINGS: Record<PresetType, MappingTemplate> = {
 };
 
 export function AlertSourcesTab() {
+  const { locale } = useI18n();
   const { data: sources = [], isLoading, refetch, isFetching } = useAlertSources();
   const { mutateAsync: createSource, isPending: creating } = useCreateAlertSource();
   const { mutateAsync: updateSource, isPending: updating } = useUpdateAlertSource();
@@ -104,11 +107,11 @@ export function AlertSourcesTab() {
 
   const SEVERITY_OPTIONS = ["critical", "major", "minor", "warning", "info"];
   const SEVERITY_LABELS: Record<string, string> = {
-    critical: "严重 (Critical)",
-    major: "重要 (Major)",
-    minor: "一般 (Minor)",
-    warning: "警告 (Warning)",
-    info: "通知 (Info)",
+    critical: tr(locale, "严重 (Critical)", "Critical", "Nghiêm trọng (Critical)"),
+    major: tr(locale, "重要 (Major)", "Major", "Quan trọng (Major)"),
+    minor: tr(locale, "一般 (Minor)", "Minor", "Nhỏ (Minor)"),
+    warning: tr(locale, "警告 (Warning)", "Warning", "Cảnh báo (Warning)"),
+    info: tr(locale, "通知 (Info)", "Info", "Thông tin (Info)"),
   };
 
   const toggleSeverity = (sev: string) => {
@@ -127,7 +130,7 @@ export function AlertSourcesTab() {
   const handleCopy = (text: string, id: string) => {
     void navigator.clipboard.writeText(text);
     setCopiedId(id);
-    toast.success("已复制到剪贴板");
+    toast.success(tr(locale, "已复制到剪贴板", "Copied to clipboard", "Đã sao chép vào khay nhớ tạm"));
     setTimeout(() => setCopiedId(null), 2000);
   };
 
@@ -142,31 +145,56 @@ export function AlertSourcesTab() {
     switch (type.toLowerCase()) {
       case "grafana":
         return {
-          instructions: "在 Grafana 中添加一个新的 contact point（Webhook 类型），将下方的推送地址配置为 URL，HTTP Method 选择为 POST，格式选为 JSON，保存即可。系统内置的 GrafanaProvider 会全自动解析 payload 里的指标、级别与关联面板地址。",
+          instructions: tr(
+            locale,
+            "在 Grafana 中添加一个新的 contact point（Webhook 类型），将下方的推送地址配置为 URL，HTTP Method 选择为 POST，格式选为 JSON，保存即可。系统内置的 GrafanaProvider 会全自动解析 payload 里的指标、级别与关联面板地址。",
+            "Add a new Webhook contact point in Grafana, set the URL below, choose POST with JSON format, and save. The built-in GrafanaProvider automatically parses metrics, severity, and panel links.",
+            "Trong Grafana, thêm một contact point mới (loại Webhook), đặt URL bên dưới làm địa chỉ gửi, chọn HTTP Method là POST, định dạng JSON rồi lưu lại. GrafanaProvider tích hợp sẽ tự động phân tích chỉ số, mức độ và liên kết bảng điều khiển.",
+          ),
           yaml: null,
           curl: `curl -X POST "${url}" \\\n  -H "Content-Type: application/json"${authLine} \\\n  -d '{\n    "status": "firing",\n    "alerts": [\n      {\n        "status": "firing",\n        "labels": {\n          "alertname": "High CPU utilization",\n          "service": "postgres",\n          "environment": "production",\n          "severity": "critical"\n        },\n        "annotations": {\n          "summary": "High CPU utilization on DB",\n          "description": "Database CPU is above 90% for 5 minutes"\n        },\n        "dashboardURL": "http://localhost:3000/d/abc",\n        "panelURL": "http://localhost:3000/d/abc?panelId=1",\n        "generatorURL": "http://localhost:3000/alerts/rule/1"\n      }\n    ],\n    "commonLabels": {\n      "cluster": "prod-us"\n    }\n  }'`
         };
       case "alertmanager":
         return {
-          instructions: "在 Prometheus Alertmanager 的 alertmanager.yml 配置文件中添加一个 webhook_configs 接收器，指向下方推送地址。系统内置的 AlertmanagerProvider 会自动映射标准化警报字段。",
+          instructions: tr(
+            locale,
+            "在 Prometheus Alertmanager 的 alertmanager.yml 配置文件中添加一个 webhook_configs 接收器，指向下方推送地址。系统内置的 AlertmanagerProvider 会自动映射标准化警报字段。",
+            "Add a webhook_configs receiver in Prometheus Alertmanager's alertmanager.yml pointing to the URL below. AlertmanagerProvider automatically maps standard alert fields.",
+            "Thêm bộ nhận webhook_configs trong tệp alertmanager.yml của Prometheus Alertmanager trỏ tới URL bên dưới. AlertmanagerProvider tích hợp sẽ tự động ánh xạ các trường cảnh báo chuẩn.",
+          ),
           yaml: `receivers:\n  - name: 'opsintech-receiver'\n    webhook_configs:\n      - url: '${url}'\n        send_resolved: true`,
           curl: `curl -X POST "${url}" \\\n  -H "Content-Type: application/json"${authLine} \\\n  -d '{\n    "status": "firing",\n    "alerts": [\n      {\n        "status": "firing",\n        "labels": {\n          "alertname": "InstanceDown",\n          "service": "api-gateway",\n          "environment": "production",\n          "severity": "critical"\n        },\n        "annotations": {\n          "summary": "Instance is down",\n          "description": "The api-gateway instance has been down for > 5 minutes"\n        },\n        "fingerprint": "12345abcdef"\n      }\n    ],\n    "externalURL": "http://alertmanager.local"\n  }'`
         };
       case "cloudwatch":
         return {
-          instructions: "在 AWS SNS 控制台中创建一个 HTTPS 类型的订阅，将下方推送地址配置为 Endpoint 终结点。平台会自动确认 SNS 的 SubscriptionConfirmation 并在之后自动将 CloudWatch 报警信号清洗合并为 Incident 告警事件。",
+          instructions: tr(
+            locale,
+            "在 AWS SNS 控制台中创建一个 HTTPS 类型的订阅，将下方推送地址配置为 Endpoint 终结点。平台会自动确认 SNS 的 SubscriptionConfirmation 并在之后自动将 CloudWatch 报警信号清洗合并为 Incident 告警事件。",
+            "Create an HTTPS subscription in the AWS SNS console with the URL below as the Endpoint. The platform automatically confirms SNS SubscriptionConfirmation and normalizes CloudWatch alarms into Incidents.",
+            "Tạo subscription loại HTTPS trong AWS SNS console với Endpoint là URL bên dưới. Nền tảng sẽ tự động xác nhận SubscriptionConfirmation và chuẩn hóa cảnh báo CloudWatch thành sự cố (Incident).",
+          ),
           yaml: null,
           curl: `curl -X POST "${url}" \\\n  -H "Content-Type: application/json"${authLine} \\\n  -d '{\n    "Type": "Notification",\n    "MessageId": "cw-sns-notification-id",\n    "Message": "{\\"AlarmName\\":\\"High-CPU-Usage\\",\\"NewStateValue\\":\\"ALARM\\",\\"NewStateReason\\":\\"Threshold Crossed\\",\\"Region\\":\\"us-west-2\\",\\"Trigger\\":{\\"MetricName\\":\\"CPUUtilization\\",\\"Namespace\\":\\"AWS/EC2\\",\\"Threshold\\":80.0,\\"ComparisonOperator\\":\\"GreaterThanThreshold\\",\\"Dimensions\\":[{\\"name\\":\\"InstanceId\\",\\"value\\":\\"i-123456789\\"}]}}"\n  }'`
         };
       case "datadog":
         return {
-          instructions: "在 Datadog Webhooks Integration 中配置一个指向下方推送地址的新 Webhook。由于 Datadog 监控器报警格式灵活，建议在 Custom Payload 中包含 ID、级别、标题与关联标签，平台将全自动提取清洗指标。",
+          instructions: tr(
+            locale,
+            "在 Datadog Webhooks Integration 中配置一个指向下方推送地址的新 Webhook。由于 Datadog 监控器报警格式灵活，建议在 Custom Payload 中包含 ID、级别、标题与关联标签，平台将全自动提取清洗指标。",
+            "Configure a new Webhook in Datadog Webhooks Integration pointing to the URL below. Include ID, severity, title, and tags in the Custom Payload for automatic normalization.",
+            "Cấu hình Webhook mới trong Datadog Webhooks Integration trỏ tới URL bên dưới. Nên bao gồm ID, mức độ, tiêu đề và thẻ trong Custom Payload để nền tảng tự động trích xuất.",
+          ),
           yaml: null,
           curl: `curl -X POST "${url}" \\\n  -H "Content-Type: application/json"${authLine} \\\n  -d '{\n    "id": "datadog-monitor-123456",\n    "event_title": "High error rate on checkout service",\n    "event_msg": "The error rate on checkout service is 5.4% which is above the warning threshold of 3%",\n    "alert_transition": "triggered",\n    "alert_type": "error",\n    "tags": "service:checkout,env:production,team:billing"\n  }'`
         };
       default:
         return {
-          instructions: "通用 Webhook 接入。当第三方平台推送 JSON Payload 时，平台将依照您在此接入源中配置的「JSONPath 字段映射关系」提取清洗字段值，完成标准化。若无映射则默认不予处理。",
+          instructions: tr(
+            locale,
+            "通用 Webhook 接入。当第三方平台推送 JSON Payload 时，平台将依照您在此接入源中配置的「JSONPath 字段映射关系」提取清洗字段值，完成标准化。若无映射则默认不予处理。",
+            "Generic Webhook integration. When a third-party system posts a JSON payload, the platform extracts and normalizes fields using the configured JSONPath field mapping.",
+            "Tích hợp Webhook chung. Khi hệ thống bên thứ ba gửi JSON Payload, nền tảng sẽ trích xuất và chuẩn hóa các trường theo ánh xạ JSONPath bạn đã cấu hình.",
+          ),
           yaml: null,
           curl: `curl -X POST "${url}" \\\n  -H "Content-Type: application/json"${authLine} \\\n  -d '{\n    "title": "Database connection latency too high",\n    "summary": "Service postgres on production has response time > 500ms over 3 minutes",\n    "severity": "critical",\n    "service": "postgres",\n    "environment": "production",\n    "status": "firing"\n  }'`
         };
@@ -254,7 +282,7 @@ export function AlertSourcesTab() {
 
   const handleCreate = async () => {
     if (!name.trim()) {
-      toast.error("请输入告警源名称");
+      toast.error(tr(locale, "请输入告警源名称", "Please enter alert source name", "Vui lòng nhập tên nguồn cảnh báo"));
       return;
     }
 
@@ -285,7 +313,7 @@ export function AlertSourcesTab() {
 
   const handleUpdate = async () => {
     if (!editSourceId || !name.trim()) {
-      toast.error("请输入告警源名称");
+      toast.error(tr(locale, "请输入告警源名称", "Please enter alert source name", "Vui lòng nhập tên nguồn cảnh báo"));
       return;
     }
 
@@ -313,7 +341,7 @@ export function AlertSourcesTab() {
 
       setIsNewDialogOpen(false);
       setEditSourceId(null);
-      toast.success("告警源已更新");
+      toast.success(tr(locale, "告警源已更新", "Alert source updated", "Đã cập nhật nguồn cảnh báo"));
     } catch {
       // 错误由 Hook 处理
     }
@@ -324,9 +352,11 @@ export function AlertSourcesTab() {
       {/* 描述与控制栏 */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-lg font-bold text-zinc-950 dark:text-zinc-50">告警接入源</h2>
+          <h2 className="text-lg font-bold text-zinc-950 dark:text-zinc-50">
+            {tr(locale, "告警接入源", "Alert Sources", "Nguồn tiếp nhận cảnh báo")}
+          </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            配置运维平台向外公开接收的 webhook 地址，支持与 Grafana、Prometheus 等系统的报警无缝集成。
+            {tr(locale, "配置运维平台向外公开接收的 webhook 地址，支持与 Grafana、Prometheus 等系统的报警无缝集成。", "Configure webhook endpoints to receive alerts from Grafana, Prometheus, and other monitoring systems.", "Cấu hình địa chỉ webhook tiếp nhận cảnh báo từ Grafana, Prometheus và các hệ thống giám sát khác.")}
           </p>
         </div>
 
@@ -339,7 +369,7 @@ export function AlertSourcesTab() {
             disabled={isLoading || isFetching}
           >
             <RefreshCwIcon className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
-            刷新
+            {tr(locale, "刷新", "Refresh", "Làm mới")}
           </Button>
 
           <Button
@@ -348,7 +378,7 @@ export function AlertSourcesTab() {
             onClick={handleOpenNewDialog}
           >
             <PlusIcon className="h-4 w-4" />
-            新建接入源
+            {tr(locale, "新建接入源", "New Source", "Thêm nguồn mới")}
           </Button>
         </div>
       </div>
@@ -363,12 +393,14 @@ export function AlertSourcesTab() {
       ) : sources.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800 py-16 text-center bg-background/30">
           <ShieldAlertIcon className="h-10 w-10 text-zinc-400" />
-          <h3 className="mt-4 text-sm font-semibold text-zinc-800 dark:text-zinc-200">暂无配置告警接入源</h3>
+          <h3 className="mt-4 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+            {tr(locale, "暂无配置告警接入源", "No alert sources configured", "Chưa có nguồn cảnh báo nào")}
+          </h3>
           <p className="mt-1 text-xs text-muted-foreground max-w-sm leading-relaxed px-4">
-            创建新的告警源以获取专属 webhook 接收路径，把生产环境的警报打入本系统。
+            {tr(locale, "创建新的告警源以获取专属 webhook 接收路径，把生产环境的警报打入本系统。", "Create an alert source to get a dedicated webhook URL for your monitoring alerts.", "Tạo nguồn cảnh báo để nhận đường dẫn webhook riêng cho hệ thống giám sát của bạn.")}
           </p>
           <Button size="sm" onClick={handleOpenNewDialog} className="mt-4 gap-1.5 h-8">
-            <PlusIcon className="h-3.5 w-3.5" /> 开启第一次接入
+            <PlusIcon className="h-3.5 w-3.5" /> {tr(locale, "开启第一次接入", "Create First Source", "Tạo nguồn đầu tiên")}
           </Button>
         </div>
       ) : (
@@ -405,7 +437,10 @@ export function AlertSourcesTab() {
                   <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
                     <KeyIcon className="h-3.5 w-3.5 text-zinc-400" />
                     <span>
-                      鉴权: {source.auth_mode === "token" ? `Token 认证 (${sourceTokenHeader})` : "免鉴权 (开放)"}
+                      {tr(locale, "鉴权", "Auth", "Xác thực")}:{" "}
+                      {source.auth_mode === "token"
+                        ? tr(locale, `Token 认证 (${sourceTokenHeader})`, `Token (${sourceTokenHeader})`, `Token (${sourceTokenHeader})`)
+                        : tr(locale, "免鉴权 (开放)", "Open (No Auth)", "Mở (Không xác thực)")}
                     </span>
                   </div>
 
@@ -440,7 +475,9 @@ export function AlertSourcesTab() {
                       disabled={updating}
                     />
                     <span className="text-[10px] text-zinc-400">
-                      {source.status === "active" ? "已启用" : "已禁用"}
+                      {source.status === "active"
+                        ? tr(locale, "已启用", "Enabled", "Đang bật")
+                        : tr(locale, "已禁用", "Disabled", "Đã tắt")}
                     </span>
                   </div>
 
@@ -450,7 +487,7 @@ export function AlertSourcesTab() {
                       size="sm"
                       className="h-8 w-8 p-0 text-zinc-400 hover:text-primary"
                       onClick={() => handleOpenEditDialog(source)}
-                      title="编辑"
+                      title={tr(locale, "编辑", "Edit", "Chỉnh sửa")}
                     >
                       <PencilIcon className="h-3.5 w-3.5" />
                     </Button>
@@ -461,14 +498,14 @@ export function AlertSourcesTab() {
                       onClick={() => setActiveSourceForDocs(source)}
                     >
                       <BookOpenIcon className="h-3.5 w-3.5" />
-                      文档
+                      {tr(locale, "文档", "Docs", "Tài liệu")}
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
                       className="h-8 w-8 p-0 text-zinc-400 hover:text-rose-500"
                       onClick={() => {
-                        if (confirm(`确定删除告警源「${source.name}」？`)) {
+                        if (confirm(tr(locale, `确定删除告警源「${source.name}」？`, `Delete alert source "${source.name}"?`, `Xác nhận xóa nguồn cảnh báo "${source.name}"?`))) {
                           deleteSource(source.id);
                         }
                       }}
@@ -490,7 +527,9 @@ export function AlertSourcesTab() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShieldAlertIcon className="h-5 w-5 text-indigo-500" />
-              {editSourceId ? "编辑告警接入源" : "创建新告警接入源"}
+              {editSourceId
+                ? tr(locale, "编辑告警接入源", "Edit Alert Source", "Chỉnh sửa nguồn cảnh báo")
+                : tr(locale, "创建新告警接入源", "Create Alert Source", "Tạo nguồn cảnh báo mới")}
             </DialogTitle>
           </DialogHeader>
 
@@ -498,9 +537,11 @@ export function AlertSourcesTab() {
             {/* 基础配置 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">告警源名称</label>
+                <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                  {tr(locale, "告警源名称", "Source Name", "Tên nguồn cảnh báo")}
+                </label>
                 <Input
-                  placeholder="e.g. 核心生产 Kubernetes 告警"
+                  placeholder={tr(locale, "e.g. 核心生产 Kubernetes 告警", "e.g. Production Kubernetes Alerts", "vd: Cảnh báo Kubernetes Production")}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="h-9.5 text-xs"
@@ -508,14 +549,16 @@ export function AlertSourcesTab() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">类型 (Provider Type)</label>
+                <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                  {tr(locale, "类型 (Provider Type)", "Provider Type", "Loại nguồn (Provider Type)")}
+                </label>
                 <select
-                  aria-label="告警源类型"
+                  aria-label={tr(locale, "告警源类型", "Alert Source Type", "Loại nguồn cảnh báo")}
                   value={type}
                   onChange={(e) => setType(e.target.value)}
                   className="w-full h-9.5 px-3 text-xs rounded-md border border-zinc-200 dark:border-zinc-800 bg-background outline-none cursor-pointer"
                 >
-                  <option value="webhook">Webhook (通用 JSON)</option>
+                  <option value="webhook">{tr(locale, "Webhook (通用 JSON)", "Webhook (Generic JSON)", "Webhook (JSON chung)")}</option>
                   <option value="alertmanager">Prometheus Alertmanager</option>
                   <option value="grafana">Grafana Alerting</option>
                   <option value="cloudwatch">AWS CloudWatch</option>
@@ -529,7 +572,9 @@ export function AlertSourcesTab() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <KeyIcon className="h-4 w-4 text-zinc-500" />
-                  <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200">接收端安全鉴权 (Authentication)</span>
+                  <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
+                    {tr(locale, "接收端安全鉴权 (Authentication)", "Authentication", "Xác thực bảo mật (Authentication)")}
+                  </span>
                 </div>
 
                 <div className="flex gap-2">
@@ -541,7 +586,7 @@ export function AlertSourcesTab() {
                       : "bg-background text-zinc-600 border-zinc-200 dark:text-zinc-400 dark:border-zinc-800"
                       }`}
                   >
-                    Token 认证
+                    {tr(locale, "Token 认证", "Token Auth", "Xác thực Token")}
                   </button>
                   <button
                     type="button"
@@ -551,7 +596,7 @@ export function AlertSourcesTab() {
                       : "bg-background text-zinc-600 border-zinc-200 dark:text-zinc-400 dark:border-zinc-800"
                       }`}
                   >
-                    开放 (免鉴权)
+                    {tr(locale, "开放 (免鉴权)", "Open (No Auth)", "Mở (Không xác thực)")}
                   </button>
                 </div>
               </div>
@@ -559,7 +604,9 @@ export function AlertSourcesTab() {
               {authMode === "token" && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
                   <div className="space-y-1.5">
-                    <label className="text-[11px] font-medium text-zinc-500">HTTP 请求头字段 (Header Key)</label>
+                    <label className="text-[11px] font-medium text-zinc-500">
+                      {tr(locale, "HTTP 请求头字段 (Header Key)", "HTTP Header Key", "Tên trường HTTP Header (Header Key)")}
+                    </label>
                     <Input
                       value={tokenHeader}
                       onChange={(e) => setTokenHeader(e.target.value)}
@@ -568,7 +615,9 @@ export function AlertSourcesTab() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-[11px] font-medium text-zinc-500">验证密钥 (Header Value / Token)</label>
+                    <label className="text-[11px] font-medium text-zinc-500">
+                      {tr(locale, "验证密钥 (Header Value / Token)", "Token / Secret", "Mã xác thực (Header Value / Token)")}
+                    </label>
                     <div className="flex gap-1.5">
                       <Input
                         value={token}
@@ -582,7 +631,7 @@ export function AlertSourcesTab() {
                         className="h-8 text-[10px] shrink-0 font-medium px-2"
                         onClick={generateRandomToken}
                       >
-                        重新生成
+                        {tr(locale, "重新生成", "Regenerate", "Tạo lại")}
                       </Button>
                     </div>
                   </div>
@@ -596,7 +645,7 @@ export function AlertSourcesTab() {
                 <div className="flex items-center gap-1.5">
                   <Settings2Icon className="h-4 w-4 text-zinc-500" />
                   <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
-                    AI 智能解读 (Alert Translator)
+                    {tr(locale, "AI 智能解读 (Alert Translator)", "AI Alert Analysis", "Phân tích AI thông minh (Alert Translator)")}
                   </span>
                 </div>
                 <Switch
@@ -609,7 +658,7 @@ export function AlertSourcesTab() {
                 <div className="pt-2 space-y-3">
                   <div className="space-y-2">
                     <p className="text-[11px] text-muted-foreground">
-                      选择需要 AI 自动解读的告警级别：
+                      {tr(locale, "选择需要 AI 自动解读的告警级别：", "Select alert severities for AI analysis:", "Chọn mức độ cảnh báo cần AI tự động phân tích:")}
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {SEVERITY_OPTIONS.map((sev) => (
@@ -634,10 +683,10 @@ export function AlertSourcesTab() {
 
                   <div className="space-y-1.5">
                     <p className="text-[11px] text-muted-foreground">
-                      AI 解读模型：
+                      {tr(locale, "AI 解读模型：", "AI Analysis Model:", "Mô hình AI phân tích:")}
                     </p>
                     <select
-                      aria-label="AI 解读模型"
+                      aria-label={tr(locale, "AI 解读模型", "AI Analysis Model", "Mô hình AI phân tích")}
                       value={aiAnalysisModel}
                       onChange={(e) => setAiAnalysisModel(e.target.value)}
                       className="w-full h-9 px-3 text-xs rounded-md border border-zinc-200 dark:border-zinc-800 bg-background outline-none cursor-pointer"
@@ -654,15 +703,15 @@ export function AlertSourcesTab() {
 
                   <div className="space-y-1.5">
                     <p className="text-[11px] text-muted-foreground">
-                      深度诊断智能体（可选）：
+                      {tr(locale, "深度诊断智能体（可选）：", "Deep Diagnosis Agent (Optional):", "Trợ lý chẩn đoán chuyên sâu (Tùy chọn):")}
                     </p>
                     <select
-                      aria-label="深度诊断智能体"
+                      aria-label={tr(locale, "深度诊断智能体", "Deep Diagnosis Agent", "Trợ lý chẩn đoán chuyên sâu")}
                       value={diagnosisAgentId}
                       onChange={(e) => setDiagnosisAgentId(e.target.value)}
                       className="w-full h-9 px-3 text-xs rounded-md border border-zinc-200 dark:border-zinc-800 bg-background outline-none cursor-pointer"
                     >
-                      <option value="">不使用</option>
+                      <option value="">{tr(locale, "不使用", "None", "Không sử dụng")}</option>
                       {agents
                         .filter((a) => a.enabled && a.is_shared)
                         .map((a) => (
@@ -683,7 +732,7 @@ export function AlertSourcesTab() {
                   <div className="flex items-center gap-1.5">
                     <Settings2Icon className="h-4 w-4 text-zinc-500" />
                     <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
-                      图形化 JSONPath 字段映射 (Field Normalization)
+                      {tr(locale, "图形化 JSONPath 字段映射 (Field Normalization)", "JSONPath Field Mapping (Field Normalization)", "Ánh xạ trường JSONPath (Chuẩn hóa trường)")}
                     </span>
                   </div>
 
@@ -696,7 +745,7 @@ export function AlertSourcesTab() {
                         : "bg-background text-zinc-500 border-zinc-200"
                         }`}
                     >
-                      通用模板
+                      {tr(locale, "通用模板", "Generic", "Mẫu chung")}
                     </button>
                     <button
                       type="button"
@@ -722,14 +771,16 @@ export function AlertSourcesTab() {
                 </div>
 
                 <p className="text-[11px] text-muted-foreground leading-normal mt-1">
-                  平台会将您推送的任意 JSON 警报标准化归因。输入 JSONPath 点规则（如 <code>$.alert.name</code>）指定如何抽取标准数据：
+                  {tr(locale, "平台会将您推送的任意 JSON 警报标准化归因。输入 JSONPath 点规则（如 ", "The platform normalizes incoming JSON alerts. Enter JSONPath expressions (e.g., ", "Nền tảng sẽ chuẩn hóa mọi cảnh báo JSON gửi tới. Nhập quy tắc JSONPath (vd: ")}
+                  <code>$.alert.name</code>
+                  {tr(locale, "）指定如何抽取标准数据：", ") to map standard fields:", ") để trích xuất dữ liệu chuẩn:")}
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 mt-2 bg-zinc-50/50 dark:bg-zinc-900/20 p-4 rounded-xl border">
                   {/* 标题 */}
                   <div className="space-y-1">
                     <div className="flex items-center gap-1">
-                      <span className="text-[11px] font-semibold">事件标题 (Title)</span>
+                      <span className="text-[11px] font-semibold">{tr(locale, "事件标题 (Title)", "Incident Title", "Tiêu đề sự cố (Title)")}</span>
                       <span className="text-rose-500 text-[10px]">*</span>
                     </div>
                     <Input
@@ -742,7 +793,7 @@ export function AlertSourcesTab() {
 
                   {/* 概述 */}
                   <div className="space-y-1">
-                    <span className="text-[11px] font-semibold">详细描述 (Summary)</span>
+                    <span className="text-[11px] font-semibold">{tr(locale, "详细描述 (Summary)", "Summary", "Mô tả chi tiết (Summary)")}</span>
                     <Input
                       value={mapping.summary}
                       onChange={(e) => setMapping({ ...mapping, summary: e.target.value })}
@@ -753,7 +804,7 @@ export function AlertSourcesTab() {
 
                   {/* 严重度 */}
                   <div className="space-y-1">
-                    <span className="text-[11px] font-semibold">严重度 (Severity)</span>
+                    <span className="text-[11px] font-semibold">{tr(locale, "严重度 (Severity)", "Severity", "Mức độ (Severity)")}</span>
                     <Input
                       value={mapping.severity}
                       onChange={(e) => setMapping({ ...mapping, severity: e.target.value })}
@@ -764,7 +815,7 @@ export function AlertSourcesTab() {
 
                   {/* 服务名 */}
                   <div className="space-y-1">
-                    <span className="text-[11px] font-semibold">归属服务名 (Service)</span>
+                    <span className="text-[11px] font-semibold">{tr(locale, "归属服务名 (Service)", "Service", "Tên dịch vụ (Service)")}</span>
                     <Input
                       value={mapping.service}
                       onChange={(e) => setMapping({ ...mapping, service: e.target.value })}
@@ -775,7 +826,7 @@ export function AlertSourcesTab() {
 
                   {/* 环境名 */}
                   <div className="space-y-1">
-                    <span className="text-[11px] font-semibold">归属环境 (Environment)</span>
+                    <span className="text-[11px] font-semibold">{tr(locale, "归属环境 (Environment)", "Environment", "Môi trường (Environment)")}</span>
                     <Input
                       value={mapping.environment}
                       onChange={(e) => setMapping({ ...mapping, environment: e.target.value })}
@@ -786,7 +837,7 @@ export function AlertSourcesTab() {
 
                   {/* 状态 */}
                   <div className="space-y-1">
-                    <span className="text-[11px] font-semibold">警报状态 (Status: firing/resolved)</span>
+                    <span className="text-[11px] font-semibold">{tr(locale, "警报状态 (Status: firing/resolved)", "Status (firing/resolved)", "Trạng thái (Status: firing/resolved)")}</span>
                     <Input
                       value={mapping.status}
                       onChange={(e) => setMapping({ ...mapping, status: e.target.value })}
@@ -801,15 +852,15 @@ export function AlertSourcesTab() {
 
           <DialogFooter className="mt-6 border-t pt-4">
             <Button variant="outline" size="sm" onClick={() => { setIsNewDialogOpen(false); setEditSourceId(null); }} disabled={creating || updating}>
-              取消
+              {tr(locale, "取消", "Cancel", "Hủy")}
             </Button>
             {editSourceId ? (
               <Button size="sm" onClick={handleUpdate} disabled={updating} className="bg-primary text-primary-foreground">
-                {updating ? "保存中..." : "保存修改"}
+                {updating ? tr(locale, "保存中...", "Saving...", "Đang lưu...") : tr(locale, "保存修改", "Save Changes", "Lưu thay đổi")}
               </Button>
             ) : (
               <Button size="sm" onClick={handleCreate} disabled={creating} className="bg-primary text-primary-foreground">
-                {creating ? "创建中..." : "保存并启用"}
+                {creating ? tr(locale, "创建中...", "Creating...", "Đang tạo...") : tr(locale, "保存并启用", "Save & Enable", "Lưu & Kích hoạt")}
               </Button>
             )}
           </DialogFooter>
@@ -822,14 +873,16 @@ export function AlertSourcesTab() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-zinc-950 dark:text-zinc-50">
               <BookOpenIcon className="h-5 w-5 text-indigo-500" />
-              接入集成指南: {activeSourceForDocs?.name}
+              {tr(locale, "接入集成指南", "Integration Guide", "Hướng dẫn tích hợp")}: {activeSourceForDocs?.name}
             </DialogTitle>
           </DialogHeader>
 
           {activeSourceForDocs && docInfo && (
             <div className="space-y-5 py-3 text-xs leading-relaxed text-zinc-700 dark:text-zinc-300 w-full min-w-0 overflow-hidden">
               <div>
-                <p className="text-zinc-800 dark:text-zinc-200 font-semibold mb-1">1. 推送地址 (Ingest Webhook URL)</p>
+                <p className="text-zinc-800 dark:text-zinc-200 font-semibold mb-1">
+                  1. {tr(locale, "推送地址 (Ingest Webhook URL)", "Ingest Webhook URL", "Địa chỉ gửi Webhook (Ingest URL)")}
+                </p>
                 <div className="flex items-center gap-1 rounded-lg border bg-zinc-50 dark:bg-zinc-900/40 p-2 font-mono text-[11px] mt-1.5">
                   <span className="flex-1 truncate text-zinc-600 dark:text-zinc-300">
                     {getIngestUrl(activeSourceForDocs.id)}
@@ -851,8 +904,12 @@ export function AlertSourcesTab() {
 
               {activeSourceForDocs.auth_mode === "token" && (
                 <div>
-                  <p className="text-zinc-800 dark:text-zinc-200 font-semibold mb-1">2. 认证请求头 (Authentication Header)</p>
-                  <p className="text-muted-foreground mt-0.5">您需要在警报推送的 HTTP Post 请求头中附带验证头字段与值：</p>
+                  <p className="text-zinc-800 dark:text-zinc-200 font-semibold mb-1">
+                    2. {tr(locale, "认证请求头 (Authentication Header)", "Authentication Header", "Header xác thực (Authentication Header)")}
+                  </p>
+                  <p className="text-muted-foreground mt-0.5">
+                    {tr(locale, "您需要在警报推送的 HTTP Post 请求头中附带验证头字段与值：", "Include the following verification header and token in your HTTP POST request:", "Bạn cần đính kèm trường và giá trị xác thực sau vào HTTP POST Header:")}
+                  </p>
 
                   <div className="grid grid-cols-2 gap-2 mt-2 bg-zinc-50/50 dark:bg-zinc-900/20 p-3 rounded-lg border text-left">
                     <div>
@@ -874,13 +931,15 @@ export function AlertSourcesTab() {
               <div>
                 <p className="text-zinc-800 dark:text-zinc-200 font-semibold mb-1 flex items-center gap-1.5">
                   <TerminalIcon className="h-4 w-4 text-zinc-500" />
-                  3. 接入配置步骤 (Integration Setup)
+                  3. {tr(locale, "接入配置步骤 (Integration Setup)", "Integration Setup", "Các bước cấu hình tích hợp (Integration Setup)")}
                 </p>
                 <p className="text-muted-foreground mt-0.5">{docInfo.instructions}</p>
 
                 {docInfo.yaml && (
                   <div className="mt-3">
-                    <p className="text-[11px] text-zinc-500 font-semibold mb-1">Alertmanager 配置片段 (YAML):</p>
+                    <p className="text-[11px] text-zinc-500 font-semibold mb-1">
+                      {tr(locale, "Alertmanager 配置片段 (YAML):", "Alertmanager Config Snippet (YAML):", "Đoạn cấu hình Alertmanager (YAML):")}
+                    </p>
                     <div className="relative rounded-lg border bg-zinc-950 p-4 font-mono text-[10.5px] leading-relaxed text-zinc-100 w-full max-w-full overflow-hidden">
                       <pre className="overflow-x-auto whitespace-pre pr-8 pb-1 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent">{docInfo.yaml}</pre>
                       <Button
@@ -900,7 +959,9 @@ export function AlertSourcesTab() {
                 )}
 
                 <div className="mt-3">
-                  <p className="text-[11px] text-zinc-500 font-semibold mb-1">CURL 模拟警报测试指令 (Shell Command):</p>
+                  <p className="text-[11px] text-zinc-500 font-semibold mb-1">
+                    {tr(locale, "CURL 模拟警报测试指令 (Shell Command):", "CURL Test Command (Shell):", "Lệnh CURL kiểm tra giả lập cảnh báo:")}
+                  </p>
                   <div className="relative rounded-lg border bg-zinc-950 p-4 font-mono text-[10.5px] leading-relaxed text-zinc-100 w-full max-w-full overflow-hidden">
                     <pre className="overflow-x-auto whitespace-pre pr-8 pb-1 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent">{docInfo.curl}</pre>
                     <Button
@@ -923,7 +984,7 @@ export function AlertSourcesTab() {
 
           <DialogFooter className="mt-4 border-t pt-4">
             <Button size="sm" onClick={() => setActiveSourceForDocs(null)} className="bg-primary text-primary-foreground">
-              我已了解
+              {tr(locale, "我已了解", "Got it", "Đã hiểu")}
             </Button>
           </DialogFooter>
         </DialogContent>

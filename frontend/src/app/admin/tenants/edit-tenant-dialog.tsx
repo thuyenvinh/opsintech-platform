@@ -53,6 +53,8 @@ export function EditTenantDialog({
       ? "カスタム"
       : locale === "ko"
       ? "사용자 정의"
+      : locale === "vi"
+      ? "Tùy chỉnh"
       : "Custom";
 
   const customEmptyError =
@@ -62,6 +64,8 @@ export function EditTenantDialog({
       ? "カスタムタイプは空にできません"
       : locale === "ko"
       ? "사용자 정의 유형은 비워 둘 수 없습니다"
+      : locale === "vi"
+      ? "Loại tùy chỉnh không được để trống"
       : "Custom type cannot be empty";
 
   const customPlaceholder =
@@ -71,6 +75,8 @@ export function EditTenantDialog({
       ? "カスタムワークスペース类型を入力してください (例: security)"
       : locale === "ko"
       ? "사용자 정의 워크스페이스 유형을 입력하십시오 (예: security)"
+      : locale === "vi"
+      ? "Nhập loại không gian làm việc tùy chỉnh (vd: security)"
       : "Please enter custom workspace type (e.g., security)";
 
   useEffect(() => {

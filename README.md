@@ -234,7 +234,7 @@ This space is almost entirely vacant in open source. That's why we need communit
    make config
    ```
 
-   Generates `config.yaml` with platform-level settings (database, sandbox, tool groups). **No model configuration needed.**
+   Generates `config.yaml` with platform-level settings (database, sandbox, checkpointer). **No model configuration needed.**
 
 2. **Start and log in**
 

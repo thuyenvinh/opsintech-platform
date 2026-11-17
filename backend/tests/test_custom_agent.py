@@ -513,13 +513,13 @@ class TestAgentsAPI:
         """Explicit null clears tool_groups (model_fields_set distinguishes from absent)."""
         agent_client.post(
             "/api/agents",
-            json={"name": "clear-tools", "system_prompt": "p", "tool_groups": ["bash", "read"]},
+            json={"name": "clear-tools", "system_prompt": "p", "tool_groups": ["bash", "file:read"]},
         )
 
         # Verify created with tool_groups
         get_resp = agent_client.get("/api/agents/clear-tools")
         assert get_resp.status_code == 200
-        assert get_resp.json()["tool_groups"] == ["bash", "read"]
+        assert get_resp.json()["tool_groups"] == ["bash", "file:read"]
 
         # Clear with explicit null
         response = agent_client.put(

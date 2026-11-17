@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useAgent, useSkills, useUpdateAgent } from "@/core/agents";
+import { PLATFORM_TOOL_GROUPS, useAgent, useSkills, useUpdateAgent } from "@/core/agents";
 import { useCurrentTenant } from "@/core/tenants/hooks";
 import { isTenantAdminRole } from "@/core/permissions/scope";
 import type { UpdateAgentRequest } from "@/core/agents";
@@ -55,7 +55,7 @@ export function EditAgentDialog({ agentName, open, onOpenChange, onSuccess }: Ed
   const [tagInput, setTagInput] = useState("");
   const [enabled, setEnabled] = useState(true);
   const [isShared, setIsShared] = useState(false);
-  const [activeTab, setActiveTab] = useState<"mcp" | "custom" | "public">("mcp");
+  const [activeTab, setActiveTab] = useState<"mcp" | "groups" | "custom" | "public">("mcp");
 
   const { data: currentTenant } = useCurrentTenant();
   const isTenantAdmin = isTenantAdminRole(currentTenant?.role);
@@ -141,16 +141,20 @@ export function EditAgentDialog({ agentName, open, onOpenChange, onSuccess }: Ed
     }
   };
 
-  const getActiveList = () => {
+  const getActiveList = (): { name: string }[] => {
     if (activeTab === "mcp") return availableMcps || [];
+    if (activeTab === "groups") return PLATFORM_TOOL_GROUPS;
     if (activeTab === "custom") return skillsByCategory["custom"] || [];
     return skillsByCategory["public"] || [];
   };
 
+  // The MCP and built-in tabs both pick tool groups; the skill tabs pick skills.
+  const isToolGroupTab = activeTab === "mcp" || activeTab === "groups";
+
   const activeList = getActiveList();
   const isAllSelected = (() => {
     if (activeList.length === 0) return false;
-    if (activeTab === "mcp") {
+    if (isToolGroupTab) {
       return activeList.every((item) => selectedToolGroups.has(item.name));
     } else {
       return activeList.every((item) => selectedSkills.has(item.name));
@@ -158,7 +162,7 @@ export function EditAgentDialog({ agentName, open, onOpenChange, onSuccess }: Ed
   })();
 
   const handleToggleSelectAll = () => {
-    if (activeTab === "mcp") {
+    if (isToolGroupTab) {
       const next = new Set(selectedToolGroups);
       if (isAllSelected) {
         activeList.forEach((item) => next.delete(item.name));
@@ -178,6 +182,35 @@ export function EditAgentDialog({ agentName, open, onOpenChange, onSuccess }: Ed
   };
 
   const renderToolList = () => {
+    if (activeTab === "groups") {
+      return (
+        <>
+          <p className="text-[11px] text-muted-foreground px-1 pb-1">
+            {tr(
+              locale,
+              "不勾选任何工具组时，智能体可使用全部工具；一旦勾选，则仅限所选工具组。",
+              "With nothing selected the agent may use every tool; selecting groups restricts it to those groups.",
+              "Không chọn nhóm nào thì trợ lý dùng được mọi công cụ; đã chọn thì chỉ dùng các nhóm đã chọn.",
+            )}
+          </p>
+          {PLATFORM_TOOL_GROUPS.map((group) => (
+            <label
+              key={group.name}
+              className="flex cursor-pointer items-start gap-2.5 rounded-md px-2 py-1.5 hover:bg-muted/50 transition-colors"
+            >
+              <Checkbox
+                checked={selectedToolGroups.has(group.name)}
+                onCheckedChange={() => toggleToolGroup(group.name)}
+              />
+              <div className="min-w-0 -mt-0.5">
+                <div className="text-xs font-medium font-mono">{group.name}</div>
+                <div className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">{group.tools}</div>
+              </div>
+            </label>
+          ))}
+        </>
+      );
+    }
     if (activeTab === "mcp") {
       if (isLoadingMcps) {
         return <div className="text-xs text-muted-foreground py-8 text-center">{tr(locale, "正在加载 MCP 扩展...", "Loading MCP tools...", "Đang tải công cụ MCP...")}</div>;
@@ -469,6 +502,20 @@ export function EditAgentDialog({ agentName, open, onOpenChange, onSuccess }: Ed
                       onClick={() => setActiveTab("mcp")}
                     >
                       {tr(locale, "MCP工具", "MCP Tools", "Công cụ MCP")}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "px-4 py-1.5 h-8 text-xs font-medium transition-all rounded-md border",
+                        activeTab === "groups"
+                          ? "border-primary text-primary bg-primary/5 hover:bg-primary/10"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                      onClick={() => setActiveTab("groups")}
+                    >
+                      {tr(locale, "内置工具组", "Built-in Tools", "Công cụ tích hợp")}
                     </Button>
                     <Button
                       type="button"

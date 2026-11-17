@@ -12,10 +12,14 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.gateway.authorization import require_tenant_context, _is_tenant_admin
 from app.gateway.i18n import tr
+from app.gateway.permissions import is_platform_admin, require_cap
 from app.models.agents import CustomAgent
+from deerflow.config import get_app_config
 from deerflow.config.agents_config import AgentConfig
 from deerflow.config.paths import get_paths
+from deerflow.config.tool_config import BUILTIN_TOOL_GROUPS, normalize_tool_groups
 from deerflow.database.session import get_session
+from deerflow.database.user_config_service import get_available_mcp_servers
 from deerflow.skills import load_skills
 
 logger = logging.getLogger(__name__)
@@ -160,6 +164,66 @@ def _get_user_id(request: Request) -> str:
     return user_id
 
 
+def _platform_tool_groups() -> set[str]:
+    """Tool groups the platform defines, independent of any tenant."""
+    config = get_app_config()
+    names = set(BUILTIN_TOOL_GROUPS)
+    names.update(group.name for group in config.tool_groups)
+    names.update(tool.group for tool in config.tools if tool.group)
+    return names
+
+
+async def _tenant_mcp_tool_groups(request: Request, tenant_id: str, user_id: str) -> set[str]:
+    """MCP server names usable in this tenant — each one is a tool group.
+
+    The platform has no per-tenant tool-group table: the tenant admin's Tools
+    page and the agent editor both work off the MCP server registry
+    (``TenantMcpServer``), so the registered server names are the tenant's
+    allowed groups beyond the platform ones. Servers the tenant admin has
+    disabled stay in the set — the runtime loads only enabled servers, so
+    naming a disabled one grants nothing, and leaving it out would make an
+    agent unsaveable while its server is off.
+    """
+    try:
+        rows = await get_available_mcp_servers(
+            user_id,
+            tenant_id,
+            is_tenant_admin=_is_tenant_admin(request),
+            is_platform_admin=is_platform_admin(request),
+        )
+    except Exception as e:
+        # Fail closed: an unreadable registry allows no tool group beyond the
+        # platform ones.
+        logger.error(f"Could not resolve allowed MCP tool groups for tenant {tenant_id}: {e}", exc_info=True)
+        return set()
+    return {str(row["name"]) for row in rows if row.get("name")}
+
+
+async def _validate_tool_groups(request: Request, tenant_id: str, user_id: str, groups: list[str] | None) -> None:
+    """Reject a tool group whitelist that reaches outside what the tenant allows."""
+    requested = normalize_tool_groups(groups)
+    if requested is None:
+        return
+
+    unresolved = requested - _platform_tool_groups()
+    if not unresolved:
+        return
+
+    offending = sorted(unresolved - await _tenant_mcp_tool_groups(request, tenant_id, user_id))
+    if not offending:
+        return
+
+    names = ", ".join(offending)
+    raise HTTPException(
+        status_code=422,
+        detail=tr(
+            f"当前租户不允许以下工具组：{names}。",
+            f"Tool group(s) not allowed in this tenant: {names}.",
+            f"Nhóm công cụ không được phép trong tổ chức này: {names}.",
+        ),
+    )
+
+
 # ---------------------------------------------------------------------------
 # Agent CRUD endpoints
 # ---------------------------------------------------------------------------
@@ -275,6 +339,7 @@ async def get_agent(
     response_model=AgentResponse,
     status_code=201,
     summary="Create Custom Agent",
+    dependencies=[Depends(require_cap("agent.own.write"))],
 )
 async def create_agent_endpoint(
     body: AgentCreateRequest,
@@ -295,6 +360,8 @@ async def create_agent_endpoint(
     system_prompt = (body.system_prompt or body.soul or "").strip()
     if not system_prompt:
         raise HTTPException(status_code=422, detail="system_prompt is required and must not be empty")
+
+    await _validate_tool_groups(request, tenant_id, user_id, body.tool_groups)
 
     # Check uniqueness
     result = await session.exec(
@@ -342,6 +409,7 @@ async def create_agent_endpoint(
     "/agents/{name}",
     response_model=AgentResponse,
     summary="Update Custom Agent",
+    dependencies=[Depends(require_cap("agent.own.write"))],
 )
 async def update_agent(
     name: str,
@@ -378,6 +446,9 @@ async def update_agent(
         raise HTTPException(status_code=403, detail="Only the agent owner can update this agent")
 
     fields_set = body.model_fields_set
+
+    if "tool_groups" in fields_set:
+        await _validate_tool_groups(request, tenant_id, user_id, body.tool_groups)
 
     # If updating shared status
     if "is_shared" in fields_set and body.is_shared is not None:
@@ -442,6 +513,7 @@ async def update_agent(
     "/agents/{name}",
     status_code=204,
     summary="Delete Custom Agent",
+    dependencies=[Depends(require_cap("agent.own.write"))],
 )
 async def delete_agent(
     name: str,

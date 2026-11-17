@@ -17,6 +17,18 @@ export interface Agent {
   knowledge_base_ids?: string[];
 }
 
+/**
+ * Tool groups the platform itself defines, mirroring DEFAULT_TOOL_GROUPS in
+ * backend/packages/harness/deerflow/config/tool_config.py. MCP server names are
+ * tool groups too; those come from the tenant's MCP registry.
+ */
+export const PLATFORM_TOOL_GROUPS: { name: string; tools: string }[] = [
+  { name: "web", tools: "web_search, web_fetch, image_search" },
+  { name: "file:read", tools: "ls, read_file" },
+  { name: "file:write", tools: "write_file, str_replace" },
+  { name: "bash", tools: "bash" },
+];
+
 export interface Skill {
   name: string;
   description: string;

@@ -379,7 +379,7 @@ Entry: `make_lead_agent(config)` in `packages/harness/deerflow/agents/lead_agent
 Creates a LangGraph agent with:
 
 - Model from the factory (DB-driven model selection)
-- Tools filtered by agent's `tool_groups` whitelist
+- Tools filtered by the agent's `tool_groups` whitelist (empty whitelist = every tool)
 - Middleware chain for uploads, sandbox, summarization, memory, etc.
 - Skills injected into system prompt
 
@@ -421,7 +421,7 @@ Tools come from three sources merged at runtime:
 - **Configured tools** (from DB): `web_search`, `web_fetch`, `bash`, `read_file`, `write_file`, `str_replace`, `ls`
 - **MCP tools** (from DB per-tenant): External servers via stdio/SSE/HTTP transports
 
-Tool groups (`web`, `file:read`, `file:write`, `bash`) are used by custom agents for tool whitelisting.
+Tool groups are the unit of custom-agent whitelisting. The platform defines `web`, `file:read`, `file:write` and `bash` (`DEFAULT_TOOL_GROUPS` in `packages/harness/deerflow/config/tool_config.py`, extensible through `tools` / `tool_groups` in `config.yaml`); every MCP server name is also a group, covering the tools that server exposes. An agent whose `tool_groups` is empty gets all of them; a non-empty whitelist keeps only the named groups plus the ungrouped plumbing tools (`present_files`, `ask_clarification`, `task`, `view_image`, `tool_search`, `search_knowledge_base`), and when tool search is active only whitelisted MCP tools are discoverable. The gateway rejects a whitelist naming a group the tenant does not have (HTTP 422), so a tenant member cannot widen their own agent's reach.
 
 ## Configuration Flow
 

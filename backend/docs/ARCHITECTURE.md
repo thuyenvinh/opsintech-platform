@@ -63,12 +63,29 @@ Provides REST endpoints for management and non-agent operations. All business AP
 | `suggestions`         | `GET /api/threads/{id}/suggestions`                                      | Follow-up suggestions                                                |
 | `memory`              | `GET /api/memory`                                                        | Memory management                                                    |
 | `announcements`       | `GET /api/announcements`                                                 | Platform announcements                                               |
-| `channels`            | `GET /api/channels`                                                      | IM channel management                                                |
-| `auth` (Auth helpers) | `POST /api/auth/resolve-username` `POST /api/auth/setup-bootstrap-admin` | Unauthenticated endpoints for username login and initial admin setup |
+| `channels`            | `GET /api/channels` `GET /api/tenant-im`                                 | IM channel status / restart / test, per-tenant IM settings           |
+| `alerts`              | `POST /api/alerts/ingest/{source_id}` `GET /api/incidents`               | Alert ingestion, incident lifecycle, alert sources, rules, changes   |
+| `knowledge`           | `GET /api/knowledge/bases` `POST /api/knowledge/search`                  | Knowledge bases, document upload, hybrid retrieval                   |
+| `terminal`            | `WS /api/v1/terminal/ws` `POST /api/v1/terminal/invoke`                  | Terminal sessions, AI invoke, approvals, security settings, audit    |
+| `assets`              | `GET /api/v1/assets/local`                                               | Terminal target hosts, asset groups, credential keychains            |
+| `files`               | `GET /api/files` `POST /api/files/upload`                                | Tenant file manager: folders, upload, preview, download              |
+| `templates`           | `GET /api/templates`                                                     | Document/report template library                                     |
+| `summarization`       | `GET /api/tenant-admin/settings/summarization`                           | Per-tenant context-reduction settings                                |
+| `auth` (Auth helpers) | `POST /api/auth/login` `GET /api/auth/bootstrap-status`                  | Session login/signup/logout and initial admin setup                  |
 
 ### Auth Middleware
 
-Every API request (except `/health`, `/docs`, and `/api/auth/resolve-username`, `/api/auth/setup-bootstrap-admin`) passes through `AuthMiddleware`. It:
+Every API request passes through `AuthMiddleware`, except the paths it excludes (`AuthMiddleware.exclude_paths` in `app/gateway/auth.py`):
+
+| Excluded path                                           | Why                                             |
+| ------------------------------------------------------- | ----------------------------------------------- |
+| `/health` `/docs` `/redoc` `/openapi.json`              | Liveness probe and API docs                     |
+| `/api/auth/login` `/api/auth/signup` `/api/auth/logout`  | Session establishment                           |
+| `/api/auth/session`                                      | Returns `{session: null, user: null}` when anonymous |
+| `/api/auth/bootstrap-status` `/api/auth/setup-bootstrap-admin` | First-run admin setup                     |
+| `/api/alerts/ingest/` `/api/changes/ingest/`             | Authenticated per source by its own token, not a user session |
+
+`OPTIONS` preflight requests pass unconditionally. For everything else the middleware:
 
 1. Extracts the Better Auth session token from headers or cookies
 2. Resolves `user_id`, `user_role`, and `must_change_password`
@@ -84,10 +101,12 @@ The Agent runtime. Runs via `langgraph dev` (open-source CLI). Orchestrates sub-
 
 ### Frontend (Next.js, Port 3000)
 
-- Workspace sidebar: Overview, Smart Workbench, Agents, Announcements
+- Workspace (`/workspace`): Overview, Agents, Chats, Terminal, Knowledge, Files, Skills, Incidents, Announcements
 - Platform admin (`/admin`): Users, Tenants, Models, Tools, Audit, Security, Announcements
-- Tenant admin (`/tenant-admin`): Members, Models, Skills, Tools, Audit, Settings
+- Tenant admin (`/tenant-admin`): Members, Models, Skills, Tools, Agents, Alerts, IM, Audit, Settings
+- Auth / setup pages: `/sign-in`, `/sign-up`, `/setup`, `/change-password`
 - User settings dialog: Models, Memory, Tools, Skills, Appearance, Notifications
+- i18n: `en-US`, `zh-CN`, `ja`, `ko`, `vi` — the offered subset is narrowed by `NEXT_PUBLIC_SUPPORTED_LOCALES`
 
 ## Multi-Tenancy Architecture
 
@@ -110,8 +129,40 @@ global (platform level)
 | `tenant_model_configs`        | Models assigned to tenants                                            |
 | `tenant_mcp_servers`          | MCP server configs per tenant                                         |
 | `tenant_skills`               | Skill state per tenant                                                |
+| `custom_agents`               | Custom agents (SOUL.md, tool\_groups whitelist, model binding)        |
 | `platform_announcements`      | Operational announcements with role/tenant targeting                  |
 | `platform_announcement_reads` | Per-user read/dismiss state                                           |
+
+### Feature Domain Tables
+
+| Domain            | Tables                                                                                                                                        |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Alerting**      | `alert_sources` · `raw_alerts` · `signals` · `incidents` · `incident_signal_links` · `incident_context_snapshots` · `incident_actions` · `alert_rules` · `alerting_settings` · `change_events` |
+| **Knowledge**     | `knowledge_bases` · `knowledge_documents` · `knowledge_chunks`                                                                                |
+| **Terminal**      | `terminal_sessions` · `terminal_chat_sessions` · `terminal_audit_logs` · `terminal_security_settings`                                          |
+| **Assets**        | `keychains` · `asset_groups` · `local_assets`                                                                                                 |
+| **Files**         | `file_folders` · `file_objects`                                                                                                                |
+
+Schema is managed by Alembic (`backend/alembic/versions/`). `db-init` runs `alembic upgrade head` before the gateway and LangGraph containers start.
+
+### Database Engines
+
+Both the tenant DB and the auth DB run on either SQLite or PostgreSQL, selected in `config.yaml`:
+
+```yaml
+database:
+  type: postgres                                                              # sqlite | postgres
+  url: postgresql+asyncpg://user:pass@postgres:5432/opsintech_tenant_db
+  auth:
+    type: postgres
+    url: postgresql+asyncpg://user:pass@postgres:5432/opsintech_auth_db
+
+checkpointer:
+  type: postgres                                                              # memory | sqlite | postgres
+  connection_string: postgresql://user:pass@postgres:5432/opsintech_checkpoints
+```
+
+SQLite keeps both files under `.opsintech/` with no extra services. PostgreSQL is the production path — `docker compose --profile postgres up -d` starts the bundled `postgres:16-alpine` and creates the three databases from `docker/postgres/init-databases.sql`.
 
 ### Auth DB (Better Auth)
 
@@ -128,6 +179,95 @@ User-scoped config is loaded through a `contextvars`-based proxy pattern:
 5. Downstream code (`factory.py`, tool loaders) calls `get_app_config()` without knowing where the config came from
 
 This means the core Agent runtime code (model factory, tool loading) was never modified for multi-tenancy.
+
+## Alerting & Incident Pipeline
+
+External monitoring systems post to a per-source ingest endpoint. Each source carries its own token, so ingest bypasses the user-session middleware.
+
+```
+Alertmanager / Grafana / Datadog / CloudWatch / generic webhook
+  │  POST /api/alerts/ingest/{source_id}   (source token auth)
+  ▼
+raw_alerts          ← verbatim payload, kept for replay and audit
+  │  provider parser normalizes vendor payload → common shape
+  ▼
+signals             ← normalized, fingerprinted (dedup.py)
+  │  rule_engine.py evaluates alert_rules
+  ▼
+incidents           ← signals correlated into one incident (incident_manager.py)
+  ├─ ai_analysis.py        async summary and root-cause interpretation
+  ├─ diagnosis_sse.py      streaming diagnosis to the UI (AG-UI protocol over SSE)
+  ├─ escalation.py         time-based escalation
+  ├─ notify.py             IM notification via the channel layer
+  ├─ ticket_provider.py    external ticket creation
+  └─ incident_actions      claim / assign / suppress / resolve, each recorded
+```
+
+| Module                       | Responsibility                                                               |
+| ---------------------------- | ---------------------------------------------------------------------------- |
+| `alerting/ingest.py`         | Ingest entry point — resolves the source, stores the raw alert, emits signals |
+| `alerting/providers/`        | Per-vendor payload parsers: `alertmanager` · `grafana` · `datadog` · `cloudwatch` · `webhook` |
+| `alerting/dedup.py`          | Fingerprint generation and dedup (alerta-style)                              |
+| `alerting/rule_engine.py`    | Evaluates `alert_rules` against signals                                      |
+| `alerting/incident_manager.py` | Signal aggregation and incident lifecycle                                  |
+| `alerting/ai_analysis.py`    | Async, non-blocking AI interpretation                                        |
+| `alerting/diagnosis_sse.py`  | SSE streaming for interactive diagnosis                                      |
+| `alerting/escalation.py`     | Escalation policy evaluation                                                 |
+| `alerting/notify.py`         | Sends incident notifications through IM channels                             |
+| `alerting/health_monitor.py` | Watches alert sources for silence / failure                                  |
+| `alerting/ticket_provider.py`| Creates tickets in an external system                                        |
+| `alerting/cleanup.py`        | Per-tenant retention for `raw_alerts`, `signals`, and links                   |
+
+**Correlation**: `dedup.py` computes a SHA-256 fingerprint over `source | service | env | severity | labels`. A signal joins an active incident sharing that correlation key within a 30-minute window; an alert rule's `aggregation_config` can override both the key fields and `window_minutes`. Escalation is duration-based — `min_duration_minutes` firing without acknowledgment bumps severity or notifies further.
+
+`change_events` are ingested separately (`POST /api/changes/ingest/{source_id}`, also source-token authenticated) so deploys and config changes can be correlated against incident timelines.
+
+## Knowledge Base (Native RAG)
+
+Tenant-scoped document retrieval, implemented in `packages/harness/deerflow/rag/` with no external vector database.
+
+```
+Upload  POST /api/knowledge/bases/{kb_id}/documents
+  │  extractor.py   PDF · DOCX · MD · HTML · CSV · JSON · YAML · TXT · LOG → text
+  │  chunker.py     paragraph- and sentence-aware chunking
+  │  embeddings.py  optional: OpenAI-compatible /embeddings call
+  ▼
+knowledge_chunks (text + optional vector, in the tenant DB)
+
+Search  POST /api/knowledge/search  ·  or the agent's RAG tool
+  │  retriever.py   BM25 lexical score + vector cosine similarity (hybrid)
+  ▼
+ranked chunks → agent context
+```
+
+| Aspect           | Behavior                                                                                               |
+| ---------------- | ------------------------------------------------------------------------------------------------------ |
+| **Embeddings**   | Optional. Configured by `RAG_EMBEDDING_BASE_URL`, `RAG_EMBEDDING_API_KEY`, `RAG_EMBEDDING_MODEL`. `embed_texts()` returns `None` when unset, so retrieval degrades cleanly to BM25 |
+| **Storage**      | Chunks and vectors live in the tenant DB — no separate vector store to operate                          |
+| **Isolation**    | `knowledge_bases` are tenant-scoped; the agent tool only searches the caller's tenant                   |
+| **Agent access** | `rag/rag_tool.py` exposes retrieval as a LangChain tool bound to the request's tenant context           |
+
+## IM Channels
+
+Agents are reachable from chat apps. Every channel dials out — no inbound webhook or public IP is required.
+
+```
+Feishu/Lark (WebSocket)  ─┐
+Slack (Socket Mode)      ─┼─► MessageBus (async pub/sub) ─► ChannelManager ─► LangGraph Server
+Telegram (long polling)  ─┘           ▲                           │
+                                      └──── agent reply ──────────┘
+```
+
+| Module                  | Responsibility                                                                 |
+| ----------------------- | ------------------------------------------------------------------------------ |
+| `channels/base.py`      | Abstract channel interface                                                     |
+| `channels/service.py`   | `ChannelService` — lifecycle of all configured channels                        |
+| `channels/message_bus.py` | Async pub/sub hub decoupling channels from the agent dispatcher              |
+| `channels/manager.py`   | Consumes inbound messages, dispatches to the agent via the LangGraph Server    |
+| `channels/store.py`     | Persists IM-chat → agent-thread mappings so conversations keep their context   |
+| `channels/{feishu,slack,telegram}.py` | Transport implementations                                        |
+
+Managed per tenant: `GET /api/channels` reports status, `POST /api/channels/{name}/restart` recycles one, `POST /api/channels/test` sends a test notification, and `/api/tenant-im` holds the per-tenant settings. The alerting layer reuses this path to deliver incident notifications.
 
 ## Storage Evolution
 
@@ -150,7 +290,19 @@ This means the core Agent runtime code (model factory, tool loading) was never m
 
 Simple, zero-dependency. Suitable for single-node deployment. All tenants share the same filesystem with path-based isolation.
 
-### v2.0: MinIO Object Storage (Planned)
+### Driver Abstraction (Implemented)
+
+`packages/harness/deerflow/storage/` already defines the provider protocol and three drivers, so business logic never touches a filesystem path directly:
+
+| Driver                  | Backend                          | Config (`StorageProviderConfig`)                                        |
+| ----------------------- | -------------------------------- | ----------------------------------------------------------------------- |
+| `LocalStorageDriver`    | Local filesystem                 | `local_root_path` (default `data/storage`)                              |
+| `S3StorageDriver`       | MinIO or any S3-compatible store | `s3_endpoint_url` · `s3_access_key` · `s3_secret_key` · `s3_bucket_name` · `s3_region_name` · `s3_use_ssl` |
+| `JuiceFSStorageDriver`  | Distributed POSIX volume         | `juicefs_mount_path` · `juicefs_subdir`                                 |
+
+Status: the file manager (`routers/files.py`) resolves the local driver directly via `deerflow.storage.local.get_storage_driver`. Each row in `file_objects` records the `storage_backend` it landed on, so a later switch can be rolled out per file rather than as a flag day. Thread workspaces and artifacts still use plain filesystem paths.
+
+### v2.0: Per-Tenant Bucket Isolation (Planned)
 
 ```
 MinIO (S3-compatible)

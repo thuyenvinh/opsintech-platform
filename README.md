@@ -15,7 +15,7 @@ OpsinTech is an **AI-Native Operations Platform for production environments**. v
 
 - [Platform Features](#platform-features)
 - [Why OpsinTech Exists](#why-opsintech-exists)
-- [v1.0 — What We Built](#v10--what-we-built)
+- [What We've Built](#what-weve-built)
 - [Our Vision](#our-vision)
 - [Roadmap](#roadmap)
 - [Quick Start](#quick-start)
@@ -38,6 +38,8 @@ A unified workspace with three-tier resource isolation (`user → tenant → glo
 - **Agent Gallery** — Browse and select AI agents for different tasks
 - **Chat Workspace** — Conversational AI interface with artifact management
 - **Terminal Agent** — Governed terminal with AI-assisted command execution, asset management, and approval workflows
+- **Knowledge Base** — Per-tenant document ingestion with hybrid retrieval, searchable by agents
+- **Files** — Folder-organized file storage with upload, preview, and download
 - **Skill Editor** — Create, edit, and test AI Skills with sandbox testing and AI-assisted instruction generation
 - **Incident Management** — Alert ingestion, signal analysis, and incident lifecycle tracking
 
@@ -47,6 +49,8 @@ A unified workspace with three-tier resource isolation (`user → tenant → glo
 |---|---|
 | **Chat Agent** | Conversational AI with task decomposition, sub-agent parallelism, and artifact generation |
 | **Terminal Agent** | AI-assisted terminal with security governance, command approval, and multi-host asset management |
+| **Knowledge Base** | Per-tenant document ingestion (PDF · DOCX · MD · HTML · CSV · JSON · YAML · TXT · LOG) with hybrid BM25 + vector retrieval, exposed to agents as a search tool |
+| **IM Channels** | Reach agents from Feishu/Lark, Slack, or Telegram — outbound connections only, no public IP required |
 | **Skill System** | Reusable AI Skill templates with sandbox testing environment |
 | **MCP Servers** | Configurable MCP servers per tenant (stdio/SSE/HTTP transports) |
 | **Sandbox Execution** | Isolated code execution (local / Docker / Kubernetes modes) |
@@ -65,11 +69,11 @@ A unified workspace with three-tier resource isolation (`user → tenant → glo
 | Dashboard | Scope |
 |---|---|
 | **Platform Admin** | Users, tenants, global audit, model templates, announcements |
-| **Tenant Admin** | Members, models, tools, skills, MCP servers |
+| **Tenant Admin** | Members, models, tools, skills, MCP servers, custom agents, alert sources & rules, IM channels |
 
 ### 🎨 User Experience
 
-- **4-Language i18n**: English, 中文, 日本語, 한국어
+- **5-Language i18n**: English · 中文 · 日本語 · 한국어 · Tiếng Việt
 - **Model Provider Templates**: 20+ pre-configured providers with auto-filled settings
 - **Docker One-Click Deploy**: `make up` to get everything running
 - **Hot-Reload Dev Mode**: `make dev` for local development
@@ -105,7 +109,7 @@ We're not starting from scratch. DeerFlow's Agent runtime is one of the most mat
 
 **Long-term (v2.x+)**: Gradually replace DeerFlow internal dependencies with our own architecture, incorporating real operations scenarios — alert ingestion, incident management, workflow orchestration, governed terminals — to form a true AI-Native Operations Platform.
 
-## v1.0 — What We Built
+## What We've Built
 
 ### Multi-Tenancy & RBAC
 
@@ -137,10 +141,26 @@ We're not starting from scratch. DeerFlow's Agent runtime is one of the most mat
 
 ### Incident Management
 
-- **Alert Ingestion**: Webhook / Alertmanager integration
-- **Signal Analysis**: Raw alerts processed into structured signals
-- **Incident Lifecycle**: Track incidents from creation to resolution
-- **AI Analysis**: Automated incident context assembly and root cause analysis
+- **Alert Ingestion**: Prometheus Alertmanager · Grafana · Datadog · CloudWatch · generic webhook, each source authenticated by its own token
+- **Signal Analysis**: Raw alerts normalized into signals, deduplicated by fingerprint
+- **Incident Lifecycle**: Aggregate signals into incidents, then claim / assign / suppress / resolve
+- **Alert Rules**: Per-tenant rules evaluated against signals, with escalation and source health monitoring
+- **AI Analysis**: Automated context assembly, root cause analysis, and streaming diagnosis over SSE
+- **Change Correlation**: Ingest CI/CD change events to correlate deploys with incidents
+- **Ticketing**: Push an incident to an external ticket system
+
+### Knowledge Base
+
+- **Document Ingestion**: PDF · DOCX · Markdown · HTML · CSV · JSON · YAML · TXT · LOG, chunked paragraph- and sentence-aware
+- **Hybrid Retrieval**: BM25 lexical scoring plus vector cosine similarity; embeddings are optional, so lexical search works with no extra service
+- **Agent Integration**: Exposed to agents as a tenant-scoped search tool
+- **Per-Tenant Isolation**: Knowledge bases, documents, and chunks scoped to the tenant
+
+### IM Channels
+
+- **Feishu/Lark** (WebSocket), **Slack** (Socket Mode), **Telegram** (long polling) — all outbound, no public IP or inbound webhook needed
+- Messages bridge to agent threads through an async message bus, with chat-to-thread mappings persisted
+- Managed per tenant from the admin UI, with restart and test-notification actions
 
 ### Audit & Security
 
@@ -150,8 +170,9 @@ We're not starting from scratch. DeerFlow's Agent runtime is one of the most mat
 
 ### Internationalization
 
-- UI supports 4 languages: English, 中文, 日本語, 한국어
+- UI supports 5 languages: English, 中文, 日本語, 한국어, Tiếng Việt
 - Auto-detects browser language preference with manual switcher
+- Restrict the set offered to users with `NEXT_PUBLIC_SUPPORTED_LOCALES` (e.g. `en-US,vi`)
 
 ### Deployment & Operations
 
@@ -174,24 +195,25 @@ This space is almost entirely vacant in open source. That's why we need communit
 ## Roadmap
 
 ```
-✅ v1.0 (Current) — Governable AI Agent Platform
+✅ v1.0 — Governable AI Agent Platform
   ├─ Multi-tenancy + RBAC + Audit
   ├─ 20+ model provider templates, database-backed
   ├─ Visual admin dashboards (platform + tenant)
-  ├─ Terminal Agent with security governance
+  ├─ Terminal Agent with security governance and audit trail
   ├─ Skill System with sandbox testing
   └─ Docker one-command deploy
 
-🔜 v1.1 — Smart Alerting
-  ├─ Webhook / Alertmanager ingestion
-  ├─ Raw Alert → Signal → Incident pipeline
-  ├─ AI-powered summaries and context assembly
-  └─ Incident-to-workspace context linking
+✅ v1.1 (Current) — Smart Alerting, Knowledge & IM
+  ├─ Alertmanager / Grafana / Datadog / CloudWatch / webhook ingestion
+  ├─ Raw Alert → Signal → Incident pipeline with fingerprint dedup
+  ├─ Alert rules, escalation, source health monitoring, external ticketing
+  ├─ AI incident analysis + streaming diagnosis (SSE)
+  ├─ Knowledge Base: hybrid BM25 + vector retrieval, searchable by agents
+  └─ IM channels: Feishu/Lark, Slack, Telegram
 
-🔜 v1.2 — Workflows + Terminal
+🔜 v1.2 — Workflows
   ├─ Event-driven workflow engine
   ├─ SOP templates (service restart, log collection, health checks)
-  ├─ Governed terminal execution + audit trail
   └─ Full closed loop: Alert → Incident → Workflow → Terminal → Audit
 
 📋 v2.0 — Digital Operators & Ecosystem
@@ -280,6 +302,26 @@ docker pull enterprise-public-cn-beijing.cr.volces.com/vefaas-public/all-in-one-
 For mirror accelerator setup, see the [Quick Start Guide](QUICKSTART.md#china-users-preparing-images-for-local-builds).
 
 ### Advanced
+
+#### Database
+
+SQLite is the zero-dependency default. For production, switch `database` (and `checkpointer`) in `config.yaml` to PostgreSQL and start the bundled instance with its compose profile:
+
+```bash
+docker compose --profile postgres up -d
+```
+
+See [Configuration Guide](backend/docs/CONFIGURATION.md).
+
+#### Knowledge Base Embeddings
+
+Hybrid retrieval falls back to BM25 lexical search when no embedding endpoint is configured. To enable vector search, point these at any OpenAI-compatible `/embeddings` endpoint:
+
+```bash
+RAG_EMBEDDING_BASE_URL=https://api.openai.com/v1
+RAG_EMBEDDING_API_KEY=sk-...
+RAG_EMBEDDING_MODEL=text-embedding-3-small
+```
 
 #### Sandbox Mode
 

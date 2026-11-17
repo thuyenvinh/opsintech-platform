@@ -654,8 +654,12 @@ export function InputBox({
             }}
           />
         </PromptInputBody>
-        <PromptInputFooter className="flex justify-between">
-          <PromptInputTools>
+        <PromptInputFooter className="flex items-end justify-between gap-2">
+          {/* min-w-0 lets this group shrink inside the footer instead of
+              overflowing it, flex-wrap sends the overflow to a second row.
+              Without both, a long skill list pushed the submit button out of
+              the composer entirely. */}
+          <PromptInputTools className="min-w-0 flex-1 flex-wrap">
             {/* + 按钮 */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -1142,7 +1146,7 @@ export function InputBox({
         </PromptInputTools>
 
         {/* 提交和停止按钮 - 置右 */}
-        <PromptInputTools>
+        <PromptInputTools className="shrink-0">
           {!isStreaming ? (
             <PromptInputSubmit
               className="size-8 rounded-full bg-foreground text-background hover:bg-foreground/90 disabled:opacity-30 disabled:hover:bg-foreground shadow-sm"

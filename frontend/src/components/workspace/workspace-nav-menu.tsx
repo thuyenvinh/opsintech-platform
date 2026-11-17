@@ -43,7 +43,7 @@ import {
 } from "@/components/ui/tooltip";
 import { SettingsDialog } from "@/components/workspace/settings";
 import { useSession } from "@/core/auth/hooks";
-import { enUS, zhCN, ja, ko, vi, type Locale } from "@/core/i18n";
+import { getLanguageOptions } from "@/core/i18n";
 import { useI18n } from "@/core/i18n/hooks";
 import { canAccessAdminPage } from "@/core/permissions/roles";
 import { clearTenantId, useCurrentTenant, useTenantList } from "@/core/tenants";
@@ -84,13 +84,7 @@ export function WorkspaceNavMenu() {
   };
   const typeLabel = typeLabelMap[tenantType] ?? tenantType;
 
-  const languageOptions: { value: Locale; label: string }[] = [
-    { value: "en-US", label: enUS.locale.localName },
-    { value: "zh-CN", label: zhCN.locale.localName },
-    { value: "ja", label: ja.locale.localName },
-    { value: "ko", label: ko.locale.localName },
-    { value: "vi", label: vi.locale.localName },
-  ];
+  const languageOptions = getLanguageOptions();
 
   const handleSignOut = async () => {
     setIsSigningOut(true);

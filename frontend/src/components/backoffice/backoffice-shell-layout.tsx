@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { logout } from "@/core/auth/auth-api";
 import { useSession } from "@/core/auth/hooks";
-import { enUS, zhCN, ja, ko, vi, type Locale } from "@/core/i18n";
+import { getLanguageOptions } from "@/core/i18n";
 import { useI18n } from "@/core/i18n/hooks";
 import { isPlatformAdminRole } from "@/core/permissions/roles";
 import { clearTenantId } from "@/core/tenants";
@@ -78,13 +78,7 @@ export function BackofficeShellLayout({
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  const languageOptions: { value: Locale; label: string }[] = [
-    { value: "en-US", label: enUS.locale.localName },
-    { value: "zh-CN", label: zhCN.locale.localName },
-    { value: "ja", label: ja.locale.localName },
-    { value: "ko", label: ko.locale.localName },
-    { value: "vi", label: vi.locale.localName },
-  ];
+  const languageOptions = getLanguageOptions();
 
   useEffect(() => {
     const handleOpenDialog = () => setChangePasswordOpen(true);

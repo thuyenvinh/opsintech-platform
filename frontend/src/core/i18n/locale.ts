@@ -1,3 +1,5 @@
+import { env } from "@/env";
+
 export const SUPPORTED_LOCALES = ["en-US", "zh-CN", "ja", "ko", "vi"] as const;
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
 export const DEFAULT_LOCALE: Locale = "en-US";
@@ -6,32 +8,52 @@ export function isLocale(value: string): value is Locale {
   return (SUPPORTED_LOCALES as readonly string[]).includes(value);
 }
 
+function parseLocaleToken(token: string): Locale | null {
+  const trimmed = token.trim();
+  if (!trimmed) return null;
+  if (isLocale(trimmed)) return trimmed;
+  const lower = trimmed.toLowerCase();
+  if (lower.startsWith("en")) return "en-US";
+  if (lower.startsWith("zh")) return "zh-CN";
+  if (lower.startsWith("ja")) return "ja";
+  if (lower.startsWith("ko")) return "ko";
+  if (lower.startsWith("vi")) return "vi";
+  return null;
+}
+
+export function getEnabledLocales(): Locale[] {
+  const raw = env.NEXT_PUBLIC_SUPPORTED_LOCALES?.trim();
+  if (!raw) {
+    return [...SUPPORTED_LOCALES];
+  }
+  const parsed: Locale[] = [];
+  for (const part of raw.split(",")) {
+    const loc = parseLocaleToken(part);
+    if (loc && !parsed.includes(loc)) {
+      parsed.push(loc);
+    }
+  }
+  return parsed.length > 0 ? parsed : [...SUPPORTED_LOCALES];
+}
+
+export function getDefaultLocale(): Locale {
+  const enabled = getEnabledLocales();
+  return enabled.includes(DEFAULT_LOCALE) ? DEFAULT_LOCALE : (enabled[0] ?? DEFAULT_LOCALE);
+}
+
 export function normalizeLocale(locale: string | null | undefined): Locale {
+  const enabled = getEnabledLocales();
+  const fallback = getDefaultLocale();
   if (!locale) {
-    return DEFAULT_LOCALE;
+    return fallback;
   }
 
-  if (isLocale(locale)) {
-    return locale;
+  const candidate = parseLocaleToken(locale);
+  if (candidate && enabled.includes(candidate)) {
+    return candidate;
   }
 
-  if (locale.toLowerCase().startsWith("zh")) {
-    return "zh-CN";
-  }
-
-  if (locale.toLowerCase().startsWith("ja")) {
-    return "ja";
-  }
-
-  if (locale.toLowerCase().startsWith("ko")) {
-    return "ko";
-  }
-
-  if (locale.toLowerCase().startsWith("vi")) {
-    return "vi";
-  }
-
-  return DEFAULT_LOCALE;
+  return fallback;
 }
 
 // Helper function to detect browser locale

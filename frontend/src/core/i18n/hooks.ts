@@ -13,6 +13,7 @@ import { vi } from "./locales/vi";
 import {
   DEFAULT_LOCALE,
   detectLocale,
+  getEnabledLocales,
   normalizeLocale,
   type Locale,
   type Translations,
@@ -32,6 +33,9 @@ export function useI18n() {
   const t = translations[locale] ?? translations[DEFAULT_LOCALE];
 
   const changeLocale = (newLocale: Locale) => {
+    if (!getEnabledLocales().includes(newLocale)) {
+      return;
+    }
     setLocale(newLocale);
     setLocaleInCookie(newLocale);
   };

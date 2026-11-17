@@ -12,19 +12,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { enUS, isLocale, zhCN, ja, ko, vi, type Locale } from "@/core/i18n";
+import { getLanguageOptions, isLocale, type Locale } from "@/core/i18n";
 import { useI18n } from "@/core/i18n/hooks";
 import { cn } from "@/lib/utils";
 
 import { SettingsSection } from "./settings-section";
 
-const languageOptions: { value: Locale; label: string }[] = [
-  { value: "en-US", label: enUS.locale.localName },
-  { value: "zh-CN", label: zhCN.locale.localName },
-  { value: "ja", label: ja.locale.localName },
-  { value: "ko", label: ko.locale.localName },
-  { value: "vi", label: vi.locale.localName },
-];
+const languageOptions = getLanguageOptions();
 
 export function AppearanceSettingsPage() {
   const { t, locale, changeLocale } = useI18n();

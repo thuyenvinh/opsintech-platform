@@ -8,6 +8,7 @@ import { enUS } from "./locales/en-US";
 import { zhCN } from "./locales/zh-CN";
 import { ja } from "./locales/ja";
 import { ko } from "./locales/ko";
+import { vi } from "./locales/vi";
 
 import {
   DEFAULT_LOCALE,
@@ -22,6 +23,7 @@ const translations: Record<Locale, Translations> = {
   "zh-CN": zhCN,
   ja,
   ko,
+  vi,
 };
 
 export function useI18n() {

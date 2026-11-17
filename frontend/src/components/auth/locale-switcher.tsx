@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { enUS, zhCN, ja, ko, type Locale } from "@/core/i18n";
+import { enUS, zhCN, ja, ko, vi, type Locale } from "@/core/i18n";
 import { useI18n } from "@/core/i18n/hooks";
 
 const languageOptions: { value: Locale; label: string }[] = [
@@ -17,6 +17,7 @@ const languageOptions: { value: Locale; label: string }[] = [
   { value: "zh-CN", label: zhCN.locale.localName },
   { value: "ja", label: ja.locale.localName },
   { value: "ko", label: ko.locale.localName },
+  { value: "vi", label: vi.locale.localName },
 ];
 
 export function AuthLocaleSwitcher() {

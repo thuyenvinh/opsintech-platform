@@ -1,4 +1,4 @@
-export const SUPPORTED_LOCALES = ["en-US", "zh-CN", "ja", "ko"] as const;
+export const SUPPORTED_LOCALES = ["en-US", "zh-CN", "ja", "ko", "vi"] as const;
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
 export const DEFAULT_LOCALE: Locale = "en-US";
 
@@ -25,6 +25,10 @@ export function normalizeLocale(locale: string | null | undefined): Locale {
 
   if (locale.toLowerCase().startsWith("ko")) {
     return "ko";
+  }
+
+  if (locale.toLowerCase().startsWith("vi")) {
+    return "vi";
   }
 
   return DEFAULT_LOCALE;

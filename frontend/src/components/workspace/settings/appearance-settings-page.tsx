@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { enUS, isLocale, zhCN, ja, ko, type Locale } from "@/core/i18n";
+import { enUS, isLocale, zhCN, ja, ko, vi, type Locale } from "@/core/i18n";
 import { useI18n } from "@/core/i18n/hooks";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +23,7 @@ const languageOptions: { value: Locale; label: string }[] = [
   { value: "zh-CN", label: zhCN.locale.localName },
   { value: "ja", label: ja.locale.localName },
   { value: "ko", label: ko.locale.localName },
+  { value: "vi", label: vi.locale.localName },
 ];
 
 export function AppearanceSettingsPage() {

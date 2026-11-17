@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { logout } from "@/core/auth/auth-api";
 import { useSession } from "@/core/auth/hooks";
-import { enUS, zhCN, ja, ko, type Locale } from "@/core/i18n";
+import { enUS, zhCN, ja, ko, vi, type Locale } from "@/core/i18n";
 import { useI18n } from "@/core/i18n/hooks";
 import { isPlatformAdminRole } from "@/core/permissions/roles";
 import { clearTenantId } from "@/core/tenants";
@@ -78,6 +78,7 @@ export function BackofficeShellLayout({
     { value: "zh-CN", label: zhCN.locale.localName },
     { value: "ja", label: ja.locale.localName },
     { value: "ko", label: ko.locale.localName },
+    { value: "vi", label: vi.locale.localName },
   ];
 
   useEffect(() => {

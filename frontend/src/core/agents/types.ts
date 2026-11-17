@@ -14,6 +14,7 @@ export interface Agent {
   created_at?: string | null;
   updated_at?: string | null;
   is_shared?: boolean;
+  knowledge_base_ids?: string[];
 }
 
 export interface Skill {
@@ -35,6 +36,7 @@ export interface CreateAgentRequest {
   tags?: string[];
   enabled?: boolean;
   is_shared?: boolean;
+  knowledge_base_ids?: string[];
 }
 
 export interface UpdateAgentRequest {
@@ -48,4 +50,5 @@ export interface UpdateAgentRequest {
   enabled?: boolean | null;
   tags?: string[] | null;
   is_shared?: boolean | null;
+  knowledge_base_ids?: string[] | null;
 }

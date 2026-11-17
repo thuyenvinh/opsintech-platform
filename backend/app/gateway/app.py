@@ -19,6 +19,7 @@ from app.gateway.routers import (
     auth as auth_routes,
     channels,
     files,
+    knowledge,
     mcp,
     memory,
     models,
@@ -211,6 +212,10 @@ This gateway provides custom endpoints for models, MCP configuration, skills, an
                 "description": "Create and manage custom agents with per-agent config and prompts",
             },
             {
+                "name": "knowledge",
+                "description": "Manage knowledge bases, documents, and RAG search",
+            },
+            {
                 "name": "suggestions",
                 "description": "Generate follow-up question suggestions for conversations",
             },
@@ -269,6 +274,9 @@ This gateway provides custom endpoints for models, MCP configuration, skills, an
 
     # Agents API is mounted at /api/agents
     app.include_router(agents.router)
+
+    # Knowledge API is mounted at /api/knowledge
+    app.include_router(knowledge.router)
 
     # Auth helpers (bootstrap-status, setup-bootstrap-admin)
     app.include_router(auth_routes.router)

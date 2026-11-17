@@ -1,6 +1,6 @@
 "use client";
 
-import { BotIcon, CheckCircle2Icon, XIcon, AlertCircleIcon, ChevronDown, SparklesIcon } from "lucide-react";
+import { BotIcon, CheckCircle2Icon, XIcon, AlertCircleIcon, ChevronDown, SparklesIcon, BookOpenIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ import { tr } from "@/core/i18n";
 import { useI18n } from "@/core/i18n/hooks";
 import { useAvailableMcpConfig } from "@/core/mcp/hooks";
 import { useAvailableModels } from "@/core/models/hooks";
+import { useKnowledgeBases } from "@/core/knowledge";
 import { cn } from "@/lib/utils";
 
 interface CreateAgentDialogProps {
@@ -41,6 +42,7 @@ export function CreateAgentDialog({ open, onOpenChange, onSuccess }: CreateAgent
   const createAgent = useCreateAgent();
   const { rawArray: availableMcps, isLoading: isLoadingMcps } = useAvailableMcpConfig();
   const { models: availableModels, isLoading: isLoadingModels } = useAvailableModels();
+  const { bases: availableKnowledgeBases, isLoading: isLoadingKbs } = useKnowledgeBases();
 
   // Form states
   const [name, setName] = useState("");
@@ -49,6 +51,7 @@ export function CreateAgentDialog({ open, onOpenChange, onSuccess }: CreateAgent
   const [selectedModel, setSelectedModel] = useState<string>("");
   const [selectedSkills, setSelectedSkills] = useState<Set<string>>(new Set());
   const [selectedToolGroups, setSelectedToolGroups] = useState<Set<string>>(new Set());
+  const [selectedKbIds, setSelectedKbIds] = useState<Set<string>>(new Set());
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [enabled, setEnabled] = useState(true);
@@ -72,6 +75,7 @@ export function CreateAgentDialog({ open, onOpenChange, onSuccess }: CreateAgent
       setSelectedModel("");
       setSelectedSkills(new Set());
       setSelectedToolGroups(new Set());
+      setSelectedKbIds(new Set());
       setTags([]);
       setTagInput("");
       setEnabled(true);
@@ -152,6 +156,16 @@ export function CreateAgentDialog({ open, onOpenChange, onSuccess }: CreateAgent
       next.add(groupName);
     }
     setSelectedToolGroups(next);
+  };
+
+  const toggleKb = (kbId: string) => {
+    const next = new Set(selectedKbIds);
+    if (next.has(kbId)) {
+      next.delete(kbId);
+    } else {
+      next.add(kbId);
+    }
+    setSelectedKbIds(next);
   };
 
   const addTag = useCallback(() => {
@@ -316,6 +330,7 @@ export function CreateAgentDialog({ open, onOpenChange, onSuccess }: CreateAgent
       skills: Array.from(selectedSkills),
       tags,
       tool_groups: toolGroupsList.length > 0 ? toolGroupsList : null,
+      knowledge_base_ids: Array.from(selectedKbIds),
       enabled,
       is_shared: isShared,
     };
@@ -589,6 +604,58 @@ export function CreateAgentDialog({ open, onOpenChange, onSuccess }: CreateAgent
                 <div className="space-y-1.5 overflow-y-auto pr-1 flex-1">
                   {renderToolList()}
                 </div>
+              </div>
+            </div>
+
+            {/* Knowledge Bases (RAG) */}
+            <div className="space-y-2.5 shrink-0">
+              <div className="flex flex-col gap-0.5 border-l-2 border-primary pl-2.5">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                  <BookOpenIcon className="h-3.5 w-3.5 text-primary" />
+                  {tr(locale, "关联知识库 (RAG)", "Knowledge Bases (RAG)", "Kho tri thức (RAG)")}
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  {tr(locale, "选择智能体可检索的知识库", "Select knowledge bases this agent can search", "Chọn kho tri thức mà trợ lý có thể tra cứu")}
+                </p>
+              </div>
+              <div className="border border-border rounded-lg bg-zinc-50/50 dark:bg-zinc-900/10 p-2.5 max-h-[140px] overflow-y-auto space-y-1">
+                {isLoadingKbs ? (
+                  <div className="text-xs text-muted-foreground py-3 text-center">{t.common.loading}</div>
+                ) : availableKnowledgeBases.length === 0 ? (
+                  <div className="text-xs text-muted-foreground py-3 text-center">
+                    {tr(locale, "暂无知识库", "No knowledge bases available", "Chưa có kho tri thức nào")}
+                  </div>
+                ) : (
+                  availableKnowledgeBases.map((kb) => (
+                    <label
+                      key={kb.id}
+                      className="flex cursor-pointer items-start gap-2.5 rounded-md px-2 py-1.5 hover:bg-muted/50 transition-colors"
+                    >
+                      <Checkbox
+                        checked={selectedKbIds.has(kb.id)}
+                        onCheckedChange={() => toggleKb(kb.id)}
+                      />
+                      <div className="min-w-0 -mt-0.5 flex-1">
+                        <div className="text-xs font-medium flex items-center gap-1.5">
+                          <span className="truncate">{kb.name}</span>
+                          <span className="text-[10px] px-1 bg-muted rounded text-muted-foreground shrink-0">
+                            {kb.doc_count} docs
+                          </span>
+                          {kb.is_shared && (
+                            <span className="text-[9px] px-1 bg-primary/10 text-primary rounded font-medium shrink-0">
+                              {tr(locale, "共享", "Shared", "Chia sẻ")}
+                            </span>
+                          )}
+                        </div>
+                        {kb.description && (
+                          <div className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
+                            {kb.description}
+                          </div>
+                        )}
+                      </div>
+                    </label>
+                  ))
+                )}
               </div>
             </div>
           </div>

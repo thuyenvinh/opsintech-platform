@@ -45,6 +45,7 @@ class AgentResponse(BaseModel):
     created_at: str | None = Field(default=None, description="ISO timestamp")
     updated_at: str | None = Field(default=None, description="ISO timestamp")
     is_shared: bool = Field(default=False, description="Whether the agent is shared with the tenant")
+    knowledge_base_ids: list[str] = Field(default_factory=list, description="Attached knowledge base IDs")
     # Deprecated alias
     soul: str | None = Field(default=None, description="Deprecated — use system_prompt")
 
@@ -67,6 +68,7 @@ class AgentCreateRequest(BaseModel):
     tags: list[str] = Field(default_factory=list, description="Filter labels")
     enabled: bool = Field(default=True, description="Enable or disable the agent")
     is_shared: bool = Field(default=False, description="Whether the agent is shared with the tenant")
+    knowledge_base_ids: list[str] = Field(default_factory=list, description="Attached knowledge base IDs")
     # Deprecated field — accepted but mapped to system_prompt
     soul: str | None = Field(default=None, description="Deprecated — use system_prompt")
 
@@ -82,6 +84,7 @@ class AgentUpdateRequest(BaseModel):
     enabled: bool | None = Field(default=None, description="Enable or disable the agent")
     tags: list[str] | None = Field(default=None, description="Updated filter labels")
     is_shared: bool | None = Field(default=None, description="Whether the agent is shared with the tenant")
+    knowledge_base_ids: list[str] | None = Field(default=None, description="Updated knowledge base IDs")
     # Deprecated field
     soul: str | None = Field(default=None, description="Deprecated — use system_prompt")
 
@@ -145,6 +148,7 @@ def _agent_to_response(agent: CustomAgent) -> AgentResponse:
         created_at=agent.created_at.isoformat() if agent.created_at else None,
         updated_at=agent.updated_at.isoformat() if agent.updated_at else None,
         is_shared=agent.user_id == "tenant-shared",
+        knowledge_base_ids=list((agent.meta_info or {}).get("knowledge_base_ids") or []),
         soul=agent.system_prompt or None,
     )
 
@@ -315,6 +319,7 @@ async def create_agent_endpoint(
         skills=body.skills or [],
         tags=body.tags or [],
         enabled=body.enabled,
+        meta_info={"knowledge_base_ids": list(body.knowledge_base_ids)} if body.knowledge_base_ids else {},
         created_by=user_id,
     )
 
@@ -404,6 +409,10 @@ async def update_agent(
         agent.skills = body.skills or []
     if "tags" in fields_set:
         agent.tags = body.tags or []
+    if "knowledge_base_ids" in fields_set:
+        meta = dict(agent.meta_info or {})
+        meta["knowledge_base_ids"] = list(body.knowledge_base_ids or [])
+        agent.meta_info = meta
 
     if body.system_prompt is not None:
         trimmed = body.system_prompt.strip()

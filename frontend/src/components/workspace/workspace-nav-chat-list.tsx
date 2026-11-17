@@ -2,6 +2,7 @@
 
 import {
   BellIcon,
+  BookOpenIcon,
   LayoutDashboardIcon,
   PlayCircleIcon,
   Settings2Icon,
@@ -83,6 +84,12 @@ export function WorkspaceNavChatList() {
       href: "/workspace/agents",
       icon: BotIcon,
       active: pathname.startsWith("/workspace/agents"),
+    },
+    {
+      name: tr(locale, "知识库", "Knowledge Base", "Kho tri thức (RAG)"),
+      href: "/workspace/knowledge",
+      icon: BookOpenIcon,
+      active: pathname.startsWith("/workspace/knowledge"),
     },
     {
       name: t.sidebarNav.skillsPlaza,

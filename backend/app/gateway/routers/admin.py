@@ -266,6 +266,8 @@ def _list_all_auth_users(repo: AuthUserRepository, batch_size: int = 500) -> lis
 
 
 def _parse_iso_datetime(value: Any) -> datetime | None:
+    if isinstance(value, datetime):
+        return value if value.tzinfo is not None else value.replace(tzinfo=UTC)
     if not isinstance(value, str) or not value.strip():
         return None
     raw = value.strip()
@@ -286,6 +288,12 @@ async def get_admin_me(request: Request) -> AdminMeResponse:
     return AdminMeResponse(user_id=user_id, role=role)
 
 
+def _iso_str(value: Any) -> str:
+    if isinstance(value, datetime):
+        return value.isoformat()
+    return str(value or "")
+
+
 @router.get("/users", response_model=AdminUsersResponse, dependencies=[Depends(require_platform_admin)])
 async def list_users(keyword: str | None = None, limit: int = 50, offset: int = 0) -> AdminUsersResponse:
     try:
@@ -301,8 +309,8 @@ async def list_users(keyword: str | None = None, limit: int = 50, offset: int = 
             name=row["name"],
             role=row["role"] or "user",
             status=row.get("status"),
-            createdAt=row["createdAt"],
-            updatedAt=row["updatedAt"],
+            createdAt=_iso_str(row["createdAt"]),
+            updatedAt=_iso_str(row["updatedAt"]),
             mustChangePassword=bool(row.get("mustChangePassword", False)),
             isBootstrapAdmin=bool(row.get("isBootstrapAdmin", False)),
         )
@@ -329,8 +337,8 @@ async def create_user(request: AdminCreateUserRequest) -> AdminUser:
             name=new_user["name"],
             role=new_user["role"],
             status=new_user["status"],
-            createdAt=new_user["createdAt"],
-            updatedAt=new_user["updatedAt"],
+            createdAt=_iso_str(new_user["createdAt"]),
+            updatedAt=_iso_str(new_user["updatedAt"]),
             mustChangePassword=new_user["mustChangePassword"],
             isBootstrapAdmin=new_user["isBootstrapAdmin"]
         )

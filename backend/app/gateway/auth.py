@@ -19,11 +19,14 @@ from deerflow.database.user_config_service import get_current_tenant_id, set_cur
 logger = logging.getLogger(__name__)
 
 
-def _parse_iso_datetime(raw: str | None) -> datetime | None:
+def _parse_iso_datetime(raw: str | datetime | None) -> datetime | None:
     if not raw:
         return None
+    if isinstance(raw, datetime):
+        return raw if raw.tzinfo is not None else raw.replace(tzinfo=UTC)
     try:
-        return datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        dt = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+        return dt if dt.tzinfo is not None else dt.replace(tzinfo=UTC)
     except ValueError:
         return None
 

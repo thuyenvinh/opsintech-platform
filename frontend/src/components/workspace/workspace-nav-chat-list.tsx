@@ -152,9 +152,7 @@ export function WorkspaceNavChatList() {
             )}
             title={link.name}
           >
-            {link.active && (
-              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1/2 bg-primary rounded-r-full" />
-            )}
+
             <Icon
               className={cn(
                 "size-[18px] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",

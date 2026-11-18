@@ -162,9 +162,64 @@ class SkillInstallResponse(BaseModel):
     message: str = Field(..., description="Installation result message")
 
 
+def _safe_int(value: object, default: int = 0) -> int:
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return default
+
+
+def _split_skill_markdown(content: str) -> tuple[dict[str, object], str]:
+    match = re.match(r"^---\r?\n(.*?)\r?\n---\s*\r?\n?(.*)$", content, re.DOTALL)
+    if not match:
+        return {}, ""
+    try:
+        frontmatter = yaml.safe_load(match.group(1)) or {}
+    except yaml.YAMLError:
+        frontmatter = {}
+    if not isinstance(frontmatter, dict):
+        frontmatter = {}
+    return frontmatter, match.group(2).strip()
+
+
+def _read_skill_frontmatter_and_instructions(skill_dir: Path) -> tuple[dict[str, object], str]:
+    skill_file = skill_dir / "SKILL.md"
+    if not skill_file.exists():
+        return {}, ""
+    try:
+        content = skill_file.read_text(encoding="utf-8")
+        return _split_skill_markdown(content)
+    except Exception as e:
+        logger.warning(f"Failed to read SKILL.md in {skill_dir}: {e}")
+        return {}, ""
+
+
+def _read_skill_file_payload(skill_dir: Path) -> tuple[str | None, str | None]:
+    frontmatter, instructions = _read_skill_frontmatter_and_instructions(skill_dir)
+    description = frontmatter.get("description")
+    if description is not None:
+        description_text = str(description).strip()
+        if not description_text:
+            description_text = None
+    else:
+        description_text = None
+    return description_text, instructions or None
+
+
+def _read_skill_instructions(skill_dir: Path) -> str | None:
+    _, instructions = _read_skill_frontmatter_and_instructions(skill_dir)
+    return instructions or None
+
+
 def _skill_to_response(skill: Skill) -> SkillResponse:
     """Convert a Skill object to a SkillResponse."""
-    frontmatter, instructions = _read_skill_file_payload(skill.skill_dir)
+    frontmatter, instructions = _read_skill_frontmatter_and_instructions(skill.skill_dir)
+    references = frontmatter.get("references")
+    if not isinstance(references, dict):
+        references = None
+
     return SkillResponse(
         name=skill.name,
         description=skill.description,
@@ -174,12 +229,12 @@ def _skill_to_response(skill: Skill) -> SkillResponse:
         bound_tools=[],
         prompt_template=None,
         strategy=None,
-        instructions=instructions,
-        created_by=frontmatter.get("created_by"),
-        version=int(frontmatter.get("version", 1)),
-        changelog=frontmatter.get("changelog"),
-        usage_count=int(frontmatter.get("usage_count", 0)),
-        references=frontmatter.get("references"),
+        instructions=instructions or None,
+        created_by=str(frontmatter.get("created_by")) if frontmatter.get("created_by") is not None else None,
+        version=_safe_int(frontmatter.get("version"), default=1),
+        changelog=str(frontmatter.get("changelog")) if frontmatter.get("changelog") is not None else None,
+        usage_count=_safe_int(frontmatter.get("usage_count"), default=0),
+        references=references,
     )
 
 
@@ -214,39 +269,6 @@ def _tenant_skill_relative_path(tenant_id: str, skill_name: str) -> str:
 
 def _tenant_skill_dir(tenant_id: str, skill_name: str) -> Path:
     return get_skills_root_path() / "custom" / tenant_id / skill_name
-
-
-def _split_skill_markdown(content: str) -> tuple[dict[str, object], str]:
-    match = re.match(r"^---\n(.*?)\n---\s*\n?(.*)$", content, re.DOTALL)
-    if not match:
-        return {}, ""
-    try:
-        frontmatter = yaml.safe_load(match.group(1)) or {}
-    except yaml.YAMLError:
-        frontmatter = {}
-    if not isinstance(frontmatter, dict):
-        frontmatter = {}
-    return frontmatter, match.group(2).strip()
-
-
-def _read_skill_file_payload(skill_dir: Path) -> tuple[str | None, str | None]:
-    skill_file = skill_dir / "SKILL.md"
-    if not skill_file.exists():
-        return None, None
-    frontmatter, instructions = _split_skill_markdown(skill_file.read_text(encoding="utf-8"))
-    description = frontmatter.get("description")
-    if description is not None:
-        description_text = str(description).strip()
-        if not description_text:
-            description_text = None
-    else:
-        description_text = None
-    return description_text, instructions or None
-
-
-def _read_skill_instructions(skill_dir: Path) -> str | None:
-    _, instructions = _read_skill_file_payload(skill_dir)
-    return instructions
 
 
 def _render_skill_markdown(
@@ -326,18 +348,18 @@ def _build_skill_response(
 ) -> SkillResponse:
     resolved = next((s for s in load_skills(enabled_only=False) if s.name == row_name), None)
     skill_dir = _resolve_skill_runtime_dir(tenant_id, row_name, install_dir, relative_path)
-    skill_file = skill_dir / "SKILL.md"
-    file_description: str | None = None
-    if skill_file.exists():
-        raw = skill_file.read_text(encoding="utf-8")
-        fm, instructions = _split_skill_markdown(raw)
-        # _read_skill_file_payload safely casts description to str
-        file_description, _ = _read_skill_file_payload(skill_dir)
-    else:
-        fm = {}
-        instructions = ""
+    fm, instructions = _read_skill_frontmatter_and_instructions(skill_dir)
+    file_description = (
+        str(fm.get("description")).strip()
+        if fm.get("description") is not None and str(fm.get("description")).strip()
+        else None
+    )
 
     settings = settings or {}
+
+    references = fm.get("references")
+    if not isinstance(references, dict):
+        references = None
 
     return SkillResponse(
         name=row_name,
@@ -348,12 +370,12 @@ def _build_skill_response(
         bound_tools=settings.get("bound_tools") or [],
         prompt_template=settings.get("prompt_template"),
         strategy=settings.get("strategy"),
-        instructions=instructions,
-        created_by=fm.get("created_by"),
-        version=int(fm.get("version", 1)),
-        changelog=fm.get("changelog"),
-        usage_count=int(fm.get("usage_count", 0)),
-        references=fm.get("references"),
+        instructions=instructions or None,
+        created_by=str(fm.get("created_by")) if fm.get("created_by") is not None else None,
+        version=_safe_int(fm.get("version"), default=1),
+        changelog=str(fm.get("changelog")) if fm.get("changelog") is not None else None,
+        usage_count=_safe_int(fm.get("usage_count"), default=0),
+        references=references,
     )
 
 
@@ -543,7 +565,7 @@ async def patch_tenant_skill(skill_name: str, request: TenantSkillPatchRequest, 
         getattr(row, "install_dir", None),
         getattr(row, "relative_path", None),
     )
-    frontmatter, current_instructions = _read_skill_file_payload(skill_dir)
+    frontmatter, current_instructions = _read_skill_frontmatter_and_instructions(skill_dir)
     creator = frontmatter.get("created_by")
     if not is_admin and creator and creator != user_id:
         raise HTTPException(status_code=403, detail="You can only edit skills you created")
@@ -564,17 +586,17 @@ async def patch_tenant_skill(skill_name: str, request: TenantSkillPatchRequest, 
             else (current_description if isinstance(current_description, str) and current_description.strip() else row.name)
         )
         instructions_to_write = request.instructions if request.instructions is not None else current_instructions
-        new_version = int(frontmatter.get("version", 1)) + 1
+        new_version = _safe_int(frontmatter.get("version"), default=1) + 1
         _write_skill_markdown(
             skill_dir,
             name=row.name,
             description=description_to_write,
             instructions=instructions_to_write,
-            created_by=creator,
+            created_by=str(creator) if creator is not None else None,
             version=new_version,
             changelog=request.changelog or f"Updated (v{new_version})",
-            usage_count=int(frontmatter.get("usage_count", 0)),
-            references=frontmatter.get("references"),
+            usage_count=_safe_int(frontmatter.get("usage_count"), default=0),
+            references=frontmatter.get("references") if isinstance(frontmatter.get("references"), dict) else None,
         )
 
     return _build_skill_response(
@@ -698,12 +720,7 @@ async def patch_personal_skill(skill_name: str, request: TenantSkillPatchRequest
         getattr(row, "install_dir", None),
         getattr(row, "relative_path", None),
     )
-    skill_file = skill_dir / "SKILL.md"
-    if skill_file.exists():
-        frontmatter, current_instructions = _split_skill_markdown(skill_file.read_text(encoding="utf-8"))
-    else:
-        frontmatter = {}
-        current_instructions = ""
+    frontmatter, current_instructions = _read_skill_frontmatter_and_instructions(skill_dir)
 
     settings = await update_tenant_personal_skill_settings(
         tenant_id,
@@ -722,7 +739,7 @@ async def patch_personal_skill(skill_name: str, request: TenantSkillPatchRequest
             else (current_description if isinstance(current_description, str) and current_description.strip() else row.name)
         )
         instructions_to_write = request.instructions if request.instructions is not None else current_instructions
-        new_version = int(frontmatter.get("version", 1)) + 1
+        new_version = _safe_int(frontmatter.get("version"), default=1) + 1
         _write_skill_markdown(
             skill_dir,
             name=row.name,
@@ -731,8 +748,8 @@ async def patch_personal_skill(skill_name: str, request: TenantSkillPatchRequest
             created_by=user_id,
             version=new_version,
             changelog=request.changelog or f"Updated (v{new_version})",
-            usage_count=int(frontmatter.get("usage_count", 0)),
-            references=frontmatter.get("references"),
+            usage_count=_safe_int(frontmatter.get("usage_count"), default=0),
+            references=frontmatter.get("references") if isinstance(frontmatter.get("references"), dict) else None,
         )
 
     return _build_skill_response(
@@ -1002,16 +1019,16 @@ async def get_skill_detail(skill_name: str, request: Request) -> SkillDetailResp
         row.get("install_dir"),
         row.get("relative_path"),
     )
-    skill_file = skill_dir / "SKILL.md"
-    file_description: str | None = None
-    if skill_file.exists():
-        raw = skill_file.read_text(encoding="utf-8")
-        fm, instructions = _split_skill_markdown(raw)
-        # _read_skill_file_payload safely casts description to str
-        file_description, _ = _read_skill_file_payload(skill_dir)
-    else:
-        fm = {}
-        instructions = ""
+    fm, instructions = _read_skill_frontmatter_and_instructions(skill_dir)
+    file_description = (
+        str(fm.get("description")).strip()
+        if fm.get("description") is not None and str(fm.get("description")).strip()
+        else None
+    )
+
+    references = fm.get("references")
+    if not isinstance(references, dict):
+        references = None
 
     return SkillDetailResponse(
         name=row.get("name") or skill_name,
@@ -1022,12 +1039,12 @@ async def get_skill_detail(skill_name: str, request: Request) -> SkillDetailResp
         bound_tools=row.get("bound_tools") or [],
         prompt_template=row.get("prompt_template"),
         strategy=row.get("strategy"),
-        instructions=instructions,
-        created_by=fm.get("created_by"),
-        version=int(fm.get("version", 1)),
-        changelog=fm.get("changelog"),
-        usage_count=int(fm.get("usage_count", 0)),
-        references=fm.get("references"),
+        instructions=instructions or None,
+        created_by=str(fm.get("created_by")) if fm.get("created_by") is not None else None,
+        version=_safe_int(fm.get("version"), default=1),
+        changelog=str(fm.get("changelog")) if fm.get("changelog") is not None else None,
+        usage_count=_safe_int(fm.get("usage_count"), default=0),
+        references=references,
         scope=row.get("scope", "global"),
         managed_by_current_user=row.get("managed_by_current_user", False),
     )

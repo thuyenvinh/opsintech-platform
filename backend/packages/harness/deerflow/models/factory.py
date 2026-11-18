@@ -115,15 +115,14 @@ def _wrap_no_tools_model(model_instance: BaseChatModel, model_name: str) -> None
         @functools.wraps(_orig_agenerate)
         async def _wrapped_agenerate(*args, **kwargs):
             try:
-                async for chunk in _orig_agenerate(*args, **kwargs):
-                    yield chunk
+                return await _orig_agenerate(*args, **kwargs)
             except Exception as e:
                 if _is_tool_not_supported_error(e):
                     raise ValueError(
                         f"模型 '{model_name}' 不支持工具/函数调用，请换用支持工具调用的模型"
                     ) from e
                 raise
-        model_instance._agenerate = _wrapped_agenerate
+        object.__setattr__(model_instance, "_agenerate", _wrapped_agenerate)
 
     if hasattr(model_instance, "_astream"):
         _orig_astream = model_instance._astream
@@ -139,7 +138,7 @@ def _wrap_no_tools_model(model_instance: BaseChatModel, model_name: str) -> None
                         f"模型 '{model_name}' 不支持工具/函数调用，请换用支持工具调用的模型"
                     ) from e
                 raise
-        model_instance._astream = _wrapped_astream
+        object.__setattr__(model_instance, "_astream", _wrapped_astream)
 
 
 def _is_tool_not_supported_error(exc: Exception) -> bool:
@@ -276,7 +275,7 @@ def create_chat_model(name: str | None = None, thinking_enabled: bool = False, *
 
     if not model_config.supports_tools:
         logger.info("Model '%s' does not support tools; bind_tools will be a no-op.", name)
-        model_instance.bind_tools = lambda tools=None, **kw: model_instance
+        object.__setattr__(model_instance, "bind_tools", lambda tools=None, **kw: model_instance)
         _wrap_no_tools_model(model_instance, name)
 
     if is_tracing_enabled():

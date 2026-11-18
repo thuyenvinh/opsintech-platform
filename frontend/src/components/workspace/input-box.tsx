@@ -2,6 +2,7 @@
 
 import type { ChatStatus } from "ai";
 import {
+  BlocksIcon,
   BotIcon,
   CheckIcon,
   Download,
@@ -1108,36 +1109,52 @@ export function InputBox({
               );
             }
 
-            return t.inputBox.suggestions.map((s) => ({
-              icon: s.icon,
-              label: s.label,
-              skillName: s.skillName,
-              description: s.description,
-            })).map((item) => {
-              const isSelected = context.skill_name === item.skillName;
-              return (
-                <Tooltip key={item.label} content={item.description}>
-                  <PromptInputButton
-                    className={cn(
-                      "h-7 px-2.5 text-xs font-normal border-0 shadow-none",
-                      isSelected
-                        ? "bg-primary/10 text-primary font-semibold"
-                        : "text-muted-foreground hover:text-foreground bg-transparent hover:bg-muted/60"
-                    )}
-                    onClick={() => {
-                      onContextChange?.({
-                        ...context,
-                        skill_name: item.skillName,
-                      });
-                      setSettingsPanelOpen(true);
-                    }}
-                  >
-                    <item.icon className="size-3.5" />
-                    <span className="ml-1">{item.label}</span>
-                  </PromptInputButton>
-                </Tooltip>
-              );
-            });
+            // One trigger instead of a chip per skill. Laid out as chips the row
+            // held eight controls and overflowed the composer at normal window
+            // widths, clipping the last label and pushing the send button out of
+            // view. Every skill is still here, one click deeper, and the
+            // descriptions read better in a menu than in a tooltip.
+            return (
+              <PromptInputActionMenu>
+                <PromptInputActionMenuTrigger className="gap-1! px-2!">
+                  <BlocksIcon className="size-3.5" />
+                  <span className="text-xs font-normal">
+                    {tr(locale, "技能", "Skills", "Kỹ năng")}
+                  </span>
+                </PromptInputActionMenuTrigger>
+                <PromptInputActionMenuContent className="w-72">
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel className="text-muted-foreground text-xs">
+                      {tr(locale, "选择技能", "Select Skill", "Chọn kỹ năng")}
+                    </DropdownMenuLabel>
+                    {t.inputBox.suggestions.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <PromptInputActionMenuItem
+                          key={item.skillName}
+                          className="text-muted-foreground/80"
+                          onSelect={() => {
+                            onContextChange?.({
+                              ...context,
+                              skill_name: item.skillName,
+                            });
+                            setSettingsPanelOpen(true);
+                          }}
+                        >
+                          <Icon className="size-4 shrink-0" />
+                          <div className="flex flex-col gap-0.5">
+                            <div className="font-medium text-xs">{item.label}</div>
+                            <div className="text-[11px] text-muted-foreground">
+                              {item.description}
+                            </div>
+                          </div>
+                        </PromptInputActionMenuItem>
+                      );
+                    })}
+                  </DropdownMenuGroup>
+                </PromptInputActionMenuContent>
+              </PromptInputActionMenu>
+            );
           })()}
         </PromptInputTools>
 

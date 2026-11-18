@@ -37,6 +37,7 @@ coverage.xml
 coverage/
 .opsintech/
 .claude/
+.codex/
 skills/custom/*
 logs/
 log/

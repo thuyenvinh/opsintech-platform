@@ -281,30 +281,30 @@ export function ChatThreadContent({ threadId, context, onContextChange }: ChatTh
     <PromptInputProvider>
     <ThreadContext.Provider value={{ thread, isMock }}>
       <ChatBox threadId={effectiveThreadId}>
-        <div className="relative flex size-full min-h-0 flex-col bg-background">
+        <div className="relative flex size-full min-h-0 flex-col bg-[radial-gradient(circle_at_top,rgba(148,163,184,0.12),transparent_32%)]">
           {/* Header — inside chat panel, only spans chat width */}
           {headerCtx && (
             <header
               className={cn(
-                "sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between border-b border-border/60 bg-background px-6 pointer-events-none",
+                "sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between px-6 bg-gradient-to-b from-background/90 to-transparent backdrop-blur-sm pointer-events-none",
               )}
             >
               <div className="flex min-w-0 items-center gap-3 opacity-60 hover:opacity-100 transition-opacity pointer-events-auto">
                 {headerCtx.incidentId && (
                   <Link
                     href={`/workspace/incidents/${encodeURIComponent(headerCtx.incidentId)}`}
-                    className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground no-underline"
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300 no-underline"
                     title={headerCtx.t.sidebarNav.incidents}
                   >
-                    <ArrowLeft className="size-4" />
+                    <ArrowLeft className="size-3.5" />
                     {headerCtx.t.sidebarNav.incidents}
                   </Link>
                 )}
-                <div className="bg-muted text-muted-foreground inline-flex h-6 items-center rounded-md px-2 text-[11px] font-medium">
+                <div className="bg-primary/5 text-primary inline-flex h-[24px] items-center rounded-md px-2 text-[11px] font-semibold uppercase tracking-wider">
                   {headerCtx.t.chatHeader.smartWorkbench}
                 </div>
                 <div className="hidden bg-border h-4 w-px lg:block" />
-                <div className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[13px] font-medium max-w-[120px] sm:max-w-[200px]">
+                <div className="min-w-0 text-[13px] font-medium tracking-tight overflow-hidden text-ellipsis whitespace-nowrap pt-0.5 max-w-[120px] sm:max-w-[200px]">
                   <ThreadTitle threadId={effectiveThreadId} thread={thread} />
                 </div>
                 <div className="hidden bg-border h-4 w-px lg:block" />
@@ -357,7 +357,7 @@ export function ChatThreadContent({ threadId, context, onContextChange }: ChatTh
                         </div>
                         {!headerCtx.isSelectMode && (
                           <Button variant="outline" size="sm" className="h-8 gap-1.5 px-3 text-xs font-normal mr-10" onClick={headerCtx.toggleSelectMode}>
-                            <ListChecks className="size-4" />
+                            <ListChecks className="size-3.5" />
                             {headerCtx.t.common.manage}
                           </Button>
                         )}
@@ -389,9 +389,9 @@ export function ChatThreadContent({ threadId, context, onContextChange }: ChatTh
                             const active = item.thread_id === headerCtx.activeThreadId;
                             const isSelected = headerCtx.selectedIds.has(item.thread_id);
                             return (
-                              <div key={item.thread_id} className={cn("group flex items-center gap-2.5 rounded-xl border px-3 py-2.5 transition-[background-color,border-color,opacity] duration-150", active && !headerCtx.isSelectMode && "border-primary/35 bg-primary/5", headerCtx.isSelectMode && isSelected && "border-primary/30 bg-primary/5", headerCtx.isSelectMode && !isSelected && "opacity-60")}>
+                              <div key={item.thread_id} className={cn("group flex items-center gap-2.5 rounded-xl border px-3 py-2.5 transition-all duration-150", active && !headerCtx.isSelectMode && "border-primary/35 bg-primary/5", headerCtx.isSelectMode && isSelected && "border-primary/30 bg-primary/5", headerCtx.isSelectMode && !isSelected && "opacity-60")}>
                                 {headerCtx.isSelectMode && (
-                                  <button type="button" className="shrink-0 rounded-md border p-0.5 transition-colors duration-150" style={{ borderColor: isSelected ? "hsl(var(--primary))" : "hsl(var(--border))", background: isSelected ? "hsl(var(--primary) / 0.1)" : "transparent" }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); headerCtx.toggleSelectOne(item.thread_id); }}>
+                                  <button type="button" className="shrink-0 rounded-md border p-0.5 transition-all duration-150" style={{ borderColor: isSelected ? "hsl(var(--primary))" : "hsl(var(--border))", background: isSelected ? "hsl(var(--primary) / 0.1)" : "transparent" }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); headerCtx.toggleSelectOne(item.thread_id); }}>
                                     {isSelected ? (
                                       <svg className="size-3.5 text-primary" viewBox="0 0 16 16" fill="none"><path d="M13.5 4.5L6 12L2.5 8.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                                     ) : (<div className="size-3.5" />)}
@@ -421,14 +421,10 @@ export function ChatThreadContent({ threadId, context, onContextChange }: ChatTh
             <div className="mx-auto flex size-full max-w-5xl min-w-0 flex-col px-6 pb-4 pt-5">
               <div className="relative flex min-h-0 flex-1 flex-col">
                 {isNewThread && thread.messages.length === 0 && (
-                  // Anchored just above the composer rather than centred in the
-                  // empty area: centring left a dead band of several hundred
-                  // pixels above and below, and the guidance belongs next to
-                  // the input it describes.
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex justify-center pb-6">
-                    <div className="mx-auto flex w-full max-w-(--container-width-md) flex-col items-center justify-center px-6 text-center animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-                      <h2 className="text-xl font-medium text-foreground">{t.chatHeader.startNewTask}</h2>
-                      <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+                  <div className="pointer-events-none absolute inset-x-0 top-1/2 z-10 flex -translate-y-1/2 justify-center">
+                    <div className="mx-auto flex w-full max-w-(--container-width-md) flex-col items-center justify-center rounded-3xl p-8 text-center animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out">
+                      <h2 className="text-xl font-semibold tracking-tight text-foreground">{t.chatHeader.startNewTask}</h2>
+                      <p className="mt-2.5 max-w-sm text-sm leading-relaxed text-muted-foreground">
                         {t.chatHeader.startNewTaskDesc.split("<br />").map((line, i) => (
                           <span key={i}>
                             {i > 0 && <br />}
@@ -450,10 +446,10 @@ export function ChatThreadContent({ threadId, context, onContextChange }: ChatTh
                 {sourceIncident && !incidentCardDismissed && (
                   <div className="shrink-0 rounded-xl border border-indigo-200/80 dark:border-indigo-800/80 bg-indigo-50/30 dark:bg-indigo-950/10 px-4 py-3 mx-auto w-full max-w-5xl sticky top-16 z-10 mb-4">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono text-[11px] text-muted-foreground">
+                      <span className="font-mono text-[11px] font-semibold text-zinc-500">
                         {sourceIncident.incident_key}
                       </span>
-                      <Badge variant="outline" className={`${getSeverityBadgeStyles(sourceIncident.severity)} border font-medium px-2 py-0.5 rounded text-[10px] capitalize`}>
+                      <Badge variant="outline" className={`${getSeverityBadgeStyles(sourceIncident.severity)} border font-medium px-2 py-0.5 rounded text-[10px] uppercase`}>
                         {sourceIncident.severity}
                       </Badge>
                       {sourceIncident.status === "firing" && (
@@ -510,7 +506,7 @@ export function ChatThreadContent({ threadId, context, onContextChange }: ChatTh
                   <div className="pointer-events-none absolute inset-x-0 -top-6 h-8 bg-linear-to-t from-background via-background/70 to-transparent" />
                   <div
                     className={cn(
-                      "relative z-10",
+                      "relative z-10 transition-all duration-300",
                       (todosHidden || !thread.values.todos || thread.values.todos.length === 0)
                         ? "hidden"
                         : "mb-4",

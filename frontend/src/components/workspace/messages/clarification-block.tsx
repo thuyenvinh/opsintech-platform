@@ -171,7 +171,7 @@ export function ClarificationBlock({
                     onClick={() => handleOptionSelect(option)}
                     disabled={isLoading}
                     className={cn(
-                      "flex items-start gap-3 p-3.5 rounded-lg text-left transition-colors duration-200 border",
+                      "flex items-start gap-3 p-3.5 rounded-lg text-left transition-all duration-200 border",
                       "hover:bg-muted/60 hover:border-muted-foreground/20",
                       selectedOption === option &&
                         "bg-primary/10 border-primary/40 shadow-sm",

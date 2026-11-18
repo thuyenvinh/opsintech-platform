@@ -99,13 +99,13 @@ export function SubtaskCard({
 
   return (
     <ChainOfThought
-      className={cn("flex w-full flex-col gap-0.5 pl-9", className)}
+      className={cn("flex w-full flex-col gap-0.5 pl-9 transition-all duration-300", className)}
       open={!collapsed}
     >
       <div className="flex w-full flex-col overflow-hidden">
         <div className="flex w-fit items-center justify-start">
           <Button
-            className="w-fit flex items-center justify-start gap-3 h-auto py-1 px-2 -ml-2 rounded-lg text-left hover:bg-black/5 dark:hover:bg-white/5 opacity-80 hover:opacity-100"
+            className="w-fit flex items-center justify-start gap-3 h-auto py-1 px-2 -ml-2 rounded-[8px] text-left hover:bg-black/5 dark:hover:bg-white/5 opacity-80 hover:opacity-100"
             variant="ghost"
             onClick={() => setCollapsed(!collapsed)}
           >

@@ -599,10 +599,7 @@ export function InputBox({
     <div ref={promptRootRef} className="relative">
       <PromptInput
         className={cn(
-          // Solid surface, no blur: the composer sits on the page, it does not
-          // float above it. No transition either -- the only thing that changed
-          // size here was the textarea growing, and height must never animate.
-          "bg-background rounded-2xl overflow-hidden *:data-[slot='input-group']:rounded-2xl",
+          "bg-background/85 rounded-2xl backdrop-blur-sm transition-all duration-300 ease-out overflow-hidden *:data-[slot='input-group']:rounded-2xl",
           className,
         )}
         disabled={submitDisabled}
@@ -728,12 +725,13 @@ export function InputBox({
                     <GraduationCapIcon className="size-3" />
                   )}
                   {context.mode === "ultra" && (
-                    <RocketIcon className="size-4" />
+                    <RocketIcon className="size-3 text-[#dabb5e]" />
                   )}
                 </div>
                 <div
                   className={cn(
                     "text-xs font-normal",
+                    context.mode === "ultra" ? "golden-text" : "",
                   )}
                 >
                   {(context.mode === "flash" && t.inputBox.flashMode) ||
@@ -758,7 +756,7 @@ export function InputBox({
                     onSelect={() => handleModeSelect("flash")}
                   >
                     <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-1 font-medium">
+                      <div className="flex items-center gap-1 font-bold">
                         <ZapIcon
                           className={cn(
                             "mr-2 size-4",
@@ -788,7 +786,7 @@ export function InputBox({
                       onSelect={() => handleModeSelect("thinking")}
                     >
                       <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-1 font-medium">
+                        <div className="flex items-center gap-1 font-bold">
                           <LightbulbIcon
                             className={cn(
                               "mr-2 size-4",
@@ -818,7 +816,7 @@ export function InputBox({
                     onSelect={() => handleModeSelect("pro")}
                   >
                     <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-1 font-medium">
+                      <div className="flex items-center gap-1 font-bold">
                         <GraduationCapIcon
                           className={cn(
                             "mr-2 size-4",
@@ -846,14 +844,17 @@ export function InputBox({
                     onSelect={() => handleModeSelect("ultra")}
                   >
                     <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-1 font-medium">
+                      <div className="flex items-center gap-1 font-bold">
                         <RocketIcon
                           className={cn(
                             "mr-2 size-4",
+                            context.mode === "ultra" && "text-[#dabb5e]",
                           )}
                         />
                         <div
-                          className={cn()}
+                          className={cn(
+                            context.mode === "ultra" && "golden-text",
+                          )}
                         >
                           {t.inputBox.ultraMode}
                         </div>
@@ -898,7 +899,7 @@ export function InputBox({
                       onSelect={() => handleReasoningEffortSelect("minimal")}
                     >
                       <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-1 font-medium">
+                        <div className="flex items-center gap-1 font-bold">
                           {t.inputBox.reasoningEffortMinimal}
                         </div>
                         <div className="pl-2 text-xs">
@@ -920,7 +921,7 @@ export function InputBox({
                       onSelect={() => handleReasoningEffortSelect("low")}
                     >
                       <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-1 font-medium">
+                        <div className="flex items-center gap-1 font-bold">
                           {t.inputBox.reasoningEffortLow}
                         </div>
                         <div className="pl-2 text-xs">
@@ -942,7 +943,7 @@ export function InputBox({
                       onSelect={() => handleReasoningEffortSelect("medium")}
                     >
                       <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-1 font-medium">
+                        <div className="flex items-center gap-1 font-bold">
                           {t.inputBox.reasoningEffortMedium}
                         </div>
                         <div className="pl-2 text-xs">
@@ -964,7 +965,7 @@ export function InputBox({
                       onSelect={() => handleReasoningEffortSelect("high")}
                     >
                       <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-1 font-medium">
+                        <div className="flex items-center gap-1 font-bold">
                           {t.inputBox.reasoningEffortHigh}
                         </div>
                         <div className="pl-2 text-xs">

@@ -80,7 +80,7 @@ export function SummaryCard({ message, messagesBeforeSummary, className }: Summa
         className={cn(
           "relative w-full max-w-[85%] rounded-xl border border-dashed",
           "border-amber-200/40 dark:border-amber-800/30 bg-amber-50/20 dark:bg-amber-950/10",
-          "transition-[background-color,border-color,box-shadow] duration-300",
+          "transition-all duration-300",
           isOpen && "border-amber-300/60 dark:border-amber-700/50 bg-amber-50/40 dark:bg-amber-950/20 shadow-sm"
         )}
       >

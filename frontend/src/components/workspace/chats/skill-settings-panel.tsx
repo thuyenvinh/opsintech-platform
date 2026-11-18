@@ -875,13 +875,13 @@ export function SkillSettingsPanel({
     <TooltipProvider delayDuration={150}>
       <div 
         className={cn(
-          "w-full bg-muted/20 dark:bg-muted/10 backdrop-blur-md px-4 py-3.5 border-b border-border/40 transition-colors duration-300 animate-in fade-in slide-in-from-top-4"
+          "w-full bg-muted/20 dark:bg-muted/10 backdrop-blur-md px-4 py-3.5 border-b border-border/40 transition-all duration-300 animate-in fade-in slide-in-from-top-4"
         )}
       >
         <div className="flex items-center justify-between gap-1.5 mb-2.5">
           <div className="flex items-center gap-1.5">
             {currentSkillIcon}
-            <span className="text-xs font-medium text-muted-foreground">
+            <span className="text-xs font-semibold text-foreground/80 tracking-wide uppercase">
               {skillName === "ppt-master" && t.ppt.title}
               {skillName === "deep-research" && t.research.title}
               {skillName === "data-analysis" && t.analysis.title}
@@ -1212,7 +1212,7 @@ export function SkillSettingsPanel({
                         }}
                         className="sr-only peer"
                       />
-                      <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer dark:bg-muted/80 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-colors dark:border-gray-600 peer-checked:bg-primary"></div>
+                      <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer dark:bg-muted/80 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
                     </label>
                   </div>
                 </div>
@@ -1241,7 +1241,7 @@ export function SkillSettingsPanel({
                             updateSetting("deep-research", (prev) => ({ ...prev, depth: d }));
                           }}
                           className={cn(
-                            "flex-1 text-xs font-medium rounded transition-colors cursor-pointer truncate px-1",
+                            "flex-1 text-xs font-medium rounded transition-all cursor-pointer truncate px-1",
                             isSel 
                               ? "bg-background text-primary shadow-xs font-semibold" 
                               : "text-muted-foreground hover:text-foreground"
@@ -1300,7 +1300,7 @@ export function SkillSettingsPanel({
                         });
                       }}
                       className={cn(
-                        "h-6 px-2 rounded-full text-[10px] font-medium transition-colors flex items-center gap-0.5 cursor-pointer border border-transparent",
+                        "h-6 px-2 rounded-full text-[10px] font-medium transition-all flex items-center gap-0.5 cursor-pointer border border-transparent",
                         isSel
                           ? "bg-primary/10 text-primary border-primary/20 font-semibold"
                           : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
@@ -1336,7 +1336,7 @@ export function SkillSettingsPanel({
                             updateSetting("data-analysis", (prev) => ({ ...prev, preference: p }));
                           }}
                           className={cn(
-                            "flex-1 text-xs font-medium rounded transition-colors cursor-pointer truncate px-1",
+                            "flex-1 text-xs font-medium rounded transition-all cursor-pointer truncate px-1",
                             isSel 
                               ? "bg-background text-primary shadow-xs font-semibold" 
                               : "text-muted-foreground hover:text-foreground"
@@ -1432,7 +1432,7 @@ export function SkillSettingsPanel({
                         updateSetting("chart-visualization", (prev) => ({ ...prev, colorTheme: theme }));
                       }}
                       className={cn(
-                        "flex-1 text-xs font-medium rounded transition-colors cursor-pointer px-1 truncate",
+                        "flex-1 text-xs font-medium rounded transition-all cursor-pointer px-1 truncate",
                         isSel 
                           ? "bg-background text-primary shadow-xs font-semibold" 
                           : "text-muted-foreground hover:text-foreground"
@@ -1491,7 +1491,7 @@ export function SkillSettingsPanel({
                         });
                       }}
                       className={cn(
-                        "h-6 px-2.5 rounded text-[10px] font-medium transition-colors flex items-center gap-1 cursor-pointer border border-transparent",
+                        "h-6 px-2.5 rounded text-[10px] font-medium transition-all flex items-center gap-1 cursor-pointer border border-transparent",
                         isSel
                           ? "bg-primary/10 text-primary border-primary/20 font-semibold"
                           : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
@@ -1520,7 +1520,7 @@ export function SkillSettingsPanel({
                         updateSetting("consulting-analysis", (prev) => ({ ...prev, language: l }));
                       }}
                       className={cn(
-                        "flex-1 text-xs font-medium rounded transition-colors cursor-pointer",
+                        "flex-1 text-xs font-medium rounded transition-all cursor-pointer",
                         isSel 
                           ? "bg-background text-primary shadow-xs font-semibold" 
                           : "text-muted-foreground hover:text-foreground"

@@ -159,7 +159,7 @@ export function MessageGroup({
       {aboveLastToolCallSteps.length > 0 && (
         <Button
           key="above"
-          className="w-fit flex items-center justify-start gap-2 h-auto py-1 px-2 -ml-2 rounded-lg text-left hover:bg-black/5 dark:hover:bg-white/5 opacity-80 hover:opacity-100"
+          className="w-fit flex items-center justify-start gap-2 h-auto py-1 px-2 -ml-2 rounded-[8px] text-left hover:bg-black/5 dark:hover:bg-white/5 opacity-80 hover:opacity-100"
           variant="ghost"
           onClick={() => setShowAbove(!showAbove)}
         >

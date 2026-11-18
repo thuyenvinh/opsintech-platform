@@ -90,10 +90,10 @@ export function MarkdownContent({
               ? String(children)
               : "";
           return (
-            <div className="my-6 overflow-hidden rounded-xl border border-black/5 dark:border-white/10 bg-slate-50 dark:bg-[#0c0c0d] relative group">
+            <div className="my-6 overflow-hidden rounded-[12px] border border-black/5 dark:border-white/10 bg-slate-50 dark:bg-[#0c0c0d] relative group">
               <div className="flex h-10 items-center justify-between border-b border-black/5 dark:border-white/5 bg-black/5 dark:bg-white/5 px-4 text-xs text-zinc-500 dark:text-zinc-400">
-                <span className="font-mono">{lang}</span>
-                <CodeBlockCopyButton variant="ghost" size="icon" className="h-6 w-6 rounded-md hover:bg-black/5 dark:hover:bg-white/10 text-zinc-400 dark:text-zinc-400" />
+                <span className="font-mono uppercase tracking-wider">{lang}</span>
+                <CodeBlockCopyButton variant="ghost" size="icon" className="h-6 w-6 rounded-[6px] hover:bg-black/5 dark:hover:bg-white/10 text-zinc-400 dark:text-zinc-400" />
               </div>
               <CodeBlock
                 code={codeString.replace(/\n$/, "")}
@@ -107,7 +107,7 @@ export function MarkdownContent({
         return (
           <code
             className={cn(
-              "rounded-md bg-black/5 dark:bg-white/10 px-1.5 py-0.5 font-mono text-[12.5px] font-medium text-foreground",
+              "rounded-[6px] bg-black/5 dark:bg-white/10 px-1.5 py-0.5 font-mono text-[12.5px] font-medium text-foreground",
               className
             )}
             {...props}
@@ -158,7 +158,7 @@ export function MarkdownContent({
                   onClick={handleRun}
                   disabled={isExecuting || isFinished}
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
                     isFinished
                       ? "bg-emerald-100 text-emerald-700 cursor-not-allowed"
                       : isExecuting
@@ -216,10 +216,10 @@ export function MarkdownContent({
         // Paragraphs
         "[&_p]:mb-3 [&_p:last-child]:mb-0",
         // Headings
-        "[&_h1]:mb-3 [&_h1]:mt-6 [&_h1]:text-xl [&_h1]:font-semibold [&_h1]:tracking-tight [&_h1]:text-zinc-900 dark:[&_h1]:text-zinc-100",
-        "[&_h2]:mb-2 [&_h2]:mt-5 [&_h2]:text-lg [&_h2]:font-medium [&_h2]:tracking-tight [&_h2]:text-zinc-900 dark:[&_h2]:text-zinc-100",
-        "[&_h3]:mb-1.5 [&_h3]:mt-4 [&_h3]:text-base [&_h3]:font-medium [&_h3]:text-zinc-900 dark:[&_h3]:text-zinc-100",
-        "[&_h4]:mb-1 [&_h4]:mt-3 [&_h4]:text-sm [&_h4]:font-medium [&_h4]:text-zinc-900 dark:[&_h4]:text-zinc-100",
+        "[&_h1]:mb-3 [&_h1]:mt-6 [&_h1]:text-xl [&_h1]:font-bold [&_h1]:tracking-tight [&_h1]:text-zinc-900 dark:[&_h1]:text-zinc-100",
+        "[&_h2]:mb-2 [&_h2]:mt-5 [&_h2]:text-lg [&_h2]:font-bold [&_h2]:tracking-tight [&_h2]:text-zinc-900 dark:[&_h2]:text-zinc-100",
+        "[&_h3]:mb-1.5 [&_h3]:mt-4 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:tracking-tight [&_h3]:text-zinc-900 dark:[&_h3]:text-zinc-100",
+        "[&_h4]:mb-1 [&_h4]:mt-3 [&_h4]:text-sm [&_h4]:font-semibold [&_h4]:tracking-tight [&_h4]:text-zinc-900 dark:[&_h4]:text-zinc-100",
         // Lists
         "[&_ul]:mb-3 [&_ul]:ml-5 [&_ul]:list-disc [&_ul_li]:pl-1 [&_ul_li]:mb-1.5",
         "[&_ol]:mb-3 [&_ol]:ml-5 [&_ol]:list-decimal [&_ol_li]:pl-1 [&_ol_li]:mb-1.5",

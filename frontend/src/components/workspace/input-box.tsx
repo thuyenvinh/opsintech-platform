@@ -278,6 +278,9 @@ export function InputBox({
   const [skillMenuPosition, setSkillMenuPosition] = useState({ top: 0, left: 0, width: 280 });
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const slashStartPosRef = useRef<number | null>(null);
+  // Set when the menu is dismissed without choosing, so the next leading
+  // slash is treated as literal text rather than reopening it.
+  const slashDismissedRef = useRef(false);
   const [settingsPanelOpen, setSettingsPanelOpen] = useState(false);
 
   useEffect(() => {
@@ -456,6 +459,7 @@ export function InputBox({
       setSkillMenuOpen(false);
       setSkillMenuSearch("");
       slashStartPosRef.current = null;
+      slashDismissedRef.current = false;
     },
     [context, onContextChange],
   );
@@ -500,14 +504,34 @@ export function InputBox({
 
   const handleSlashKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === "/" && !skillMenuOpen) {
-        const target = e.currentTarget;
-        const slashPos = target.selectionStart;
-        slashStartPosRef.current = slashPos;
-        setSkillMenuSearch("");
-        handleSkillMenuOpen();
-        e.preventDefault();
+      if (e.key !== "/" || skillMenuOpen) {
+        return;
       }
+
+      const target = e.currentTarget;
+      const caret = target.selectionStart ?? 0;
+      const before = target.value.slice(0, caret);
+
+      // Only a slash that opens the message is a command. One typed after any
+      // other character is just a slash -- a date like 16/10, a path, a URL --
+      // and must reach the textarea. The menu swallows the keystroke, so
+      // getting this wrong makes those impossible to type at all.
+      if (before.trim().length > 0) {
+        return;
+      }
+
+      // A leading slash is ambiguous: it starts both a command and an absolute
+      // path. Dismissing the menu marks the next one as literal, so typing
+      // /var/log only costs one Escape.
+      if (slashDismissedRef.current) {
+        slashDismissedRef.current = false;
+        return;
+      }
+
+      slashStartPosRef.current = caret;
+      setSkillMenuSearch("");
+      handleSkillMenuOpen();
+      e.preventDefault();
     },
     [skillMenuOpen, handleSkillMenuOpen],
   );
@@ -1192,6 +1216,7 @@ export function InputBox({
           if (!open) {
             setSkillMenuSearch("");
             slashStartPosRef.current = null;
+            slashDismissedRef.current = true;
           }
         }}
         onSelect={handleSkillSelect}

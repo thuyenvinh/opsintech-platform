@@ -111,7 +111,7 @@ export function SubtaskCard({
           >
             <div className="flex items-center gap-2 flex-1 min-w-0">
               {icon}
-              <span className="text-xs font-medium truncate max-w-[400px]">
+              <span className="text-[10px] font-medium truncate max-w-[400px]">
                 {task.status === "in_progress" ? (
                   <Shimmer duration={3} spread={3}>
                     {task.description}
@@ -126,7 +126,7 @@ export function SubtaskCard({
               {durationLabel && (
                 <span
                   className={cn(
-                    "text-muted-foreground text-xs font-mono",
+                    "text-muted-foreground text-[10px] font-mono",
                     task.status === "failed" ? "text-red-500/70" : "",
                     task.status === "timed_out" ? "text-amber-500/70" : "",
                   )}

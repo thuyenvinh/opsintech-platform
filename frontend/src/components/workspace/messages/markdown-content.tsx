@@ -98,7 +98,7 @@ export function MarkdownContent({
               <CodeBlock
                 code={codeString.replace(/\n$/, "")}
                 language={lang}
-                className="rounded-none border-0 bg-transparent p-4 pb-4 *:!bg-transparent text-xs leading-[1.6] font-mono text-zinc-800 dark:text-zinc-200"
+                className="rounded-none border-0 bg-transparent p-4 pb-4 *:!bg-transparent text-[12px] leading-[1.6] font-mono text-zinc-800 dark:text-zinc-200"
                 {...props}
               />
             </div>
@@ -107,7 +107,7 @@ export function MarkdownContent({
         return (
           <code
             className={cn(
-              "rounded-md bg-black/5 dark:bg-white/10 px-1.5 py-0.5 font-mono text-xs font-medium text-foreground",
+              "rounded-md bg-black/5 dark:bg-white/10 px-1.5 py-0.5 font-mono text-[12.5px] font-medium text-foreground",
               className
             )}
             {...props}
@@ -182,7 +182,7 @@ export function MarkdownContent({
                 </button>
               )}
             </div>
-            <div className="p-4 bg-white/60 font-mono text-sm text-zinc-800 break-all whitespace-pre-wrap leading-relaxed">
+            <div className="p-4 bg-white/60 font-mono text-[13px] text-zinc-800 break-all whitespace-pre-wrap leading-relaxed">
               {cmd}
             </div>
           </div>
@@ -212,7 +212,7 @@ export function MarkdownContent({
   return (
     <MessageResponse
       className={cn(
-        "text-sm leading-[1.7] text-zinc-800 dark:text-zinc-200",
+        "text-[13px] leading-[1.7] text-zinc-800 dark:text-zinc-200",
         // Paragraphs
         "[&_p]:mb-3 [&_p:last-child]:mb-0",
         // Headings

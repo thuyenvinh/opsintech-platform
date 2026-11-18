@@ -80,7 +80,7 @@ export function MessageListItem({
           !isHuman && "w-full min-w-0"
         )}>
           {isHuman ? (
-            <div className="bg-muted/70 text-foreground px-5 py-3 rounded-3xl rounded-tr-sm text-sm leading-relaxed shadow-sm">
+            <div className="bg-muted/70 text-foreground px-5 py-3 rounded-3xl rounded-tr-sm text-[13px] leading-relaxed shadow-sm">
               <MessageContent
                 className="w-full break-words"
                 message={message}
@@ -90,7 +90,7 @@ export function MessageListItem({
             </div>
           ) : (
             <MessageContent
-              className="w-full break-words text-sm leading-loose text-foreground/90"
+              className="w-full break-words text-[13px] leading-loose text-foreground/90"
               message={message}
               isLoading={isLoading}
               availableAttachmentKeys={availableAttachmentKeys}
@@ -333,10 +333,10 @@ function RichFileCard({
 
   if (isUploading) {
     return (
-      <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 opacity-60 text-xs font-medium w-fit transition-colors group relative cursor-wait">
+      <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 opacity-60 text-[12px] font-medium w-fit transition-colors group relative cursor-wait">
         <Loader2Icon className="size-3.5 animate-spin text-muted-foreground shrink-0" />
         <span className="truncate max-w-[120px] text-foreground/80">{file.filename}</span>
-        <span className="text-xs text-muted-foreground ml-1">{t.uploads.uploading}</span>
+        <span className="text-[10px] text-muted-foreground ml-1">{t.uploads.uploading}</span>
       </div>
     );
   }
@@ -349,7 +349,7 @@ function RichFileCard({
       href={fileUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-black/10 dark:border-white/10 bg-background hover:bg-black/5 dark:hover:bg-white/10 text-xs font-medium w-fit transition-colors duration-200 group relative shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
+      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-black/10 dark:border-white/10 bg-background hover:bg-black/5 dark:hover:bg-white/10 text-[12px] font-medium w-fit transition-colors duration-200 group relative shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
       title={file.filename}
     >
       <FileIcon className="size-3.5 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />

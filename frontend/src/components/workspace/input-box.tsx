@@ -1018,7 +1018,7 @@ export function InputBox({
                         <div className="font-medium text-xs">
                           {tr(locale, "默认助手", "Default Agent", "Trợ lý mặc định")}
                         </div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-[11px] text-muted-foreground">
                           {tr(locale, "使用系统通用主助手", "Use standard lead assistant", "Sử dụng trợ lý chính mặc định")}
                         </div>
                       </div>
@@ -1055,7 +1055,7 @@ export function InputBox({
                               <span className="truncate">{agent.name}</span>
                             </div>
                             {agent.description && (
-                              <div className="text-xs text-muted-foreground line-clamp-1">
+                              <div className="text-[11px] text-muted-foreground line-clamp-1">
                                 {agent.description}
                               </div>
                             )}

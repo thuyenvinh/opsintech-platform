@@ -906,7 +906,7 @@ export function SkillSettingsPanel({
           <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
             {/* Pages Slider */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">{t.ppt.pages}</span>
+              <span className="text-[11px] font-medium text-muted-foreground">{t.ppt.pages}</span>
               <div className="flex items-center gap-3">
                 <input
                   type="range"
@@ -937,7 +937,7 @@ export function SkillSettingsPanel({
 
             {/* Design Style Selector */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">{t.ppt.style}</span>
+              <span className="text-[11px] font-medium text-muted-foreground">{t.ppt.style}</span>
               <Select
                 value={settings["ppt-master"].style}
                 onValueChange={(val: PPTSettings["style"]) => {
@@ -961,7 +961,7 @@ export function SkillSettingsPanel({
                       <SelectItem key={key} value={key} className="text-xs cursor-pointer py-1.5">
                         <div className="flex flex-col gap-0.5">
                           <span className="font-medium">{label}</span>
-                          <span className="text-xs text-muted-foreground font-normal [[data-slot=select-value]_&]:hidden">{descriptions[key]}</span>
+                          <span className="text-[10px] text-muted-foreground font-normal [[data-slot=select-value]_&]:hidden">{descriptions[key]}</span>
                         </div>
                       </SelectItem>
                     );
@@ -972,7 +972,7 @@ export function SkillSettingsPanel({
 
             {/* Template Selector */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">{t.ppt.template}</span>
+              <span className="text-[11px] font-medium text-muted-foreground">{t.ppt.template}</span>
               <Select
                 value={settings["ppt-master"].template}
                 onValueChange={(val: string) => {
@@ -998,7 +998,7 @@ export function SkillSettingsPanel({
                       <SelectItem key={key} value={key} className="text-xs cursor-pointer py-1.5">
                         <div className="flex flex-col gap-0.5">
                           <span className="font-medium">{label}</span>
-                          <span className="text-xs text-muted-foreground font-normal [[data-slot=select-value]_&]:hidden">{descriptions[key]}</span>
+                          <span className="text-[10px] text-muted-foreground font-normal [[data-slot=select-value]_&]:hidden">{descriptions[key]}</span>
                         </div>
                       </SelectItem>
                     );
@@ -1035,7 +1035,7 @@ export function SkillSettingsPanel({
                 type="button"
                 onClick={handleUploadTemplate}
                 disabled={uploading}
-                className="inline-flex items-center gap-1 mt-1 text-xs font-medium text-muted-foreground hover:text-primary transition-colors hover:underline cursor-pointer"
+                className="inline-flex items-center gap-1 mt-1 text-[10px] font-medium text-muted-foreground hover:text-primary transition-colors hover:underline cursor-pointer"
               >
                 <UploadIcon className="size-3" />
                 {uploading
@@ -1046,7 +1046,7 @@ export function SkillSettingsPanel({
 
             {/* Canvas Format Selector */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">{t.ppt.aspectRatio}</span>
+              <span className="text-[11px] font-medium text-muted-foreground">{t.ppt.aspectRatio}</span>
               <Select
                 value={normalizedAspect}
                 onValueChange={(val: PPTSettings["aspectRatio"]) => {
@@ -1071,7 +1071,7 @@ export function SkillSettingsPanel({
               <button
                 type="button"
                 onClick={() => setShowAdvanced(!showAdvanced)}
-                className="flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 cursor-pointer select-none transition-colors"
+                className="flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 cursor-pointer select-none transition-colors"
               >
                 <span>{t.ppt.advancedSettings}</span>
                 {showAdvanced ? (
@@ -1085,7 +1085,7 @@ export function SkillSettingsPanel({
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-5 mt-3 animate-in fade-in slide-in-from-top-2 duration-200">
                   {/* Industry Colors Selector */}
                   <div className="flex flex-col gap-1.5">
-                    <span className="text-xs font-medium text-muted-foreground">{t.ppt.industry}</span>
+                    <span className="text-[11px] font-medium text-muted-foreground">{t.ppt.industry}</span>
                     <Select
                       value={settings["ppt-master"].industry || "none"}
                       onValueChange={(val: PPTSettings["industry"]) => {
@@ -1107,7 +1107,7 @@ export function SkillSettingsPanel({
 
                   {/* Transition Effect Selector */}
                   <div className="flex flex-col gap-1.5">
-                    <span className="text-xs font-medium text-muted-foreground">{t.ppt.transition}</span>
+                    <span className="text-[11px] font-medium text-muted-foreground">{t.ppt.transition}</span>
                     <Select
                       value={settings["ppt-master"].transition || "fade"}
                       onValueChange={(val: PPTSettings["transition"]) => {
@@ -1129,7 +1129,7 @@ export function SkillSettingsPanel({
 
                   {/* Entrance Animation Selector */}
                   <div className="flex flex-col gap-1.5">
-                    <span className="text-xs font-medium text-muted-foreground">{t.ppt.animation}</span>
+                    <span className="text-[11px] font-medium text-muted-foreground">{t.ppt.animation}</span>
                     <Select
                       value={settings["ppt-master"].animation || "auto"}
                       onValueChange={(val: PPTSettings["animation"]) => {
@@ -1151,7 +1151,7 @@ export function SkillSettingsPanel({
 
                   {/* Formula Policy Selector */}
                   <div className="flex flex-col gap-1.5">
-                    <span className="text-xs font-medium text-muted-foreground">{t.ppt.formula}</span>
+                    <span className="text-[11px] font-medium text-muted-foreground">{t.ppt.formula}</span>
                     <Select
                       value={settings["ppt-master"].formula || "mixed"}
                       onValueChange={(val: PPTSettings["formula"]) => {
@@ -1173,7 +1173,7 @@ export function SkillSettingsPanel({
 
                   {/* Text-to-Image Model Selector */}
                   <div className="flex flex-col gap-1.5">
-                    <span className="text-xs font-medium text-muted-foreground">{t.ppt.imageModel}</span>
+                    <span className="text-[11px] font-medium text-muted-foreground">{t.ppt.imageModel}</span>
                     <Select
                       value={settings["ppt-master"].imageModel || "none"}
                       onValueChange={(val: string) => {
@@ -1200,7 +1200,7 @@ export function SkillSettingsPanel({
                   <div className="col-span-1 md:col-span-5 flex items-center justify-between border-t border-border/10 pt-3 mt-1">
                     <div className="flex flex-col gap-0.5">
                       <span className="text-xs font-semibold text-foreground/80">{t.ppt.mergeParagraphs}</span>
-                      <span className="text-xs text-muted-foreground max-w-2xl">{t.ppt.mergeParagraphsTip}</span>
+                      <span className="text-[10px] text-muted-foreground max-w-2xl">{t.ppt.mergeParagraphsTip}</span>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer select-none">
                       <input
@@ -1226,7 +1226,7 @@ export function SkillSettingsPanel({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {/* Research Depth */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">{t.research.depth}</span>
+              <span className="text-[11px] font-medium text-muted-foreground">{t.research.depth}</span>
               <div className="flex bg-muted/65 rounded-md p-0.5 h-8">
                 {(["fast", "normal", "deep"] as const).map((d) => {
                   const isSel = settings["deep-research"].depth === d;
@@ -1261,7 +1261,7 @@ export function SkillSettingsPanel({
 
             {/* Time Range */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">{t.research.timeRange}</span>
+              <span className="text-[11px] font-medium text-muted-foreground">{t.research.timeRange}</span>
               <Select
                 value={settings["deep-research"].timeRange}
                 onValueChange={(val: DeepResearchSettings["timeRange"]) => {
@@ -1283,7 +1283,7 @@ export function SkillSettingsPanel({
 
             {/* Sources Multi-select */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">{t.research.sources}</span>
+              <span className="text-[11px] font-medium text-muted-foreground">{t.research.sources}</span>
               <div className="flex flex-wrap gap-1">
                 {Object.entries(t.research.sourceOptions).map(([key, label]) => {
                   const isSel = settings["deep-research"].sources.includes(key);
@@ -1300,7 +1300,7 @@ export function SkillSettingsPanel({
                         });
                       }}
                       className={cn(
-                        "h-6 px-2 rounded-full text-xs font-medium transition-colors flex items-center gap-0.5 cursor-pointer border border-transparent",
+                        "h-6 px-2 rounded-full text-[10px] font-medium transition-colors flex items-center gap-0.5 cursor-pointer border border-transparent",
                         isSel
                           ? "bg-primary/10 text-primary border-primary/20 font-semibold"
                           : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
@@ -1321,7 +1321,7 @@ export function SkillSettingsPanel({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* Analysis Preference */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">{t.analysis.preference}</span>
+              <span className="text-[11px] font-medium text-muted-foreground">{t.analysis.preference}</span>
               <div className="flex bg-muted/65 rounded-md p-0.5 h-8">
                 {(["auto", "summary", "sql"] as const).map((p) => {
                   const isSel = settings["data-analysis"].preference === p;
@@ -1356,7 +1356,7 @@ export function SkillSettingsPanel({
 
             {/* Output Format */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">{t.analysis.format}</span>
+              <span className="text-[11px] font-medium text-muted-foreground">{t.analysis.format}</span>
               <Select
                 value={settings["data-analysis"].outputFormat}
                 onValueChange={(val: DataAnalysisSettings["outputFormat"]) => {
@@ -1383,7 +1383,7 @@ export function SkillSettingsPanel({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* Target Chart Type */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">{t.chart.type}</span>
+              <span className="text-[11px] font-medium text-muted-foreground">{t.chart.type}</span>
               <Select
                 value={settings["chart-visualization"].chartType}
                 onValueChange={(val: ChartVisualizationSettings["chartType"]) => {
@@ -1408,7 +1408,7 @@ export function SkillSettingsPanel({
                       <SelectItem key={key} value={key} className="text-xs cursor-pointer py-1.5">
                         <div className="flex flex-col gap-0.5">
                           <span className="font-medium">{label}</span>
-                          <span className="text-xs text-muted-foreground font-normal [[data-slot=select-value]_&]:hidden">{descriptions[key]}</span>
+                          <span className="text-[10px] text-muted-foreground font-normal [[data-slot=select-value]_&]:hidden">{descriptions[key]}</span>
                         </div>
                       </SelectItem>
                     );
@@ -1419,7 +1419,7 @@ export function SkillSettingsPanel({
 
             {/* Color Theme */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">{t.chart.theme}</span>
+              <span className="text-[11px] font-medium text-muted-foreground">{t.chart.theme}</span>
               <div className="flex bg-muted/65 rounded-md p-0.5 h-8">
                 {(["light", "dark", "vibrant"] as const).map((theme) => {
                   const isSel = settings["chart-visualization"].colorTheme === theme;
@@ -1452,7 +1452,7 @@ export function SkillSettingsPanel({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {/* Report Type */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">{t.consulting.type}</span>
+              <span className="text-[11px] font-medium text-muted-foreground">{t.consulting.type}</span>
               <Select
                 value={settings["consulting-analysis"].reportType}
                 onValueChange={(val: ConsultingAnalysisSettings["reportType"]) => {
@@ -1474,7 +1474,7 @@ export function SkillSettingsPanel({
 
             {/* Frameworks Multi-select */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">{t.consulting.frameworks}</span>
+              <span className="text-[11px] font-medium text-muted-foreground">{t.consulting.frameworks}</span>
               <div className="flex flex-wrap gap-1">
                 {Object.entries(t.consulting.frameworkOptions).map(([key, label]) => {
                   const isSel = settings["consulting-analysis"].frameworks.includes(key);
@@ -1491,7 +1491,7 @@ export function SkillSettingsPanel({
                         });
                       }}
                       className={cn(
-                        "h-6 px-2.5 rounded text-xs font-medium transition-colors flex items-center gap-1 cursor-pointer border border-transparent",
+                        "h-6 px-2.5 rounded text-[10px] font-medium transition-colors flex items-center gap-1 cursor-pointer border border-transparent",
                         isSel
                           ? "bg-primary/10 text-primary border-primary/20 font-semibold"
                           : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
@@ -1507,7 +1507,7 @@ export function SkillSettingsPanel({
 
             {/* Language */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">{t.consulting.lang}</span>
+              <span className="text-[11px] font-medium text-muted-foreground">{t.consulting.lang}</span>
               <div className="flex bg-muted/65 rounded-md p-0.5 h-8">
                 {(["zh", "en"] as const).map((l) => {
                   const isSel = settings["consulting-analysis"].language === l;
@@ -1540,7 +1540,7 @@ export function SkillSettingsPanel({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {/* Analysis Mode */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">{t.pm.mode}</span>
+              <span className="text-[11px] font-medium text-muted-foreground">{t.pm.mode}</span>
               <Select
                 value={settings["pm-analysis"].mode}
                 onValueChange={(val: PMAnalysisSettings["mode"]) => {
@@ -1562,7 +1562,7 @@ export function SkillSettingsPanel({
 
             {/* Framework */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">{t.pm.framework}</span>
+              <span className="text-[11px] font-medium text-muted-foreground">{t.pm.framework}</span>
               <Select
                 value={settings["pm-analysis"].framework}
                 onValueChange={(val: PMAnalysisSettings["framework"]) => {
@@ -1584,7 +1584,7 @@ export function SkillSettingsPanel({
 
             {/* Template */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">{t.pm.template}</span>
+              <span className="text-[11px] font-medium text-muted-foreground">{t.pm.template}</span>
               <Select
                 value={settings["pm-analysis"].template}
                 onValueChange={(val: PMAnalysisSettings["template"]) => {

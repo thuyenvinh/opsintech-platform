@@ -169,7 +169,7 @@ export function MessageGroup({
               showAbove ? "rotate-180" : "",
             )}
           />
-          <span className="opacity-60 text-xs font-medium">
+          <span className="opacity-60 text-[10px] font-medium">
             {showAbove
               ? t.toolCalls.lessSteps
               : t.toolCalls.moreSteps(aboveLastToolCallSteps.length)}
@@ -275,7 +275,7 @@ function BashStep({
       {isLong && (
         <button
           type="button"
-          className="text-muted-foreground hover:text-foreground text-xs mt-1 transition-colors"
+          className="text-muted-foreground hover:text-foreground text-[10px] mt-1 transition-colors"
           onClick={() => setExpanded(!expanded)}
         >
           {expanded ? `▲ ${t.messageGroup.collapseAll}` : `▼ ${t.messageGroup.expandAll}`}

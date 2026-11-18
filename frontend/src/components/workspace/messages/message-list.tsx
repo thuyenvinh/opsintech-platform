@@ -348,7 +348,7 @@ export function MessageList({
           if (activeTaskIds.size === 0) return null;
           return (
             <div className="flex flex-col gap-1 mb-3 ml-9">
-              <div className="text-muted-foreground flex items-center gap-1.5 pt-1 pb-1 pl-9 text-xs font-medium">
+              <div className="text-muted-foreground flex items-center gap-1.5 pt-1 pb-1 pl-9 text-[11px] font-medium">
                 {t.subtasks.executing(activeTaskIds.size)}
               </div>
               {Array.from(activeTaskIds).map((taskId) => (

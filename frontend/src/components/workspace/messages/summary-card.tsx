@@ -109,7 +109,7 @@ export function SummaryCard({ message, messagesBeforeSummary, className }: Summa
                   }
                 </span>
                 {summaryIndex != null && (
-                  <span className="text-xs text-muted-foreground/60 font-mono shrink-0">
+                  <span className="text-[10px] text-muted-foreground/60 font-mono shrink-0">
                     #{summaryIndex + 1}
                   </span>
                 )}
@@ -117,13 +117,13 @@ export function SummaryCard({ message, messagesBeforeSummary, className }: Summa
             </div>
             <div className="flex items-center gap-2 shrink-0">
               {timestamp && (
-                <span className="flex items-center gap-1 text-xs text-muted-foreground/50">
+                <span className="flex items-center gap-1 text-[10px] text-muted-foreground/50">
                   <Clock className="size-3" />
                   {timestamp}
                 </span>
               )}
               {messagesBeforeSummary != null && messagesBeforeSummary > 0 && (
-                <span className="flex items-center gap-1 text-xs text-muted-foreground/50">
+                <span className="flex items-center gap-1 text-[10px] text-muted-foreground/50">
                   <MessageSquare className="size-3" />
                   {messagesBeforeSummary}
                 </span>
@@ -140,7 +140,7 @@ export function SummaryCard({ message, messagesBeforeSummary, className }: Summa
         <CollapsibleContent>
           <div className="px-4 pb-3 pt-0">
             <div className="border-t border-amber-200/30 dark:border-amber-800/20 pt-2.5">
-              <p className="text-xs leading-relaxed text-muted-foreground/80 whitespace-pre-wrap">
+              <p className="text-[11px] leading-relaxed text-muted-foreground/80 whitespace-pre-wrap">
                 {summaryContent}
               </p>
             </div>

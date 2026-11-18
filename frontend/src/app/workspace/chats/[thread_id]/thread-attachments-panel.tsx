@@ -153,7 +153,7 @@ export function ThreadAttachmentsPanel({
             </button>
           </div>
         </div>
-        <div className="mt-1.5 flex flex-wrap gap-1.5 text-xs text-muted-foreground">
+        <div className="mt-1.5 flex flex-wrap gap-1.5 text-[11px] text-muted-foreground">
           <span className="rounded-full bg-muted px-2 py-0.5">{fileType}</span>
           <span className="rounded-full bg-muted px-2 py-0.5">{sizeText}</span>
           {isDerived && (
@@ -176,7 +176,7 @@ export function ThreadAttachmentsPanel({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="text-sm font-medium">{t.attachments.title}</div>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-[11px] text-muted-foreground">
             {selectedAttachments.length > 0 && t.attachments.referencedCount(selectedAttachments.length)}
             {historyAttachments.length > 0 && `${selectedAttachments.length > 0 ? ', ' : ''}${t.attachments.historyCount(historyAttachments.length)}`}
           </span>
@@ -214,14 +214,14 @@ export function ThreadAttachmentsPanel({
       </div>
       {!collapsed && (
         <>
-          <div className="mt-2 text-xs text-muted-foreground">
+          <div className="mt-2 text-[11px] text-muted-foreground">
             {t.attachments.uploadHint}
             {newlyUploadedPreferredIds.length > 0
               ? ` ${t.attachments.identifiedFiles(newlyUploadedPreferredIds.length)}`
               : ` ${t.attachments.noIdentifiedFiles}`}
           </div>
           {deleteError && (
-            <div className="mt-2 text-xs text-destructive">{deleteError}</div>
+            <div className="mt-2 text-[11px] text-destructive">{deleteError}</div>
           )}
           <div className="mt-3 space-y-3">
             <section>

@@ -293,18 +293,18 @@ export function ChatThreadContent({ threadId, context, onContextChange }: ChatTh
                 {headerCtx.incidentId && (
                   <Link
                     href={`/workspace/incidents/${encodeURIComponent(headerCtx.incidentId)}`}
-                    className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground no-underline"
+                    className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground no-underline"
                     title={headerCtx.t.sidebarNav.incidents}
                   >
                     <ArrowLeft className="size-4" />
                     {headerCtx.t.sidebarNav.incidents}
                   </Link>
                 )}
-                <div className="bg-muted text-muted-foreground inline-flex h-6 items-center rounded-md px-2 text-xs font-medium">
+                <div className="bg-muted text-muted-foreground inline-flex h-6 items-center rounded-md px-2 text-[11px] font-medium">
                   {headerCtx.t.chatHeader.smartWorkbench}
                 </div>
                 <div className="hidden bg-border h-4 w-px lg:block" />
-                <div className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-sm font-medium max-w-[120px] sm:max-w-[200px]">
+                <div className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[13px] font-medium max-w-[120px] sm:max-w-[200px]">
                   <ThreadTitle threadId={effectiveThreadId} thread={thread} />
                 </div>
                 <div className="hidden bg-border h-4 w-px lg:block" />
@@ -450,14 +450,14 @@ export function ChatThreadContent({ threadId, context, onContextChange }: ChatTh
                 {sourceIncident && !incidentCardDismissed && (
                   <div className="shrink-0 rounded-xl border border-indigo-200/80 dark:border-indigo-800/80 bg-indigo-50/30 dark:bg-indigo-950/10 px-4 py-3 mx-auto w-full max-w-5xl sticky top-16 z-10 mb-4">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono text-xs text-muted-foreground">
+                      <span className="font-mono text-[11px] text-muted-foreground">
                         {sourceIncident.incident_key}
                       </span>
-                      <Badge variant="outline" className={`${getSeverityBadgeStyles(sourceIncident.severity)} border font-medium px-2 py-0.5 rounded text-xs capitalize`}>
+                      <Badge variant="outline" className={`${getSeverityBadgeStyles(sourceIncident.severity)} border font-medium px-2 py-0.5 rounded text-[10px] capitalize`}>
                         {sourceIncident.severity}
                       </Badge>
                       {sourceIncident.status === "firing" && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 dark:bg-rose-950/20 dark:text-rose-400">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-medium text-rose-700 dark:bg-rose-950/20 dark:text-rose-400">
                           <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
                           Firing
                         </span>
@@ -465,12 +465,12 @@ export function ChatThreadContent({ threadId, context, onContextChange }: ChatTh
                       <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300 truncate">
                         {sourceIncident.title ?? t.pages.untitled}
                       </span>
-                      <span className="text-xs text-zinc-400">
+                      <span className="text-[10px] text-zinc-400">
                         Service: {sourceIncident.service ?? "—"} · Env: {sourceIncident.environment ?? "—"}
                       </span>
                       <Link
                         href={`/workspace/incidents/${encodeURIComponent(sourceIncident.id)}`}
-                        className="ml-auto text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium whitespace-nowrap"
+                        className="ml-auto text-[10px] text-indigo-600 dark:text-indigo-400 hover:underline font-medium whitespace-nowrap"
                       >
                         ← {t.sidebarNav.incidents}
                       </Link>

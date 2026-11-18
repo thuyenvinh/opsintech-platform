@@ -1,8 +1,9 @@
 "use client";
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 
 import type { Locale } from "@/core/i18n";
+import { setLocaleInCookie } from "@/core/i18n/cookies";
 
 export interface I18nContextType {
   locale: Locale;
@@ -20,10 +21,18 @@ export function I18nProvider({
 }) {
   const [locale, setLocale] = useState<Locale>(initialLocale);
 
-  const handleSetLocale = (newLocale: Locale) => {
+  // Memoized: this is the context's setLocale, and the initializer in
+  // useI18n depends on it. Recreated every render, it turned a mount effect
+  // into a per-render one.
+  //
+  // Writing through setLocaleInCookie rather than document.cookie by hand
+  // leaves one writer. The hand-rolled line skipped LOCALE_COOKIE_NAME,
+  // encodeURIComponent and SameSite, so the two writers could drift apart and
+  // the reader would stop finding what the writer stored.
+  const handleSetLocale = useCallback((newLocale: Locale) => {
     setLocale(newLocale);
-    document.cookie = `locale=${newLocale}; path=/; max-age=31536000`;
-  };
+    setLocaleInCookie(newLocale);
+  }, []);
 
   return (
     <I18nContext.Provider value={{ locale, setLocale: handleSetLocale }}>

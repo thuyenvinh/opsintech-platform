@@ -25,11 +25,18 @@ export default async function RootLayout({
   return (
     <html lang={locale} suppressContentEditableWarning suppressHydrationWarning>
       <body suppressHydrationWarning>
-        <QueryProvider>
-          <ThemeProvider attribute="class" enableSystem disableTransitionOnChange>
+        {/* ThemeProvider sits outside QueryProvider on purpose. QueryProvider
+            renders null until it has mounted, so anything nested inside it is
+            absent from the server HTML -- including next-themes' blocking
+            pre-paint script. With it nested, every hard load painted the light
+            palette until hydration finished, and signing out is the one place
+            the app forces a hard load, which is why the theme looked forgotten
+            at exactly that moment. */}
+        <ThemeProvider attribute="class" enableSystem disableTransitionOnChange>
+          <QueryProvider>
             <I18nProvider initialLocale={locale}>{children}</I18nProvider>
-          </ThemeProvider>
-        </QueryProvider>
+          </QueryProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

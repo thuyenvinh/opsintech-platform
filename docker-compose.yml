@@ -55,7 +55,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 2G
 
   postgres:
     image: postgres:16-alpine
@@ -128,7 +128,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 2G
 
   gateway:
     build:

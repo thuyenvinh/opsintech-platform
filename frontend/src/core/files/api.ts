@@ -107,6 +107,30 @@ export function getPreviewUrl(fileId: string): string {
   return `${BASE()}/${fileId}/preview`;
 }
 
+export interface SpreadsheetSheet {
+  name: string;
+  total_rows: number;
+  total_cols: number;
+  rows: (string | number | boolean | null)[][];
+}
+
+export interface SpreadsheetPreviewResponse {
+  file_id: string;
+  filename: string;
+  sheets: SpreadsheetSheet[];
+}
+
+export async function getSpreadsheetPreview(fileId: string): Promise<SpreadsheetPreviewResponse> {
+  const res = await fetch(`${BASE()}/${fileId}/spreadsheet`, {
+    headers: await getAuthHeaders(),
+  });
+  if (!res.ok) {
+    const payload = await res.json().catch(() => ({}));
+    throw new Error(payload.detail ?? `Failed to preview spreadsheet: ${res.status}`);
+  }
+  return res.json();
+}
+
 export async function deleteFile(fileId: string): Promise<void> {
   const res = await fetch(`${BASE()}/${fileId}`, {
     method: "DELETE",

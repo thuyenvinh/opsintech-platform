@@ -489,6 +489,150 @@ async def preview_file(
     )
 
 
+@router.get("/{file_id}/spreadsheet")
+async def get_spreadsheet_preview(
+    file_id: str,
+    request: Request,
+    db: AsyncSession = Depends(get_session),
+    _ctx: Any = Depends(require_tenant_context),
+):
+    """Parse and return spreadsheet content (xlsx, xls, csv) for frontend preview."""
+    import csv
+    import io
+
+    tenant_id = request.state.tenant_id
+    user_id = request.state.user_id
+
+    query = sa_select(FileObject).where(
+        FileObject.id == file_id,
+        FileObject.tenant_id == tenant_id,
+        FileObject.deleted_at.is_(None),
+    )
+    result = await db.execute(query)
+    file_obj = result.scalars().first()
+
+    if not file_obj:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    if file_obj.visibility == "private" and file_obj.owner_user_id != user_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    storage = get_storage_driver()
+    try:
+        content = await storage.get_object(file_obj.object_key)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="File content not found in storage")
+
+    filename = (file_obj.original_filename or file_obj.display_name or "").lower()
+    sheets: list[dict[str, Any]] = []
+
+    # Case 1: XLSX / XLSM (via openpyxl)
+    if filename.endswith((".xlsx", ".xlsm")):
+        try:
+            import openpyxl
+
+            wb = openpyxl.load_workbook(io.BytesIO(content), data_only=True, read_only=True)
+            for sheet_name in wb.sheetnames[:15]:
+                ws = wb[sheet_name]
+                rows: list[list[str]] = []
+                max_cols = 0
+                for r_idx, row in enumerate(ws.iter_rows(values_only=True)):
+                    if r_idx >= 500:
+                        break
+                    row_vals = []
+                    for cell in row:
+                        if cell is None:
+                            row_vals.append("")
+                        elif hasattr(cell, "isoformat"):
+                            row_vals.append(cell.isoformat())
+                        else:
+                            row_vals.append(str(cell))
+                    rows.append(row_vals)
+                    if len(row_vals) > max_cols:
+                        max_cols = len(row_vals)
+
+                # Ensure all rows have equal column count
+                for row in rows:
+                    if len(row) < max_cols:
+                        row.extend([""] * (max_cols - len(row)))
+
+                sheets.append({
+                    "name": sheet_name,
+                    "total_rows": len(rows),
+                    "total_cols": max_cols,
+                    "rows": rows,
+                })
+        except Exception as e:
+            logger.warning("Failed to parse xlsx with openpyxl: %s", e)
+
+    # Case 2: XLS (older Excel via pandas / xlrd)
+    elif filename.endswith(".xls"):
+        try:
+            import pandas as pd
+
+            excel_file = pd.ExcelFile(io.BytesIO(content))
+            for sheet_name in excel_file.sheet_names[:15]:
+                df = pd.read_excel(excel_file, sheet_name=sheet_name, nrows=500, header=None)
+                raw_rows = df.fillna("").astype(str).values.tolist()
+                max_cols = max((len(r) for r in raw_rows), default=0)
+                sheets.append({
+                    "name": sheet_name,
+                    "total_rows": len(raw_rows),
+                    "total_cols": max_cols,
+                    "rows": raw_rows,
+                })
+        except Exception as e:
+            logger.warning("Failed to parse xls with pandas: %s", e)
+
+    # Case 3: CSV / TSV
+    if not sheets and (filename.endswith((".csv", ".tsv", ".txt")) or "csv" in file_obj.mime_type):
+        text = None
+        for enc in ["utf-8-sig", "utf-8", "cp1258", "latin1"]:
+            try:
+                text = content.decode(enc)
+                break
+            except Exception:
+                continue
+
+        if text is not None:
+            delimiter = "\t" if filename.endswith(".tsv") else ","
+            if not filename.endswith(".tsv") and "\t" in text[:500] and "," not in text[:500]:
+                delimiter = "\t"
+
+            reader = csv.reader(io.StringIO(text), delimiter=delimiter)
+            rows = []
+            max_cols = 0
+            for idx, row in enumerate(reader):
+                if idx >= 500:
+                    break
+                rows.append(row)
+                if len(row) > max_cols:
+                    max_cols = len(row)
+
+            for row in rows:
+                if len(row) < max_cols:
+                    row.extend([""] * (max_cols - len(row)))
+
+            sheets.append({
+                "name": "Data",
+                "total_rows": len(rows),
+                "total_cols": max_cols,
+                "rows": rows,
+            })
+
+    if not sheets:
+        raise HTTPException(
+            status_code=400,
+            detail="Could not extract spreadsheet data from this file. Ensure it is a valid .xlsx, .xls, or .csv file.",
+        )
+
+    return {
+        "file_id": file_id,
+        "filename": file_obj.original_filename or file_obj.display_name,
+        "sheets": sheets,
+    }
+
+
 @router.delete("/{file_id}")
 async def delete_file(
     file_id: str,

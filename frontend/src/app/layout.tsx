@@ -32,7 +32,16 @@ export default async function RootLayout({
             palette until hydration finished, and signing out is the one place
             the app forces a hard load, which is why the theme looked forgotten
             at exactly that moment. */}
-        <ThemeProvider attribute="class" enableSystem disableTransitionOnChange>
+        {/* defaultTheme is light rather than next-themes' "system" default:
+            with no stored choice the app follows the product default, not the
+            operating system. enableSystem stays on, so "system" is still one
+            of the choices in the appearance settings. */}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem
+          disableTransitionOnChange
+        >
           <QueryProvider>
             <I18nProvider initialLocale={locale}>{children}</I18nProvider>
           </QueryProvider>

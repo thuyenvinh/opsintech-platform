@@ -10,7 +10,6 @@ export type { Translations } from "./locales/types";
 export {
   DEFAULT_LOCALE,
   SUPPORTED_LOCALES,
-  detectLocale,
   getActiveLocale,
   getDefaultLocale,
   getEnabledLocales,

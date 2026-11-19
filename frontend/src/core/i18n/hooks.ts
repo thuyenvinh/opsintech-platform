@@ -12,7 +12,7 @@ import { vi } from "./locales/vi";
 
 import {
   DEFAULT_LOCALE,
-  detectLocale,
+  getDefaultLocale,
   getEnabledLocales,
   normalizeLocale,
   type Locale,
@@ -59,12 +59,12 @@ export function useI18n() {
       return;
     }
 
-    // No stored choice yet: fall back to the browser's language and keep it,
-    // so the server renders the same thing on the next load. This cannot
-    // destroy a choice, because there is none.
-    const detected = detectLocale();
-    if (detected !== locale) {
-      setLocale(detected);
+    // No stored choice yet: use the product default and keep it, so the
+    // server renders the same thing on the next load. This cannot destroy a
+    // choice, because there is none.
+    const fallback = getDefaultLocale();
+    if (fallback !== locale) {
+      setLocale(fallback);
     }
   }, [locale, setLocale]);
 

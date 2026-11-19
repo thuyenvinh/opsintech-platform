@@ -44,7 +44,7 @@ const createParticleElement = (
     height: 4px;
     border-radius: 50%;
     background: rgba(${color}, 1);
-    box-shadow: 0 0 6px rgba(${color}, 0.6);
+    /* box-shadow: 0 0 6px rgba(${color}, 0.6); */
     pointer-events: none;
     z-index: 100;
     left: ${x}px;

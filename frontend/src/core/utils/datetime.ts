@@ -5,7 +5,7 @@ import {
   zhCN as dateFnsZhCN,
 } from "date-fns/locale";
 
-import { detectLocale, type Locale } from "@/core/i18n";
+import { getDefaultLocale, type Locale } from "@/core/i18n";
 import { getLocaleFromCookie } from "@/core/i18n/cookies";
 
 function getDateFnsLocale(locale: Locale) {
@@ -25,7 +25,7 @@ export function formatTimeAgo(date: Date | string | number, locale?: Locale) {
     locale ??
     (getLocaleFromCookie() as Locale | null) ??
     // Fallback when cookie is missing (or on first render)
-    detectLocale();
+    getDefaultLocale();
 
   const parsedDate = date instanceof Date ? date : new Date(date);
   if (Number.isNaN(parsedDate.getTime())) {

@@ -1,12 +1,14 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+
+import { zhCN } from "@/core/i18n";
+import { renderWithProviders } from "@/test/render";
 
 import { ModelLifecycleSettingsPage } from "./model-lifecycle-settings-page";
 import { SkillSettingsPage } from "./skill-settings-page";
 import { ToolSettingsPage } from "./tool-settings-page";
 
 const mocks = vi.hoisted(() => ({
-  useI18n: vi.fn(),
   useCurrentTenant: vi.fn(),
   useAvailableModels: vi.fn(),
   useRegisterModel: vi.fn(),
@@ -14,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   useDeleteModel: vi.fn(),
   useDeleteTenantModel: vi.fn(),
   useUpdateTenantModel: vi.fn(),
+  useTestModelConnection: vi.fn(),
   getDisabledModelsStore: vi.fn(),
   setDisabledModelsStore: vi.fn(),
   useAvailableMcpConfig: vi.fn(),
@@ -29,10 +32,6 @@ const mocks = vi.hoisted(() => ({
   useUpdateTenantSkill: vi.fn(),
 }));
 
-vi.mock("@/core/i18n/hooks", () => ({
-  useI18n: mocks.useI18n,
-}));
-
 vi.mock("@/core/tenants/hooks", () => ({
   useCurrentTenant: mocks.useCurrentTenant,
 }));
@@ -44,6 +43,7 @@ vi.mock("@/core/models/hooks", () => ({
   useDeleteModel: mocks.useDeleteModel,
   useDeleteTenantModel: mocks.useDeleteTenantModel,
   useUpdateTenantModel: mocks.useUpdateTenantModel,
+  useTestModelConnection: mocks.useTestModelConnection,
   getDisabledModelsStore: mocks.getDisabledModelsStore,
   setDisabledModelsStore: mocks.setDisabledModelsStore,
 }));
@@ -71,45 +71,6 @@ vi.mock("@/env", () => ({
 
 describe("Resource settings permission UI", () => {
   it("hides model/tool/skill creation entry for tenant members", () => {
-    mocks.useI18n.mockReturnValue({
-      t: {
-        common: {
-          loading: "loading",
-          public: "public",
-          custom: "custom",
-        },
-        settings: {
-          modelLifecycle: {
-            title: "模型设置",
-            description: "模型描述",
-            register: {
-              open: "新建模型",
-              emptyHint: "empty",
-            },
-          },
-          tools: {
-            title: "工具设置",
-            description: "工具描述",
-            registerTool: "新建 Tool",
-            noDescription: "none",
-            active: "active",
-            disabled: "disabled",
-            edit: "edit",
-            builtIn: "built-in",
-            deleteConfirm: "delete",
-          },
-          skills: {
-            title: "技能设置",
-            description: "技能描述",
-            createSkill: "创建 Skill",
-            emptyTitle: "empty title",
-            emptyDescription: "empty desc",
-            emptyButton: "empty button",
-          },
-        },
-      },
-    });
-
     mocks.useCurrentTenant.mockReturnValue({ data: { tenant_id: "tenant-a", role: "tenant_member" } });
 
     mocks.useAvailableModels.mockReturnValue({ models: [], isLoading: false, error: null });
@@ -118,6 +79,7 @@ describe("Resource settings permission UI", () => {
     mocks.useDeleteModel.mockReturnValue({ mutateAsync: vi.fn(), isPending: false });
     mocks.useDeleteTenantModel.mockReturnValue({ mutateAsync: vi.fn(), isPending: false });
     mocks.useUpdateTenantModel.mockReturnValue({ mutateAsync: vi.fn(), isPending: false });
+    mocks.useTestModelConnection.mockReturnValue({ mutateAsync: vi.fn(), isPending: false });
     mocks.getDisabledModelsStore.mockReturnValue([]);
     mocks.setDisabledModelsStore.mockReturnValue(undefined);
 
@@ -139,13 +101,23 @@ describe("Resource settings permission UI", () => {
     mocks.useAvailableSkills.mockReturnValue({ skills: [], isLoading: false, error: null });
     mocks.useUpdateTenantSkill.mockReturnValue({ mutate: vi.fn() });
 
-    const { rerender } = render(<ModelLifecycleSettingsPage />);
-    expect(screen.queryByRole("button", { name: "新建模型" })).not.toBeInTheDocument();
+    // Locale pinned to match the `zhCN` bundle the assertions read from, so
+    // the expected button labels stay the labels the UI actually renders.
+    const { rerender } = renderWithProviders(<ModelLifecycleSettingsPage />, {
+      locale: "zh-CN",
+    });
+    expect(
+      screen.queryByRole("button", { name: zhCN.settings.modelLifecycle.register.open }),
+    ).not.toBeInTheDocument();
 
     rerender(<ToolSettingsPage />);
-    expect(screen.queryByRole("button", { name: "新建 Tool" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: zhCN.settings.tools.registerTool }),
+    ).not.toBeInTheDocument();
 
     rerender(<SkillSettingsPage />);
-    expect(screen.queryByRole("button", { name: "创建 Skill" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: zhCN.settings.skills.createSkill }),
+    ).not.toBeInTheDocument();
   });
 });

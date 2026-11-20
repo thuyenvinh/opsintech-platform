@@ -1,5 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+
+import { renderWithProviders } from "@/test/render";
 
 import AdminDashboardPage from "./page";
 
@@ -7,7 +9,10 @@ const mocks = vi.hoisted(() => ({
   useQuery: vi.fn(),
 }));
 
-vi.mock("@tanstack/react-query", () => ({
+// Partial mock: only useQuery is stubbed. QueryClient/QueryClientProvider have
+// to stay real because renderWithProviders builds the provider tree from them.
+vi.mock("@tanstack/react-query", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@tanstack/react-query")>()),
   useQuery: mocks.useQuery,
 }));
 
@@ -36,9 +41,9 @@ describe("AdminDashboardPage", () => {
       return { data: { events: [] } };
     });
 
-    render(<AdminDashboardPage />);
+    renderWithProviders(<AdminDashboardPage />);
 
-    expect(screen.getByRole("heading", { level: 1, name: "平台总览" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "总览" })).toBeInTheDocument();
     expect(screen.getByText("平台治理核心指标与全局运行统计")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "查看审计日志" })).toBeInTheDocument();
 

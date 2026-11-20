@@ -1,5 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { renderWithProviders } from "@/test/render";
 
 import { TenantGovernanceSettingsPage } from "./tenant-governance-settings-page";
 
@@ -42,7 +44,7 @@ describe("TenantGovernanceSettingsPage", () => {
       data: { tenant_id: "tenant-a", role: "tenant_member" },
     });
 
-    render(<TenantGovernanceSettingsPage />);
+    renderWithProviders(<TenantGovernanceSettingsPage />);
 
     expect(screen.getByText("仅工作空间管理员可访问该页面。")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "添加成员" })).not.toBeInTheDocument();
@@ -66,7 +68,7 @@ describe("TenantGovernanceSettingsPage", () => {
       error: null,
     });
 
-    render(<TenantGovernanceSettingsPage />);
+    renderWithProviders(<TenantGovernanceSettingsPage />);
 
     expect(screen.getByRole("button", { name: "添加成员" })).toBeInTheDocument();
     expect(screen.getByText("成员")).toBeInTheDocument();

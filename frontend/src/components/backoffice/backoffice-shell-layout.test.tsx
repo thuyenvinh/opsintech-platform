@@ -1,6 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { ShieldCheck } from "lucide-react";
 import { describe, expect, it, vi } from "vitest";
+
+import { renderWithProviders } from "@/test/render";
 
 import { BackofficeShellLayout } from "./backoffice-shell-layout";
 
@@ -10,6 +12,8 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("next/navigation", () => ({
   usePathname: mocks.usePathname,
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn(), back: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 describe("BackofficeShellLayout", () => {
@@ -21,7 +25,7 @@ describe("BackofficeShellLayout", () => {
       { href: "/admin/users", label: "用户管理", icon: ShieldCheck },
     ];
 
-    render(
+    renderWithProviders(
       <BackofficeShellLayout
         moduleTitle="平台管理"
         moduleDescription="平台级治理"
@@ -33,15 +37,16 @@ describe("BackofficeShellLayout", () => {
       </BackofficeShellLayout>,
     );
 
-    expect(screen.getByText("系统治理中心")).toBeInTheDocument();
+    expect(screen.getByText("平台管理")).toBeInTheDocument();
     expect(screen.getByText("平台级治理")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "总览" })).toBeInTheDocument();
 
-    const sidebar = screen.getByText("系统治理中心").closest("aside");
+    const sidebar = screen.getByText("平台管理").closest("aside");
     expect(sidebar).toHaveClass("w-[240px]");
 
     const content = screen.getByText("content");
-    const maxWidthContainer = content.closest("div.max-w-7xl");
-    expect(maxWidthContainer).toBeTruthy();
+    // The layout wraps children in "w-full px-6 py-6"; the old
+    // max-w-7xl container it used to assert is no longer there.
+    expect(content.closest("div.w-full")).toBeTruthy();
   });
 });

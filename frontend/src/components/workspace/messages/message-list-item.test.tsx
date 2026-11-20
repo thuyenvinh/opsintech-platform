@@ -1,12 +1,11 @@
 import type { Message } from "@langchain/langgraph-sdk";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useParams: vi.fn(),
   useArtifactAccessToken: vi.fn(),
-  useI18n: vi.fn(),
   useRehypeSplitWordsIntoSpans: vi.fn(),
 }));
 
@@ -16,10 +15,6 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/core/artifacts/hooks", () => ({
   useArtifactAccessToken: mocks.useArtifactAccessToken,
-}));
-
-vi.mock("@/core/i18n/hooks", () => ({
-  useI18n: mocks.useI18n,
 }));
 
 vi.mock("@/core/rehype", () => ({
@@ -66,22 +61,14 @@ vi.mock("@/components/ai-elements/loader", () => ({
   Loader: () => <div />,
 }));
 
+import { renderWithProviders } from "@/test/render";
+
 import { MessageListItem } from "./message-list-item";
 
 describe("MessageListItem", () => {
   it("renders structured attachments from additional_kwargs.attachments", () => {
     mocks.useParams.mockReturnValue({ thread_id: "thread-1" });
     mocks.useArtifactAccessToken.mockReturnValue("session-token");
-    mocks.useI18n.mockReturnValue({
-      t: {
-        uploads: { uploading: "上传中" },
-        clipboard: {
-          copyToClipboard: "复制",
-          copiedToClipboard: "已复制",
-          failedToCopyToClipboard: "复制失败",
-        },
-      },
-    });
     mocks.useRehypeSplitWordsIntoSpans.mockReturnValue([]);
 
     const message = {
@@ -102,7 +89,7 @@ describe("MessageListItem", () => {
       },
     } as Message;
 
-    render(
+    renderWithProviders(
       <MessageListItem
         message={message}
         availableAttachmentKeys={new Set(["att-1"])}
@@ -116,16 +103,6 @@ describe("MessageListItem", () => {
   it("retries the original human message object", () => {
     mocks.useParams.mockReturnValue({ thread_id: "thread-1" });
     mocks.useArtifactAccessToken.mockReturnValue("session-token");
-    mocks.useI18n.mockReturnValue({
-      t: {
-        uploads: { uploading: "上传中" },
-        clipboard: {
-          copyToClipboard: "复制",
-          copiedToClipboard: "已复制",
-          failedToCopyToClipboard: "复制失败",
-        },
-      },
-    });
     mocks.useRehypeSplitWordsIntoSpans.mockReturnValue([]);
 
     const message = {
@@ -148,7 +125,7 @@ describe("MessageListItem", () => {
 
     const onRetry = vi.fn();
 
-    render(
+    renderWithProviders(
       <MessageListItem
         message={message}
         availableAttachmentKeys={new Set(["att-2"])}

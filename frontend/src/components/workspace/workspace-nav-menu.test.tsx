@@ -1,5 +1,7 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { renderWithProviders } from "@/test/render";
 
 import { WorkspaceNavMenu } from "./workspace-nav-menu";
 
@@ -25,7 +27,11 @@ vi.mock("next/navigation", () => ({
   useRouter: mocks.useRouter,
 }));
 
-vi.mock("@tanstack/react-query", () => ({
+// Partial mock: only useQueryClient is stubbed, so the test can assert the
+// sign-out path clears the cache. QueryClient/QueryClientProvider have to stay
+// real because renderWithProviders builds the provider tree from them.
+vi.mock("@tanstack/react-query", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@tanstack/react-query")>()),
   useQueryClient: mocks.useQueryClient,
 }));
 
@@ -50,7 +56,7 @@ describe("WorkspaceNavMenu", () => {
     mocks.useCurrentTenant.mockReturnValue({ data: { tenant_id: "tenant-a", role: tenantRole } });
     mocks.useTenantList.mockReturnValue({ data: [] });
 
-    render(<WorkspaceNavMenu />);
+    renderWithProviders(<WorkspaceNavMenu />);
 
     fireEvent.pointerDown(screen.getByRole("button", { name: /Tester tenant-a/ }));
   };
@@ -81,7 +87,7 @@ describe("WorkspaceNavMenu", () => {
     mocks.useCurrentTenant.mockReturnValue({ data: { tenant_id: "tenant-a", role: "tenant_member" } });
     mocks.useTenantList.mockReturnValue({ data: [] });
 
-    render(<WorkspaceNavMenu />);
+    renderWithProviders(<WorkspaceNavMenu />);
 
     expect(screen.getByRole("link", { name: "平台治理" })).toHaveAttribute("href", "/admin");
   });

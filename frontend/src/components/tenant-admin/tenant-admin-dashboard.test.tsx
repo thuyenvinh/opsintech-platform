@@ -1,5 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+
+import { renderWithProviders } from "@/test/render";
 
 import { TenantAdminDashboard } from "./tenant-admin-dashboard";
 
@@ -26,6 +28,7 @@ vi.mock("@/core/skills/hooks", () => ({
 vi.mock("@/core/tenants/hooks", () => ({
   useCurrentTenant: mocks.useCurrentTenant,
   useTenantMembers: mocks.useTenantMembers,
+  useTenantList: () => ({ data: undefined, isLoading: false, isError: false, refetch: vi.fn() }),
 }));
 
 describe("TenantAdminDashboard", () => {
@@ -36,9 +39,9 @@ describe("TenantAdminDashboard", () => {
     mocks.useAvailableMcpConfig.mockReturnValue({ rawArray: [{ scope: "tenant", enabled: true }] });
     mocks.useAvailableSkills.mockReturnValue({ skills: [{ scope: "tenant", enabled: true }] });
 
-    render(<TenantAdminDashboard />);
+    renderWithProviders(<TenantAdminDashboard />);
 
-    expect(screen.getByRole("heading", { level: 1, name: "工作空间治理总览" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "总览" })).toBeInTheDocument();
     expect(screen.getByText("成员数量")).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "风险提醒" })).toBeInTheDocument();
   });

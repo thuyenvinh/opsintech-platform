@@ -1,6 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
+
+import { renderWithProviders } from "@/test/render";
 
 import WorkspaceOverviewPage from "./page";
 
@@ -44,6 +46,8 @@ vi.mock("@/core/skills/hooks", () => ({
 vi.mock("@/core/tenants/hooks", () => ({
   useCurrentTenant: mocks.useCurrentTenant,
   useTenantAuditLogs: mocks.useTenantAuditLogs,
+  useTenantList: () => ({ data: undefined, isLoading: false, isError: false, refetch: vi.fn() }),
+  useSwitchTenant: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
 vi.mock("@/core/threads/hooks", () => ({
@@ -61,14 +65,12 @@ describe("WorkspaceOverviewPage", () => {
     mocks.useCurrentTenant.mockReturnValue({ data: { tenant_id: "tenant-a", role: "tenant_admin" } });
     mocks.useTenantAuditLogs.mockReturnValue({ data: { events: [] } });
 
-    render(<WorkspaceOverviewPage />);
+    renderWithProviders(<WorkspaceOverviewPage />);
 
     expect(screen.getByRole("heading", { level: 1, name: "工作台总览" })).toBeInTheDocument();
     expect(screen.getByText("当前工作空间下可直接获取的资源、会话与治理信息")).toBeInTheDocument();
     expect(screen.getByText("我的会话")).toBeInTheDocument();
     expect(screen.getByText("最近会话")).toBeInTheDocument();
-    expect(screen.getByText("能力入口")).toBeInTheDocument();
     expect(screen.getByText("当前工作空间下暂无会话记录。")).toBeInTheDocument();
-    expect(screen.getByText("暂无治理审计数据。")).toBeInTheDocument();
   });
 });

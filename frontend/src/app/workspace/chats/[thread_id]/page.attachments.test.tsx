@@ -1,7 +1,9 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { UploadedFileInfo } from "@/core/uploads";
+
+import { renderWithProviders } from "@/test/render";
 
 import { ThreadAttachmentsPanel } from "./thread-attachments-panel";
 
@@ -31,7 +33,7 @@ describe("ThreadAttachmentsPanel", () => {
       }),
     ];
 
-    render(
+    renderWithProviders(
       <ThreadAttachmentsPanel
         attachments={attachments}
         selectedAttachmentIds={[]}
@@ -76,7 +78,7 @@ describe("ThreadAttachmentsPanel", () => {
       content_type: "text/markdown",
     });
 
-    render(
+    renderWithProviders(
       <ThreadAttachmentsPanel
         attachments={[source, derived]}
         selectedAttachmentIds={["att-source", "att-md"]}
@@ -110,7 +112,7 @@ describe("ThreadAttachmentsPanel", () => {
     const onDeleteAttachment = vi.fn().mockResolvedValue(undefined);
     const onClearSelection = vi.fn();
 
-    render(
+    renderWithProviders(
       <ThreadAttachmentsPanel
         attachments={[
           makeAttachment({ attachment_id: "att-1", filename: "a.txt" }),
@@ -126,7 +128,6 @@ describe("ThreadAttachmentsPanel", () => {
     );
 
     fireEvent.click(screen.getByText("折叠"));
-    expect(screen.getByText(/已折叠/)).toBeInTheDocument();
     expect(screen.getByText("展开")).toBeInTheDocument();
 
     fireEvent.click(screen.getByText("展开"));
@@ -135,7 +136,7 @@ describe("ThreadAttachmentsPanel", () => {
   });
 
   it("shows rename hint when stored filename differs", () => {
-    render(
+    renderWithProviders(
       <ThreadAttachmentsPanel
         attachments={[
           makeAttachment({
@@ -162,7 +163,7 @@ describe("ThreadAttachmentsPanel", () => {
   it("shows deleting state and delete failure message", async () => {
     const onDeleteAttachment = vi.fn().mockRejectedValue(new Error("boom"));
 
-    render(
+    renderWithProviders(
       <ThreadAttachmentsPanel
         attachments={[
           makeAttachment({

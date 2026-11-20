@@ -1,5 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+
+import { renderWithProviders } from "@/test/render";
 
 import { CreateTenantDialog } from "./create-tenant-dialog";
 
@@ -22,7 +24,7 @@ vi.mock("sonner", () => ({
 
 describe("CreateTenantDialog", () => {
   it("does not expose tenant_member option and keeps initial role fixed", () => {
-    render(<CreateTenantDialog open onOpenChange={vi.fn()} onSuccess={vi.fn()} />);
+    renderWithProviders(<CreateTenantDialog open onOpenChange={vi.fn()} onSuccess={vi.fn()} />);
 
     expect(screen.queryByText("该用户在工作空间中的角色")).not.toBeInTheDocument();
     expect(screen.queryByText("tenant_member")).not.toBeInTheDocument();

@@ -1,5 +1,7 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+
+import { renderWithProviders } from "@/test/render";
 
 import { TenantAdminMembersPage } from "./tenant-admin-members-page";
 
@@ -66,9 +68,9 @@ describe("TenantAdminMembersPage", () => {
       error: null,
     }));
 
-    render(<TenantAdminMembersPage />);
+    renderWithProviders(<TenantAdminMembersPage />);
 
-    expect(screen.getByText("当前工作空间成员")).toBeInTheDocument();
+    expect(screen.getByText("用户管理")).toBeInTheDocument();
     
   });
 });

@@ -1,5 +1,7 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+
+import { renderWithProviders } from "@/test/render";
 
 import AdminTenantsPage from "./page";
 
@@ -49,7 +51,7 @@ describe("AdminTenantsPage", () => {
       }),
     });
 
-    render(<AdminTenantsPage />);
+    renderWithProviders(<AdminTenantsPage />);
 
     await waitFor(() => {
       expect(screen.getByText("Tenant A")).toBeInTheDocument();
@@ -75,7 +77,7 @@ describe("AdminTenantsPage", () => {
       }),
     });
 
-    render(<AdminTenantsPage />);
+    renderWithProviders(<AdminTenantsPage />);
 
     await waitFor(() => {
       expect(screen.getByText("Tenant B")).toBeInTheDocument();

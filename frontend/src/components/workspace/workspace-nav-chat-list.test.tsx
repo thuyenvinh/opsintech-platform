@@ -1,5 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
+
+import { renderWithProviders } from "@/test/render";
 
 import { WorkspaceNavChatList } from "./workspace-nav-chat-list";
 
@@ -7,7 +9,7 @@ const mocks = vi.hoisted(() => ({
   usePathname: vi.fn(),
   useSession: vi.fn(),
   useActiveAnnouncements: vi.fn(),
-  useI18n: vi.fn(),
+  useCurrentTenant: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -22,32 +24,21 @@ vi.mock("@/core/announcements", () => ({
   useActiveAnnouncements: mocks.useActiveAnnouncements,
 }));
 
-vi.mock("@/core/i18n/hooks", () => ({
-  useI18n: mocks.useI18n,
+vi.mock("@/core/tenants", () => ({
+  useCurrentTenant: mocks.useCurrentTenant,
 }));
-
-const t = {
-  sidebarNav: {
-    overview: "总览",
-    smartWorkbench: "智能工作台",
-    agents: "智能体",
-    announcements: "平台通知",
-    auditGovernance: "审计治理",
-    systemSettings: "系统设置",
-  },
-};
 
 describe("WorkspaceNavChatList", () => {
   beforeEach(() => {
     mocks.useActiveAnnouncements.mockReturnValue({ announcements: [] });
-    mocks.useI18n.mockReturnValue({ t });
+    mocks.useCurrentTenant.mockReturnValue({ data: { tenant_id: "tenant-a", tenant_type: "ops" } });
   });
 
   it("points intelligent workspace entry to valid chats route", () => {
     mocks.usePathname.mockReturnValue("/workspace/overview");
     mocks.useSession.mockReturnValue({ data: { user: { role: "user" } } });
 
-    render(<WorkspaceNavChatList />);
+    renderWithProviders(<WorkspaceNavChatList />);
 
     expect(screen.getByRole("link", { name: "智能工作台" })).toHaveAttribute(
       "href",
@@ -66,7 +57,7 @@ describe("WorkspaceNavChatList", () => {
       ],
     });
 
-    render(<WorkspaceNavChatList />);
+    renderWithProviders(<WorkspaceNavChatList />);
 
     expect(screen.getByText("2")).toBeInTheDocument();
   });

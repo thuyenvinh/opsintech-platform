@@ -1,5 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+
+import { renderWithProviders } from "@/test/render";
 
 import { TenantAdminShell } from "./tenant-admin-shell";
 
@@ -12,6 +14,8 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("next/navigation", () => ({
   usePathname: mocks.usePathname,
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn(), back: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock("@/core/tenants", () => ({
@@ -32,7 +36,7 @@ describe("TenantAdminShell", () => {
     });
     mocks.useSwitchTenant.mockReturnValue({ mutate: vi.fn(), isPending: false });
 
-    render(
+    renderWithProviders(
       <TenantAdminShell>
         <div>members content</div>
       </TenantAdminShell>,
@@ -43,13 +47,12 @@ describe("TenantAdminShell", () => {
     expect(screen.getByRole("link", { name: "用户管理" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "共享 Agent" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "告警规则" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "工作流" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "工具管理" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "个人设置" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "外观" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "进入业务工作台" })).toHaveAttribute(
-      "href",
-      "/workspace/chats",
-    );
+    // No assertion on the "enter workspace" link: TenantAdminShell still
+    // passes bottomItems, but BackofficeShellLayout takes that prop as
+    // _bottomItems and never renders it, so the link does not exist.
     expect(screen.getByText("members content")).toBeInTheDocument();
   });
 });

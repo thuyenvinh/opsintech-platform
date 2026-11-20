@@ -1,5 +1,7 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+
+import { renderWithProviders } from "@/test/render";
 
 import { TenantAdminGuard } from "./tenant-admin-guard";
 
@@ -24,7 +26,7 @@ describe("TenantAdminGuard", () => {
       isError: false,
     });
 
-    render(
+    renderWithProviders(
       <TenantAdminGuard>
         <div>content</div>
       </TenantAdminGuard>,
@@ -40,7 +42,7 @@ describe("TenantAdminGuard", () => {
       isError: false,
     });
 
-    const { container } = render(
+    const { container } = renderWithProviders(
       <TenantAdminGuard>
         <div>content</div>
       </TenantAdminGuard>,
@@ -59,7 +61,7 @@ describe("TenantAdminGuard", () => {
       isError: false,
     });
 
-    render(
+    renderWithProviders(
       <TenantAdminGuard>
         <div>content</div>
       </TenantAdminGuard>,

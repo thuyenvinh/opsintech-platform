@@ -10,7 +10,11 @@ from sqlmodel import delete, select
 from deerflow.config.app_config import AppConfig
 from deerflow.config.extensions_config import ExtensionsConfig
 from deerflow.database.models import TenantMcpServer, TenantModelConfig, TenantSkill, UserConfig
-from deerflow.database.user_config_store import _build_default_payloads
+from deerflow.database.user_config_store import (
+    TENANT_SHARED_APP_KEYS,
+    _build_default_payloads,
+    tenant_shared_app_owner_id,
+)
 from deerflow.database.secrets_crypto import (
     decrypt_app_payload,
     decrypt_extensions_payload,
@@ -913,6 +917,90 @@ async def delete_global_model_with_assignments(model_name: str) -> list[str]:
             await _sync_user_models_to_scope(session, owner_id, tenant_id)
 
         return affected_tenants
+
+
+# ---------------------------------------------------------------------------
+# Tenant-shared app payload
+# ---------------------------------------------------------------------------
+#
+# Some app_config settings belong to a whole tenant, not to one user: a tenant
+# admin writes them once and every member's agent runs read them back. They
+# live in a single ``user_configs`` row owned by a synthetic
+# ``__tenant_shared_app__:<tenant>`` user, the same convention the tenant-shared
+# model and MCP rows already use, and are read back by
+# ``user_config_store.load_tenant_shared_app_payload`` on every AppConfig
+# resolution. ``TENANT_SHARED_APP_KEYS`` is the closed list of keys this row may
+# carry, so it can never override a user's models or database settings.
+
+
+async def get_tenant_shared_app_payload(tenant_id: str) -> dict[str, Any]:
+    """Read the tenant-shared app_config payload, restricted to shared keys.
+
+    Returns an empty dict when the tenant has nothing stored, and also when the
+    ``user_configs`` table has not been migrated yet -- callers fall back to
+    code defaults in both cases.
+    """
+    normalized_tenant_id = str(tenant_id or "").strip()
+    if not normalized_tenant_id:
+        return {}
+
+    owner_id = tenant_shared_app_owner_id(normalized_tenant_id)
+    session_factory = get_session_factory()
+    async with session_factory() as session:
+        try:
+            record = await _get_user_config_record(
+                session, user_id=owner_id, tenant_id=normalized_tenant_id
+            )
+        except OperationalError as exc:
+            if _is_missing_user_configs_table_error(exc):
+                return {}
+            raise
+
+    if record is None:
+        return {}
+
+    payload = decrypt_app_payload(dict(record.app_config or {}))
+    return {key: value for key, value in payload.items() if key in TENANT_SHARED_APP_KEYS}
+
+
+async def set_tenant_shared_app_payload(tenant_id: str, patch: dict[str, Any]) -> None:
+    """Merge ``patch`` into the tenant-shared app_config payload.
+
+    Only keys in :data:`TENANT_SHARED_APP_KEYS` are accepted; anything else is a
+    programming error and raises. Unlike :func:`ensure_user_config` this does not
+    seed model/MCP/skill rows -- the owner id is synthetic and has no user.
+    """
+    normalized_tenant_id = str(tenant_id or "").strip()
+    if not normalized_tenant_id:
+        raise ValueError("tenant_id is required for a tenant-shared config write")
+
+    unknown = set(patch) - set(TENANT_SHARED_APP_KEYS)
+    if unknown:
+        raise ValueError(f"Not a tenant-shared app_config key: {', '.join(sorted(unknown))}")
+    if not patch:
+        return
+
+    owner_id = tenant_shared_app_owner_id(normalized_tenant_id)
+    session_factory = get_session_factory()
+    async with session_factory() as session:
+        record = await _get_user_config_record(
+            session, user_id=owner_id, tenant_id=normalized_tenant_id
+        )
+        if record is None:
+            payload: dict[str, Any] = {}
+            record = UserConfig(
+                user_id=owner_id,
+                tenant_id=normalized_tenant_id,
+                app_config={},
+                extensions_config={},
+            )
+        else:
+            payload = decrypt_app_payload(dict(record.app_config or {}))
+
+        payload.update(patch)
+        record.app_config = encrypt_app_payload(payload)
+        session.add(record)
+        await session.commit()
 
 
 async def get_current_tenant_id(user_id: str) -> str | None:

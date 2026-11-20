@@ -367,8 +367,26 @@ class TerminalAgentNodes:
             return {}
 
         mode = state.get("mode", "cmd")
-        tenant_id = state.get("tenant_id", "default")
-        user_id = state.get("user_id", "unknown")
+        tenant_id = (state.get("tenant_id") or "").strip()
+        user_id = (state.get("user_id") or "").strip()
+
+        # An unidentified caller gets the strictest path, not a resolved policy.
+        # These used to default to "default"/"unknown", which read as fail-safe
+        # but was the opposite: the queries below are keyed on tenant_id, so a
+        # missing tenant loaded whatever policy the tenant literally named
+        # "default" happened to hold -- another tenant's command ceiling -- and
+        # when no such row existed the empty policy meant no ceiling at all.
+        # Either way a request that could not say who it was ended up with
+        # someone else's permissions. cmd mode routes every tool call through
+        # user confirmation, so reusing it keeps the fallback the most
+        # restrictive behaviour the node already has, with no new semantics.
+        if not tenant_id or not user_id:
+            logger.warning(
+                "[security_node] no identity on state (tenant_id=%r user_id=%r); "
+                "requiring confirmation for every tool call",
+                state.get("tenant_id"), state.get("user_id"),
+            )
+            mode = "cmd"
 
         # Load the tenant policy ceiling and the user's own settings from database
         from app.models.terminal import TenantTerminalPolicy, TerminalSecuritySettings
@@ -614,6 +632,11 @@ class TerminalAgentNodes:
         asset_id = state.get("asset_id", "")
         selected_assets = state.get("selected_assets", [])
         mode = state.get("mode", "cmd")
+        # /invoke writes these into the state from server-side request state, so
+        # they are the identity the PTY sessions are keyed on. ``session_id`` is
+        # the browser's taskId and says nothing about who is calling.
+        tenant_id = state.get("tenant_id", "")
+        user_id = state.get("user_id", "")
 
         results: list[ToolMessage] = []
         should_broadcast = (mode == "cmd")
@@ -634,17 +657,30 @@ class TerminalAgentNodes:
                     target_id = target.get("id", "")
                     target_name = target.get("name", "") or target.get("ip") or target_id
                     
-                    # 1. Get or create session for this target
-                    session = session_manager.get_or_create_session(term_session_id, target_id)
-                    
+                    # 1. Get or create session for this target, in the caller's
+                    #    own namespace
+                    if not tenant_id or not user_id:
+                        logger.error("[execute_node] Refusing to open a PTY without an authenticated tenant/user")
+                        host_results.append((target_name, "Error: no authenticated tenant/user for this session."))
+                        continue
+                    session = session_manager.get_or_create_session(tenant_id, user_id, term_session_id, target_id)
+
                     # 2. Ensure PTY is started
                     if session.pty.fd is None:
                         logger.info(f"[execute_node] Starting PTY session {term_session_id} for asset {target_id}")
                         try:
                             session_factory = get_session_factory()
                             async with session_factory() as db:
+                                # Scoped to the tenant the session key names, so
+                                # the key cannot say tenant A while the shell
+                                # logs into tenant B's host.
                                 asset_obj = (
-                                    await db.execute(sa_select(LocalAsset).where(LocalAsset.id == target_id))
+                                    await db.execute(
+                                        sa_select(LocalAsset).where(
+                                            LocalAsset.id == target_id,
+                                            LocalAsset.tenant_id == tenant_id,
+                                        )
+                                    )
                                 ).scalars().first()
                                 if asset_obj:
                                     keychain = None
@@ -695,8 +731,14 @@ class TerminalAgentNodes:
                                 from app.models.terminal import CommandAuditLog
                                 audit = CommandAuditLog(
                                     id=uuid.uuid4().hex,
-                                    tenant_id=state.get("tenant_id", "unknown"),
-                                    user_id=state.get("user_id", "unknown"),
+                                    # execute_node already resolved these at the
+                                    # top, blank when absent. Re-reading state
+                                    # with an "unknown" default wrote a value
+                                    # that is indistinguishable from a real
+                                    # tenant id in every audit query; a blank
+                                    # reads as unattributed, which is what it is.
+                                    tenant_id=tenant_id,
+                                    user_id=user_id,
                                     terminal_session_id=term_session_id,
                                     asset_id=target_id,
                                     command=cmd,

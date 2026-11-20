@@ -124,6 +124,7 @@ def make_lead_agent(config):
 
         agent_config = load_agent_config(agent_name, user_id=user_id) if not is_bootstrap else None
         agent_model_name = agent_config.model if agent_config and agent_config.model else None
+        agent_tool_groups = agent_config.tool_groups if agent_config else None
 
         model_name = _resolve_model_name(
             requested_model_name or agent_model_name,
@@ -164,6 +165,9 @@ def make_lead_agent(config):
                 "is_plan_mode": is_plan_mode,
                 "subagent_enabled": subagent_enabled,
                 "tenant_id": tenant_id,
+                # The whitelist this agent's own tools were built with. The task
+                # tool reads it back so a subagent cannot hold more than its parent.
+                "tool_groups": agent_tool_groups,
             }
         )
 
@@ -186,7 +190,7 @@ def make_lead_agent(config):
 
         return create_agent(
             model=create_chat_model(name=model_name, thinking_enabled=thinking_enabled, reasoning_effort=reasoning_effort),
-            tools=get_available_tools(model_name=model_name, groups=agent_config.tool_groups if agent_config else None, subagent_enabled=subagent_enabled),
+            tools=get_available_tools(model_name=model_name, groups=agent_tool_groups, subagent_enabled=subagent_enabled),
             middleware=_build_middlewares(config, model_name=model_name, agent_name=agent_name),
             system_prompt=apply_prompt_template(
                 subagent_enabled=subagent_enabled,
@@ -218,8 +222,15 @@ def _make_terminal_agent(config: dict):
         "mode": runtime_context.get("mode", "agent"),
         "selected_assets": runtime_context.get("selected_assets", []),
         "terminal_session_id": runtime_context.get("terminal_session_id", ""),
-        "tenant_id": runtime_context.get("tenant_id", "default"),
-        "user_id": runtime_context.get("user_id", "unknown"),
+        # No placeholder fallbacks here. A terminal PTY is keyed per
+        # (tenant, user, session, asset) and that key rejects a blank id, so
+        # "default"/"unknown" did not make an unidentified caller safe -- it
+        # routed every one of them onto a single shared key, which is the
+        # cross-user bleed the key was introduced to stop. Passing the missing
+        # value through unchanged lets the key check reject it, and the tools
+        # resolve the real identity from the request context anyway.
+        "tenant_id": runtime_context.get("tenant_id", ""),
+        "user_id": runtime_context.get("user_id", ""),
     }
     logger.info(f"[_make_terminal_agent] selected_assets: {len(terminal_context['selected_assets'])}, mode: {terminal_context['mode']}")
     set_terminal_context(terminal_context)

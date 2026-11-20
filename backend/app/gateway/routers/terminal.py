@@ -13,7 +13,7 @@ from sqlalchemy import func
 from sqlalchemy import select as sa_select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.gateway.authorization import require_tenant_context
+from app.gateway.authorization import require_tenant_context, require_user_context
 from app.gateway.i18n import tr
 from app.gateway.permissions import require_cap
 from app.models.assets import Keychain, LocalAsset
@@ -40,6 +40,21 @@ def _graph_thread_id(tenant_id: str, user_id: str, session_id: str) -> str:
     the SSE payloads and in the chat-session rows.
     """
     return f"{tenant_id}:{user_id}:{session_id}"
+
+
+def _require_pty_caller(request: Request) -> tuple[str, str]:
+    """Resolve the tenant and user that own a PTY session, from server state only.
+
+    ``AuthMiddleware`` fills both from the session cookie. The routes below that
+    only touch database rows fall back to "unknown_user" when the user id is
+    missing; a live shell cannot do that, because the fallback would be one
+    namespace shared by every caller whose identity failed to resolve.
+    """
+    tenant_id = require_tenant_context(request)
+    user_id = getattr(request.state, "user_id", None)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Unauthenticated")
+    return tenant_id, str(user_id)
 
 
 class ExecuteCommandRequest(BaseModel):
@@ -117,7 +132,9 @@ async def terminal_websocket(websocket: WebSocket, asset_id: str | None = None, 
         await websocket.close(code=1008)
         return
 
-    session = session_manager.get_or_create_session(session_id, asset_id)
+    # Keyed on the identity resolved above from the session cookie, never on
+    # anything the socket sent: session_id is the browser's taskId.
+    session = session_manager.get_or_create_session(tenant_id, user_id, session_id, asset_id)
     session.attach_websocket(websocket)
 
     if session.pty.fd is None:
@@ -161,8 +178,8 @@ async def execute_command_api(req: ExecuteCommandRequest, request: Request, db: 
     Executes a command via the shared SSH PTY Session in the background and returns the output.
     Used by the AI Agent to run commands without spawning a new SSH connection.
     """
-    tenant_id = require_tenant_context(request)
-    
+    tenant_id, user_id = _require_pty_caller(request)
+
     query = sa_select(LocalAsset).where(
         LocalAsset.id == req.asset_id,
         LocalAsset.tenant_id == tenant_id
@@ -171,11 +188,11 @@ async def execute_command_api(req: ExecuteCommandRequest, request: Request, db: 
     asset = result.scalars().first()
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found or unauthorized")
-        
-    session = session_manager.get_session(req.session_id, req.asset_id)
+
+    session = session_manager.get_session(tenant_id, user_id, req.session_id, req.asset_id)
     if not session or session.pty.fd is None:
         # Start a new session if not exists
-        session = session_manager.get_or_create_session(req.session_id, req.asset_id)
+        session = session_manager.get_or_create_session(tenant_id, user_id, req.session_id, req.asset_id)
             
         keychain = None
         if asset.keychain_id:
@@ -711,7 +728,7 @@ async def agent_invoke(req: AgentInvokeRequest, request: Request):
     import json as json_mod
 
     tenant_id = require_tenant_context(request)
-    user_id = getattr(request.state, "user_id", "system")
+    user_id = require_user_context(request)
     primary_asset_id = req.asset_id or (
         str(req.selected_assets[0].get("id", "")) if req.selected_assets else ""
     )
@@ -893,7 +910,7 @@ async def agent_approve(req: AgentApproveRequest, request: Request):
     import uuid
 
     tenant_id = require_tenant_context(request)
-    user_id = getattr(request.state, "user_id", "system")
+    user_id = require_user_context(request)
 
     config = {
         "configurable": {"thread_id": _graph_thread_id(tenant_id, user_id, req.session_id)},

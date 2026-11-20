@@ -12,12 +12,16 @@ from sqlmodel import select
 
 from deerflow.config.paths import get_paths
 from deerflow.config.tenant_context import get_current_tenant_id, get_current_user_id
+from deerflow.config.tool_config import UNRESOLVED_TOOL_GROUPS
 from deerflow.database.session import get_session_factory
 
 logger = logging.getLogger(__name__)
 
 SOUL_FILENAME = "SOUL.md"
 AGENT_NAME_PATTERN = re.compile(r"^[A-Za-z0-9-]+$")
+
+# Placeholder name the lead agent records when a run names no custom agent.
+DEFAULT_AGENT_NAME = "default"
 
 
 def _run_async(coro):
@@ -155,6 +159,44 @@ def load_agent_config(
     except Exception as e:
         logger.error(f"Failed to load agent '{name}' from filesystem: {e}", exc_info=True)
         raise FileNotFoundError(f"Agent '{name}' not found")
+
+
+def resolve_agent_tool_groups(
+    name: str | None,
+    user_id: str | None = None,
+    tenant_id: str | None = None,
+) -> list[str] | None:
+    """Tool group whitelist of an agent, failing closed when it cannot be read.
+
+    Mirrors what :func:`deerflow.agents.lead_agent.agent.make_lead_agent` passes
+    to ``get_available_tools``, so a caller that rebuilds a tool set for the same
+    agent ends up with the same restriction.
+
+    Args:
+        name: The agent name, or None for the default (unrestricted) agent.
+        user_id: The user ID. Resolved from context if not provided.
+        tenant_id: The tenant ID. Resolved from context if not provided.
+
+    Returns:
+        ``None`` when the agent provably restricts nothing — no name at all, or a
+        config that declares no ``tool_groups``. The agent's groups when it
+        declares some. :data:`UNRESOLVED_TOOL_GROUPS` when a name was given but
+        its config could not be loaded: an unreadable config must never widen a
+        tool set.
+    """
+    if name is None or (isinstance(name, str) and not name.strip()):
+        return None
+
+    try:
+        agent_config = load_agent_config(str(name).strip(), user_id=user_id, tenant_id=tenant_id)
+    except Exception:
+        logger.error(
+            f"Tool group lookup failed for agent '{name}'; restricting to ungrouped tools",
+            exc_info=True,
+        )
+        return list(UNRESOLVED_TOOL_GROUPS)
+
+    return agent_config.tool_groups if agent_config else None
 
 
 def load_agent_soul(

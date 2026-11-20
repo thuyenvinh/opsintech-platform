@@ -3,8 +3,17 @@
 The three ``/api/channels`` handlers shipped with no ``Request`` parameter at
 all, so any authenticated member could read every channel's status, restart a
 channel process-wide, or publish an arbitrary message to an arbitrary chat id
-on any configured Feishu/Slack/Telegram channel. All four channel-management
-routes now require ``tenant.channel.manage``.
+on any configured Feishu/Slack/Telegram channel.
+
+The channel-management routes now require ``tenant.channel.manage``, with two
+refinements that follow from the channel pool being process-wide rather than
+per tenant:
+
+* ``POST /api/channels/{name}/restart`` drops every tenant's connection on the
+  worker, so it is platform work and requires ``platform.security.write``.
+* ``POST /api/channels/test`` may only address a ``(channel, chat)`` pair the
+  caller's own tenant configured, otherwise one tenant admin could publish into
+  another tenant's chat.
 """
 
 from __future__ import annotations
@@ -21,6 +30,7 @@ from app.gateway.permissions import route_capabilities
 from app.gateway.routers import channels
 
 CHANNEL_MANAGE = "tenant.channel.manage"
+PLATFORM_SECURITY_WRITE = "platform.security.write"
 
 
 def _walk_dependencies(dependant: Any) -> list[Any]:
@@ -76,12 +86,17 @@ def _client(
     ("method", "path"),
     [
         ("GET", "/api/channels/"),
-        ("POST", "/api/channels/{name}/restart"),
         ("POST", "/api/channels/test"),
     ],
 )
 def test_channel_routes_require_channel_manage(method: str, path: str) -> None:
     assert _route_caps(channels.router, method, path) == {CHANNEL_MANAGE}
+
+
+def test_restart_requires_a_platform_capability() -> None:
+    """Restarting is not tenant-scopable: one pool, every tenant on it."""
+    caps = _route_caps(channels.router, "POST", "/api/channels/{name}/restart")
+    assert caps == {PLATFORM_SECURITY_WRITE}
 
 
 def test_im_settings_write_requires_channel_manage() -> None:
@@ -111,6 +126,19 @@ def test_member_cannot_restart_a_channel() -> None:
     assert response.status_code == 403
 
 
+def test_tenant_admin_cannot_restart_a_channel() -> None:
+    """Closes the cross-tenant denial of service: A could restart B's channel."""
+    response = _client("tenant_admin").post("/api/channels/feishu/restart")
+    assert response.status_code == 403
+    assert PLATFORM_SECURITY_WRITE in response.json()["detail"]
+
+
+def test_platform_admin_can_restart_a_channel() -> None:
+    """The service is not running in tests, so the handler answers 503."""
+    response = _client(None, user_role="platform_admin").post("/api/channels/feishu/restart")
+    assert response.status_code == 503
+
+
 def test_member_cannot_relay_a_test_notification() -> None:
     """The relay path: a member must not reach the outbound message bus."""
     response = _client("tenant_member").post(
@@ -137,9 +165,6 @@ def test_tenant_admin_reaches_the_handler() -> None:
     assert status.status_code == 200
     assert status.json() == {"service_running": False, "channels": {}}
 
-    restart = client.post("/api/channels/feishu/restart")
-    assert restart.status_code == 503
-
     notify = client.post(
         "/api/channels/test",
         json={"channel_name": "feishu", "chat_id": "oc_1"},
@@ -155,3 +180,107 @@ def test_platform_admin_without_membership_is_not_a_channel_admin() -> None:
 def test_missing_tenant_context_is_reported_as_a_bad_request() -> None:
     response = _client(None, tenant_id=None).get("/api/channels/")
     assert response.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# Relay targets: the tenant's own configured (channel, chat) pairs
+# ---------------------------------------------------------------------------
+
+
+class _RecordingBus:
+    """Stands in for the shared outbound message bus."""
+
+    def __init__(self) -> None:
+        self.published: list[Any] = []
+
+    async def publish_outbound(self, msg: Any) -> None:
+        self.published.append(msg)
+
+
+@pytest.fixture
+def _running_service(monkeypatch) -> _RecordingBus:
+    """A channel service that is up, so the handler gets past the 503 guard."""
+    from types import SimpleNamespace
+
+    from app.channels import service as service_module
+
+    bus = _RecordingBus()
+    monkeypatch.setattr(
+        service_module, "get_channel_service", lambda: SimpleNamespace(bus=bus)
+    )
+    return bus
+
+
+@pytest.fixture
+def _configured_targets(monkeypatch) -> None:
+    """Two tenants, each with its own Feishu chats, as IM settings would store."""
+    settings = {
+        "tenant-a": {
+            "enabled": True,
+            "channels": ["feishu"],
+            "chat_ids": {"feishu": "oc_a1, oc_a2"},
+        },
+        "tenant-b": {
+            "enabled": True,
+            "channels": ["feishu"],
+            "chat_ids": {"feishu": "oc_b1"},
+        },
+    }
+
+    async def _load(tenant_id: str) -> dict:
+        return dict(settings.get(tenant_id, {}))
+
+    monkeypatch.setattr(channels, "_load_tenant_notification_config", _load)
+
+
+def test_relay_reaches_the_bus_for_the_tenants_own_chat(
+    _running_service: _RecordingBus,
+    _configured_targets: None,
+) -> None:
+    response = _client("tenant_admin", tenant_id="tenant-a").post(
+        "/api/channels/test",
+        json={"channel_name": "feishu", "chat_id": "oc_a2"},
+    )
+    assert response.status_code == 200
+    assert response.json()["success"] is True
+    assert [(m.channel_name, m.chat_id) for m in _running_service.published] == [
+        ("feishu", "oc_a2")
+    ]
+
+
+def test_relay_refuses_another_tenants_chat(
+    _running_service: _RecordingBus,
+    _configured_targets: None,
+) -> None:
+    """The hole this closes: tenant A naming tenant B's chat id in the body."""
+    response = _client("tenant_admin", tenant_id="tenant-a").post(
+        "/api/channels/test",
+        json={"channel_name": "feishu", "chat_id": "oc_b1"},
+    )
+    assert response.status_code == 403
+    assert _running_service.published == []
+
+
+def test_relay_refuses_a_channel_the_tenant_has_not_configured(
+    _running_service: _RecordingBus,
+    _configured_targets: None,
+) -> None:
+    response = _client("tenant_admin", tenant_id="tenant-a").post(
+        "/api/channels/test",
+        json={"channel_name": "slack", "chat_id": "oc_a1"},
+    )
+    assert response.status_code == 403
+    assert "slack" in response.json()["detail"]
+    assert _running_service.published == []
+
+
+def test_relay_refuses_when_the_tenant_has_configured_nothing(
+    _running_service: _RecordingBus,
+    _configured_targets: None,
+) -> None:
+    response = _client("tenant_admin", tenant_id="tenant-c").post(
+        "/api/channels/test",
+        json={"channel_name": "feishu", "chat_id": "oc_a1"},
+    )
+    assert response.status_code == 403
+    assert _running_service.published == []

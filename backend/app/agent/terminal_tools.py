@@ -16,6 +16,7 @@ from langgraph.types import interrupt
 
 from app.services.terminal.session import session_manager
 from app.models.assets import Keychain, LocalAsset
+from deerflow.config.tenant_context import get_tenant_context
 from deerflow.database.session import get_session_factory
 from sqlalchemy import select as sa_select
 
@@ -45,6 +46,26 @@ def _get_session_id() -> str:
     return _terminal_context.get("terminal_session_id", "default")
 
 
+def _get_identity() -> tuple[str, str]:
+    """Resolve the tenant and user whose PTY sessions these tools may touch.
+
+    Two sources, most trustworthy first. ``get_tenant_context()`` is the
+    contextvar ``AuthMiddleware`` binds from the authenticated session cookie
+    for the lifetime of the request the agent runs inside, so it is identity the
+    server derived. The context dict ``set_terminal_context`` installs is the
+    fallback: it is assembled from the LangGraph run context by the agent
+    factory, which is only as trustworthy as whoever started that run.
+
+    Returns a blank pair when neither source has an identity; the caller must
+    refuse to open a shell in that case rather than fall back to a namespace
+    every anonymous caller would share.
+    """
+    ctx = get_tenant_context()
+    tenant_id = str(ctx.tenant_id or _terminal_context.get("tenant_id") or "").strip()
+    user_id = str(ctx.user_id or _terminal_context.get("user_id") or "").strip()
+    return tenant_id, user_id
+
+
 def _get_assets() -> list:
     return _terminal_context.get("selected_assets", [])
 
@@ -67,7 +88,14 @@ async def _ensure_session(asset_id: str = "") -> tuple:
     if not asset_id:
         return None
 
-    session = session_manager.get_or_create_session(session_id, asset_id)
+    tenant_id, user_id = _get_identity()
+    if not tenant_id or not user_id:
+        logger.error(
+            "[terminal_tool] refusing to open a PTY: no authenticated tenant/user in context"
+        )
+        return None
+
+    session = session_manager.get_or_create_session(tenant_id, user_id, session_id, asset_id)
 
     if session.pty.fd is None:
         logger.info(f"[terminal_tool] Starting PTY session {session_id} for asset {asset_id}")
@@ -75,9 +103,14 @@ async def _ensure_session(asset_id: str = "") -> tuple:
             from app.gateway.routers.terminal import build_ssh_command
             session_factory = get_session_factory()
             async with session_factory() as db:
+                # Scoped to the same tenant the session key names: the key must
+                # not say tenant A while the shell logs into tenant B's host.
                 asset = (
                     await db.execute(
-                        sa_select(LocalAsset).where(LocalAsset.id == asset_id)
+                        sa_select(LocalAsset).where(
+                            LocalAsset.id == asset_id,
+                            LocalAsset.tenant_id == tenant_id,
+                        )
                     )
                 ).scalars().first()
                 if asset:
@@ -234,8 +267,9 @@ async def execute_command(command: str, host_index: int = -1) -> str:
         host_index: Index of the host (0-based) from the connected assets list. Default -1 (targets ALL connected hosts).
     """
     assets = _get_assets()
-    tenant_id = _terminal_context.get("tenant_id", "default")
-    user_id = _terminal_context.get("user_id", "unknown")
+    # Same identity the PTY session is keyed on, so the policy evaluated here
+    # belongs to the caller whose shell will run the command.
+    tenant_id, user_id = _get_identity()
     mode = _get_mode()
 
     from app.models.terminal import TenantTerminalPolicy, TerminalSecuritySettings

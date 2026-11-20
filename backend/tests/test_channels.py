@@ -2006,3 +2006,66 @@ class TestSlackMarkdownConversion:
         result = _slack_md_converter.convert("# Title")
         assert "*Title*" in result
         assert "#" not in result
+
+
+# ---------------------------------------------------------------------------
+# Tenant outbound targets
+# ---------------------------------------------------------------------------
+
+
+class TestTenantTargets:
+    """``(channel, chat)`` pairs a tenant may publish to.
+
+    Mirrors how ``app/alerting/notify.py`` reads the same
+    ``AlertingSettings.notification_config``: a comma-separated ``chat_ids``
+    string per channel, overridden by an explicit ``selected_chat_ids`` list.
+    """
+
+    CONFIG = {
+        "enabled": True,
+        "channels": ["feishu", "telegram"],
+        "chat_ids": {"feishu": "oc_1, oc_2", "telegram": "-100", "slack": "C_unused"},
+        "selected_chat_ids": {"telegram": ["-100", "-200"]},
+    }
+
+    def test_comma_separated_chat_ids_are_split(self):
+        from app.channels.targets import tenant_chat_ids
+
+        assert tenant_chat_ids(self.CONFIG, "feishu") == ["oc_1", "oc_2"]
+
+    def test_selected_chat_ids_win_over_the_string_form(self):
+        from app.channels.targets import tenant_chat_ids
+
+        assert tenant_chat_ids(self.CONFIG, "telegram") == ["-100", "-200"]
+
+    def test_a_channel_not_in_channels_has_no_targets(self):
+        """A stray ``chat_ids`` entry does not make the channel configured."""
+        from app.channels.targets import tenant_chat_ids
+
+        assert tenant_chat_ids(self.CONFIG, "slack") == []
+
+    def test_is_tenant_target_matches_only_configured_pairs(self):
+        from app.channels.targets import is_tenant_target
+
+        assert is_tenant_target(self.CONFIG, "feishu", "oc_2")
+        assert is_tenant_target(self.CONFIG, "feishu", " oc_2 ")
+        assert not is_tenant_target(self.CONFIG, "feishu", "oc_other")
+        assert not is_tenant_target(self.CONFIG, "slack", "C_unused")
+        assert not is_tenant_target(self.CONFIG, "feishu", "")
+
+    def test_empty_or_missing_config_has_no_targets(self):
+        from app.channels.targets import is_tenant_target, resolve_tenant_targets
+
+        assert resolve_tenant_targets(None) == []
+        assert resolve_tenant_targets({}) == []
+        assert not is_tenant_target(None, "feishu", "oc_1")
+
+    def test_resolve_lists_every_configured_pair(self):
+        from app.channels.targets import resolve_tenant_targets
+
+        assert resolve_tenant_targets(self.CONFIG) == [
+            ("feishu", "oc_1"),
+            ("feishu", "oc_2"),
+            ("telegram", "-100"),
+            ("telegram", "-200"),
+        ]

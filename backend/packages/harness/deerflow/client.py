@@ -59,6 +59,9 @@ class DeerFlowClient:
             "thinking_enabled": overrides.get("thinking_enabled", self._thinking_enabled),
             "is_plan_mode": overrides.get("plan_mode", self._plan_mode),
             "subagent_enabled": overrides.get("subagent_enabled", self._subagent_enabled),
+            # Carried so the task tool can recover this agent's tool group
+            # whitelist and keep a subagent within it.
+            "agent_name": self._agent_name,
         }
         if overrides.get("tenant_id") is not None:
             configurable["tenant_id"] = overrides.get("tenant_id")
@@ -91,7 +94,12 @@ class DeerFlowClient:
         with tenant_context(user_id=user_id, tenant_id=tenant_id):
             kwargs: dict[str, Any] = {
                 "model": create_chat_model(name=model_name, thinking_enabled=thinking_enabled),
-                "tools": self._get_tools(model_name=model_name, subagent_enabled=subagent_enabled),
+                "tools": self._get_tools(
+                    model_name=model_name,
+                    subagent_enabled=subagent_enabled,
+                    user_id=user_id,
+                    tenant_id=tenant_id,
+                ),
                 "middleware": _build_middlewares(config, model_name=model_name, agent_name=self._agent_name),
                 "system_prompt": apply_prompt_template(
                     subagent_enabled=subagent_enabled,
@@ -115,11 +123,19 @@ class DeerFlowClient:
         self._agent_config_key = key
         logger.info("Agent created: agent_name=%s, model=%s, thinking=%s", self._agent_name, model_name, thinking_enabled)
 
-    @staticmethod
-    def _get_tools(*, model_name: str | None, subagent_enabled: bool):
+    def _get_tools(
+        self,
+        *,
+        model_name: str | None,
+        subagent_enabled: bool,
+        user_id: str | None = None,
+        tenant_id: str | None = None,
+    ):
+        from deerflow.config.agents_config import resolve_agent_tool_groups
         from deerflow.tools import get_available_tools
 
-        return get_available_tools(model_name=model_name, subagent_enabled=subagent_enabled)
+        groups = resolve_agent_tool_groups(self._agent_name, user_id=user_id, tenant_id=tenant_id)
+        return get_available_tools(model_name=model_name, groups=groups, subagent_enabled=subagent_enabled)
 
     @staticmethod
     def _serialize_message(msg) -> dict:

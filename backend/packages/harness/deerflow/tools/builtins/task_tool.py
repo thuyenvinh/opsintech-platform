@@ -12,10 +12,47 @@ from langgraph.typing import ContextT
 
 from deerflow.agents.lead_agent.prompt import get_skills_prompt_section
 from deerflow.agents.thread_state import ThreadState
+from deerflow.config.agents_config import DEFAULT_AGENT_NAME, resolve_agent_tool_groups
+from deerflow.config.tool_config import UNRESOLVED_TOOL_GROUPS
 from deerflow.subagents import SubagentExecutor, get_subagent_config
 from deerflow.subagents.executor import SubagentStatus, cleanup_background_task, get_background_task_result
 
 logger = logging.getLogger(__name__)
+
+
+def _resolve_parent_tool_groups(
+    runtime: ToolRuntime,
+    *,
+    metadata: dict,
+    configurable: dict,
+    user_id: str | None,
+    tenant_id: str | None,
+) -> list[str] | None:
+    """The tool group whitelist the parent agent itself was built with.
+
+    ``make_lead_agent`` records the groups it passed to ``get_available_tools``
+    in the run metadata, so that value is authoritative — it is exactly what the
+    parent holds. When the key is absent (an agent built through another path)
+    the groups are looked up again from the parent's agent name, which the run
+    carries in its context or configurable.
+
+    Returns ``None`` only when the parent is itself unrestricted; a name that
+    cannot be resolved yields :data:`UNRESOLVED_TOOL_GROUPS` so the subagent
+    ends up restricted rather than unrestricted.
+    """
+    if "tool_groups" in metadata:
+        groups = metadata.get("tool_groups")
+        return list(groups) if groups else None
+
+    agent_name = runtime.context.get("agent_name") if runtime.context else None
+    if not agent_name:
+        agent_name = configurable.get("agent_name")
+    if not agent_name:
+        # make_lead_agent writes the "default" placeholder when a run names no agent.
+        meta_name = metadata.get("agent_name")
+        agent_name = None if meta_name in (None, "", DEFAULT_AGENT_NAME) else meta_name
+
+    return resolve_agent_tool_groups(agent_name, user_id=user_id, tenant_id=tenant_id)
 
 
 @tool("task", parse_docstring=True)
@@ -78,6 +115,9 @@ def task_tool(
     tenant_id = None
     parent_model = None
     trace_id = None
+    # Fail closed: without a runtime the parent's whitelist is unknowable, so the
+    # subagent gets only the ungrouped tools instead of everything.
+    parent_tool_groups: list[str] | None = list(UNRESOLVED_TOOL_GROUPS)
 
     if runtime is not None:
         sandbox_state = runtime.state.get("sandbox")
@@ -99,12 +139,23 @@ def task_tool(
         # Get or generate trace_id for distributed tracing
         trace_id = metadata.get("trace_id") or str(uuid.uuid4())[:8]
 
+        # A subagent must never hold more than the parent agent does
+        parent_tool_groups = _resolve_parent_tool_groups(
+            runtime,
+            metadata=metadata,
+            configurable=configurable,
+            user_id=user_id,
+            tenant_id=tenant_id,
+        )
+
     # Get available tools (excluding task tool to prevent nesting)
     # Lazy import to avoid circular dependency
     from deerflow.tools import get_available_tools
 
     # Subagents should not have subagent tools enabled (prevent recursive nesting)
-    tools = get_available_tools(model_name=parent_model, subagent_enabled=False)
+    tools = get_available_tools(model_name=parent_model, groups=parent_tool_groups, subagent_enabled=False)
+    if parent_tool_groups:
+        logger.info(f"Subagent inherits the parent's tool group whitelist: {sorted(parent_tool_groups)}")
 
     # Create executor
     executor = SubagentExecutor(

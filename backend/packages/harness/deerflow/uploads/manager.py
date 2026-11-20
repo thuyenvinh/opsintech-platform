@@ -32,13 +32,18 @@ def validate_thread_id(thread_id: str) -> None:
         raise ValueError(f"Invalid thread_id: {thread_id!r}")
 
 
-def get_uploads_dir(thread_id: str, user_id: str = "default", tenant_id: str | None = None) -> Path:
+# user_id is required rather than defaulting to "default". It becomes a path
+# segment, so a default did not isolate an unidentified caller -- it put every
+# one of them in the same directory, where they share a thread's uploads. Every
+# caller already passes a real id, so the default was unreachable cover for a
+# future one that forgot.
+def get_uploads_dir(thread_id: str, user_id: str, tenant_id: str | None = None) -> Path:
     """Return the uploads directory path for a thread (no side effects)."""
     validate_thread_id(thread_id)
     return get_paths().sandbox_uploads_dir(user_id, thread_id, tenant_id=tenant_id)
 
 
-def ensure_uploads_dir(thread_id: str, user_id: str = "default", tenant_id: str | None = None) -> Path:
+def ensure_uploads_dir(thread_id: str, user_id: str, tenant_id: str | None = None) -> Path:
     """Return the uploads directory for a thread, creating it if needed."""
     base = get_uploads_dir(thread_id, user_id, tenant_id=tenant_id)
     base.mkdir(parents=True, exist_ok=True)

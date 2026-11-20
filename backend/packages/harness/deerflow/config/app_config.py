@@ -390,6 +390,43 @@ def _get_user_scoped_app_config(user_id: str) -> AppConfig:
     return user_config
 
 
+def invalidate_user_app_config_cache(
+    tenant_id: str | None = None,
+    user_id: str | None = None,
+) -> None:
+    """Evict cached per-user AppConfig entries.
+
+    ``_user_app_config_cache`` is keyed ``"{tenant_id}:{user_id}"`` and is only
+    refreshed on a miss, so a settings write that changes the DB payload is
+    invisible until the matching entries are dropped. Call this after any such
+    write:
+
+    * both arguments -- one user's entry in one tenant;
+    * ``tenant_id`` only -- every user of that tenant, the usual case for a
+      tenant-wide setting;
+    * neither -- the whole cache.
+    """
+    global _user_app_config_cache
+
+    if tenant_id is None and user_id is None:
+        _user_app_config_cache = {}
+        return
+
+    if tenant_id is not None and user_id is not None:
+        _user_app_config_cache.pop(f"{tenant_id}:{user_id}", None)
+        return
+
+    if tenant_id is not None:
+        prefix = f"{tenant_id}:"
+        for key in [k for k in _user_app_config_cache if k.startswith(prefix)]:
+            _user_app_config_cache.pop(key, None)
+        return
+
+    suffix = f":{user_id}"
+    for key in [k for k in _user_app_config_cache if k.endswith(suffix)]:
+        _user_app_config_cache.pop(key, None)
+
+
 def get_app_config() -> AppConfig:
     """Get the DeerFlow config instance.
 

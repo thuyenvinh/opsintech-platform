@@ -36,6 +36,11 @@ DEFAULT_TOOL_GROUPS: dict[str, str] = {
     "bash": "bash",
 }
 
+# A whitelist to pass when an agent's own tool groups cannot be determined. No
+# tool belongs to this group, so it keeps only the ungrouped plumbing tools: a
+# lookup failure fails closed instead of handing over bash.
+UNRESOLVED_TOOL_GROUPS: list[str] = ["__unresolved__"]
+
 # Group names the platform itself defines. A deployment may define more through
 # ``tool_groups`` / ``tools`` in config.yaml, and every MCP server name acts as
 # the group of the tools that server exposes.

@@ -124,6 +124,63 @@ def _tenant_shared_mcp_owner_id(tenant_id: str) -> str:
     return f"__tenant_shared_mcp__:{tenant_id}"
 
 
+def tenant_shared_app_owner_id(tenant_id: str) -> str:
+    """Owner id of the ``user_configs`` row holding one tenant's shared settings.
+
+    Settings that belong to a whole tenant rather than to a user live in a
+    single row owned by this synthetic user, following the same convention as
+    the tenant-shared model and MCP rows above. Every real user of the tenant
+    reads it; only tenant governance writes it.
+    """
+    return f"__tenant_shared_app__:{tenant_id}"
+
+
+#: app_config keys the tenant-shared row is allowed to contribute. Kept to an
+#: explicit list so that row can never override a user's models, database URL
+#: or anything else it has no business owning.
+TENANT_SHARED_APP_KEYS = frozenset({"summarization"})
+
+
+def load_tenant_shared_app_payload(tenant_id: str) -> dict:
+    """Load the tenant-shared app_config payload, restricted to shared keys."""
+    normalized_tenant_id = str(tenant_id or "").strip()
+    if not normalized_tenant_id:
+        return {}
+
+    db_url = _resolve_db_url_from_config()
+    if db_url is None:
+        return {}
+
+    sqlite_path = _sqlite_db_path_from_url(db_url)
+    if sqlite_path is not None and not sqlite_path.exists():
+        return {}
+
+    try:
+        rows = _query_rows(
+            db_url,
+            """
+            SELECT app_config
+            FROM user_configs
+            WHERE user_id = :owner_id AND tenant_id = :tenant_id
+            LIMIT 1
+            """,
+            {
+                "owner_id": tenant_shared_app_owner_id(normalized_tenant_id),
+                "tenant_id": normalized_tenant_id,
+            },
+        )
+    except SQLAlchemyError:
+        return {}
+
+    if not rows:
+        return {}
+
+    payload = decrypt_app_payload(_json_value(rows[0].get("app_config")) or {})
+    if not isinstance(payload, dict):
+        return {}
+    return {key: value for key, value in payload.items() if key in TENANT_SHARED_APP_KEYS}
+
+
 def _platform_mcp_owner_id() -> str:
     return "__platform__"
 
@@ -394,6 +451,13 @@ def load_user_config_payload(user_id: str, tenant_id: str | None = None) -> tupl
 
     row = legacy_rows[0] if legacy_rows else None
 
+    # Settings owned by the tenant rather than by this user. Read here because
+    # the query above is deliberately scoped to ``tenant_id IS NULL`` -- the
+    # user's own legacy row -- and would otherwise never see them.
+    shared_app_payload = (
+        load_tenant_shared_app_payload(str(tenant_id)) if tenant_id is not None else {}
+    )
+
     try:
         model_rows = _query_rows(
             db_url,
@@ -466,7 +530,14 @@ def load_user_config_payload(user_id: str, tenant_id: str | None = None) -> tupl
         tenant_shared_mcp_rows = []
         skill_rows = []
 
-    if row is None and not model_rows and not mcp_rows and not tenant_shared_mcp_rows and not skill_rows:
+    if (
+        row is None
+        and not model_rows
+        and not mcp_rows
+        and not tenant_shared_mcp_rows
+        and not skill_rows
+        and not shared_app_payload
+    ):
         return None
 
     raw_app = row["app_config"] if row is not None else {}
@@ -474,6 +545,9 @@ def load_user_config_payload(user_id: str, tenant_id: str | None = None) -> tupl
 
     app_payload = decrypt_app_payload(_json_value(raw_app) or {})
     ext_payload = decrypt_extensions_payload(_json_value(raw_ext) or {})
+
+    # Tenant-owned settings win over a stale copy in the user's own row.
+    app_payload.update(shared_app_payload)
 
     if model_rows:
         models = []

@@ -113,9 +113,13 @@ class LocalPTY:
 
 
 class TerminalSession:
-    def __init__(self, session_id: str, asset_id: str):
+    def __init__(self, session_id: str, asset_id: str, tenant_id: str = "", user_id: str = ""):
         self.session_id = session_id
         self.asset_id = asset_id
+        # The caller that owns this shell, resolved server-side. Kept on the
+        # session for logging and so a holder of the object can tell whose it is.
+        self.tenant_id = tenant_id
+        self.user_id = user_id
         self.pty: LocalPTY = LocalPTY()
         self.websockets: set[WebSocket] = set()
         self.read_task: asyncio.Task | None = None
@@ -249,44 +253,73 @@ class TerminalSession:
                 pass
 
 
+TerminalSessionKey = tuple[str, str, str, str]
+
+
 class TerminalSessionManager:
+    """Holds the live PTY sessions, keyed by the caller that owns them.
+
+    A session here is a logged-in shell on a production host, so the key has to
+    say whose it is. ``session_id`` is the browser's taskId: the client picks the
+    value, so two callers can present the same one. Keying on it alone handed
+    them a single shared shell, and the prefix scan that used to back
+    ``get_session`` let a short or guessed id resolve onto a stranger's session.
+
+    The key now carries the authenticated tenant and user, which every caller
+    resolves server-side — the same identity triple
+    ``app.gateway.routers.terminal._graph_thread_id`` derives the LangGraph
+    thread id from, so the two keys cannot disagree about who owns a session.
+    Reaching another caller's PTY is impossible rather than merely checked:
+    there is no argument the client controls that reaches the tenant/user part
+    of the key.
+
+    The key is a tuple rather than a joined string, so a crafted ``session_id``
+    has no separator to smuggle in and no key can be a prefix of another.
+    """
+
     def __init__(self):
-        self.sessions: dict[str, TerminalSession] = {}
+        self.sessions: dict[TerminalSessionKey, TerminalSession] = {}
 
-    def _get_key(self, session_id: str, asset_id: str | None) -> str:
-        if asset_id:
-            return f"{session_id}:{asset_id}"
-        return session_id
+    def _get_key(self, tenant_id: str, user_id: str, session_id: str, asset_id: str) -> TerminalSessionKey:
+        # A blank tenant or user would put every caller that failed to resolve
+        # its identity into one shared namespace, which is the hole this key
+        # closes. Fail loudly instead.
+        if not tenant_id or not user_id:
+            raise ValueError("A terminal session needs an authenticated tenant_id and user_id")
+        if not session_id or not asset_id:
+            raise ValueError("A terminal session needs a session_id and an asset_id")
+        return (tenant_id, user_id, session_id, asset_id)
 
-    def get_or_create_session(self, session_id: str, asset_id: str) -> TerminalSession:
-        key = self._get_key(session_id, asset_id)
+    def get_or_create_session(self, tenant_id: str, user_id: str, session_id: str, asset_id: str) -> TerminalSession:
+        key = self._get_key(tenant_id, user_id, session_id, asset_id)
         if key not in self.sessions:
-            session = TerminalSession(session_id, asset_id)
+            session = TerminalSession(session_id, asset_id, tenant_id=tenant_id, user_id=user_id)
             self.sessions[key] = session
         return self.sessions[key]
 
-    def get_session(self, session_id: str, asset_id: str | None = None) -> TerminalSession | None:
-        if asset_id:
-            key = self._get_key(session_id, asset_id)
-            return self.sessions.get(key)
-        # Fallback: exact match or find any key prefix matching session_id
-        if session_id in self.sessions:
-            return self.sessions[session_id]
-        for key, session in self.sessions.items():
-            if key == session_id or key.startswith(f"{session_id}:"):
-                return session
-        return None
+    def get_session(self, tenant_id: str, user_id: str, session_id: str, asset_id: str) -> TerminalSession | None:
+        """Look up one of the caller's own sessions. Exact match, no scan."""
+        return self.sessions.get(self._get_key(tenant_id, user_id, session_id, asset_id))
 
-    def close_session(self, session_id: str, asset_id: str | None = None):
+    def close_session(self, tenant_id: str, user_id: str, session_id: str, asset_id: str | None = None):
+        """Close one session, or every session the caller holds for ``session_id``.
+
+        With no ``asset_id`` this still spans hosts — a task can be attached to
+        several — but only within the caller's own namespace, by comparing the
+        key fields, never by matching a prefix across the whole dict.
+        """
         if asset_id:
-            key = self._get_key(session_id, asset_id)
-            if key in self.sessions:
-                self.sessions[key].close()
-                del self.sessions[key]
+            key = self._get_key(tenant_id, user_id, session_id, asset_id)
+            keys_to_close = [key] if key in self.sessions else []
         else:
-            keys_to_close = [k for k in self.sessions.keys() if k == session_id or k.startswith(f"{session_id}:")]
-            for key in keys_to_close:
-                self.sessions[key].close()
-                del self.sessions[key]
+            if not tenant_id or not user_id or not session_id:
+                raise ValueError("A terminal session needs an authenticated tenant_id and user_id")
+            keys_to_close = [
+                k for k in self.sessions
+                if k[0] == tenant_id and k[1] == user_id and k[2] == session_id
+            ]
+        for key in keys_to_close:
+            self.sessions[key].close()
+            del self.sessions[key]
 
 session_manager = TerminalSessionManager()

@@ -7,11 +7,18 @@ non-empty whitelist must keep only the named groups plus ungrouped plumbing.
 Part B covers ``POST``/``PUT /api/agents`` — a tool group outside what the
 tenant allows is rejected with 422, and the write endpoints require the
 ``agent.own.write`` capability.
+
+Part C covers inheritance: a subagent spawned through the ``task`` tool, and an
+agent built by the embedded client, must never hold more tools than the parent
+agent — and a whitelist that cannot be resolved must fail closed.
 """
 
 from __future__ import annotations
 
 import asyncio
+import importlib
+from enum import Enum
+from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
@@ -326,3 +333,288 @@ class TestAgentWriteCapability:
         no_role = {"x-tenant-role": ""}
         assert agent_client.put("/api/agents/gated", json={"description": "x"}, headers=no_role).status_code == 403
         assert agent_client.delete("/api/agents/gated", headers=no_role).status_code == 403
+
+
+# ===========================================================================
+# Part C — a subagent never holds more than its parent
+# ===========================================================================
+
+
+def _runtime(*, metadata: dict | None = None, context: dict | None = None, configurable: dict | None = None):
+    """Minimal ToolRuntime-like object; task_tool only reads state/context/config."""
+    return SimpleNamespace(
+        state={},
+        context=context if context is not None else {},
+        config={"metadata": metadata or {}, "configurable": configurable or {}},
+    )
+
+
+@pytest.fixture()
+def spawn_subagent(monkeypatch, stub_app_config):
+    """Run task_tool() to completion and report the tool set the subagent got.
+
+    get_available_tools runs for real (against ``stub_app_config``), so the
+    captured names are the ones a subagent would actually hold.
+    """
+    task_tool_module = importlib.import_module("deerflow.tools.builtins.task_tool")
+    tools_package = importlib.import_module("deerflow.tools")
+
+    class _Status(Enum):
+        PENDING = "pending"
+        RUNNING = "running"
+        COMPLETED = "completed"
+        FAILED = "failed"
+        TIMED_OUT = "timed_out"
+
+    captured: dict = {}
+    real_get_available_tools = tools_package.get_available_tools
+
+    def _capture(**kwargs):
+        captured["groups"] = kwargs.get("groups")
+        tools = real_get_available_tools(include_mcp=False, **kwargs)
+        captured["tool_names"] = set(_names(tools))
+        return tools
+
+    class _Executor:
+        def __init__(self, **kwargs):
+            captured["executor_kwargs"] = kwargs
+
+        def execute_async(self, task, task_id=None, **extra):
+            return task_id or "task-1"
+
+    monkeypatch.setattr(tools_package, "get_available_tools", _capture)
+    monkeypatch.setattr(task_tool_module, "SubagentStatus", _Status)
+    monkeypatch.setattr(task_tool_module, "SubagentExecutor", _Executor)
+    monkeypatch.setattr(task_tool_module, "get_skills_prompt_section", lambda: "")
+    monkeypatch.setattr(task_tool_module, "get_stream_writer", lambda: lambda _event: None)
+    monkeypatch.setattr(task_tool_module, "cleanup_background_task", lambda _task_id: None)
+    monkeypatch.setattr(
+        task_tool_module,
+        "get_background_task_result",
+        lambda _task_id: SimpleNamespace(
+            status=_Status.COMPLETED,
+            ai_messages=[],
+            result="done",
+            error=None,
+            started_at=None,
+            completed_at=None,
+        ),
+    )
+
+    def _spawn(runtime) -> dict:
+        captured.clear()
+        captured["output"] = task_tool_module.task_tool.func(
+            runtime=runtime,
+            description="spawn one",
+            prompt="do work",
+            subagent_type="general-purpose",
+            tool_call_id="tc-1",
+        )
+        return captured
+
+    return _spawn
+
+
+@pytest.fixture()
+def stub_agent_lookup(monkeypatch):
+    """Replace the DB-backed agent config loader with a canned result."""
+    from deerflow.config import agents_config
+
+    def _install(result):
+        def _load(name, user_id=None, tenant_id=None):
+            if isinstance(result, Exception):
+                raise result
+            return result
+
+        monkeypatch.setattr(agents_config, "load_agent_config", _load)
+
+    return _install
+
+
+class TestSubagentInheritsParentWhitelist:
+    def test_parent_groups_in_metadata_reach_the_subagent_tool_set(self, spawn_subagent):
+        captured = spawn_subagent(_runtime(metadata={"tool_groups": ["file:read"]}))
+
+        assert captured["groups"] == ["file:read"]
+        assert captured["tool_names"] == PLUMBING | {"ls", "read_file"}
+        assert "bash" not in captured["tool_names"]
+
+    def test_subagent_tool_set_is_a_subset_of_the_parents(self, spawn_subagent):
+        from deerflow.tools.tools import get_available_tools
+
+        for groups in (["file:read"], ["bash"], ["web", "file:write"], None):
+            parent = set(_names(get_available_tools(groups=groups, include_mcp=False, subagent_enabled=True)))
+            captured = spawn_subagent(_runtime(metadata={"tool_groups": groups}))
+            assert captured["tool_names"] <= parent, groups
+
+    def test_unrestricted_parent_leaves_the_subagent_unrestricted(self, spawn_subagent):
+        captured = spawn_subagent(_runtime(metadata={"tool_groups": None}))
+
+        assert captured["groups"] is None
+        assert captured["tool_names"] == set(UNFILTERED_TOOL_NAMES)
+
+    def test_empty_parent_whitelist_is_no_restriction(self, spawn_subagent):
+        captured = spawn_subagent(_runtime(metadata={"tool_groups": []}))
+
+        assert captured["groups"] is None
+        assert captured["tool_names"] == set(UNFILTERED_TOOL_NAMES)
+
+    def test_groups_recovered_from_the_agent_name_when_metadata_is_silent(
+        self, spawn_subagent, stub_agent_lookup
+    ):
+        from deerflow.config.agents_config import AgentConfig
+
+        stub_agent_lookup(AgentConfig(name="reader", tool_groups=["file:read"]))
+
+        # No "tool_groups" key: the run carries only the agent name.
+        captured = spawn_subagent(_runtime(context={"agent_name": "reader"}))
+        assert captured["groups"] == ["file:read"]
+        assert "bash" not in captured["tool_names"]
+
+        captured = spawn_subagent(_runtime(configurable={"agent_name": "reader"}))
+        assert captured["groups"] == ["file:read"]
+
+        captured = spawn_subagent(_runtime(metadata={"agent_name": "reader"}))
+        assert captured["groups"] == ["file:read"]
+
+    def test_default_agent_placeholder_is_not_looked_up(self, spawn_subagent, stub_agent_lookup):
+        # make_lead_agent writes "default" into metadata when a run names no agent;
+        # that placeholder must not be mistaken for a restricted custom agent.
+        stub_agent_lookup(RuntimeError("must not be called"))
+
+        captured = spawn_subagent(_runtime(metadata={"agent_name": "default"}))
+
+        assert captured["groups"] is None
+        assert captured["tool_names"] == set(UNFILTERED_TOOL_NAMES)
+
+    def test_agent_lookup_failure_fails_closed(self, spawn_subagent, stub_agent_lookup):
+        from deerflow.config.tool_config import UNRESOLVED_TOOL_GROUPS
+
+        stub_agent_lookup(FileNotFoundError("agent 'reader' not found"))
+
+        captured = spawn_subagent(_runtime(context={"agent_name": "reader"}))
+
+        assert captured["groups"] == UNRESOLVED_TOOL_GROUPS
+        assert captured["tool_names"] == PLUMBING
+        assert "bash" not in captured["tool_names"]
+
+    def test_missing_runtime_fails_closed(self, spawn_subagent):
+        from deerflow.config.tool_config import UNRESOLVED_TOOL_GROUPS
+
+        captured = spawn_subagent(None)
+
+        assert captured["groups"] == UNRESOLVED_TOOL_GROUPS
+        assert captured["tool_names"] == PLUMBING
+
+    def test_disabled_parent_agent_matches_the_lead_agent(self, spawn_subagent, stub_agent_lookup):
+        # load_agent_config returns None for a disabled agent, and make_lead_agent
+        # builds an unrestricted tool set in that case — the subagent must match.
+        stub_agent_lookup(None)
+
+        captured = spawn_subagent(_runtime(context={"agent_name": "disabled"}))
+
+        assert captured["groups"] is None
+        assert captured["tool_names"] == set(UNFILTERED_TOOL_NAMES)
+
+
+class TestLeadAgentPublishesItsWhitelist:
+    def test_metadata_carries_the_groups_the_tools_were_built_with(self, monkeypatch):
+        import deerflow.tools as tools_package
+        from deerflow.agents.lead_agent import agent as lead_agent_module
+        from deerflow.config.agents_config import AgentConfig
+        from deerflow.config.app_config import AppConfig
+        from deerflow.config.model_config import ModelConfig
+        from deerflow.config.sandbox_config import SandboxConfig
+
+        app_config = AppConfig(
+            models=[
+                ModelConfig(
+                    name="m1",
+                    display_name="m1",
+                    description=None,
+                    use="langchain_openai:ChatOpenAI",
+                    model="m1",
+                    supports_thinking=False,
+                    supports_vision=False,
+                )
+            ],
+            sandbox=SandboxConfig(use="deerflow.sandbox.local:LocalSandboxProvider"),
+        )
+
+        captured: dict = {}
+
+        def _capture(**kwargs):
+            captured["groups"] = kwargs.get("groups")
+            return []
+
+        monkeypatch.setattr(lead_agent_module, "get_app_config", lambda: app_config)
+        monkeypatch.setattr(
+            lead_agent_module,
+            "load_agent_config",
+            lambda name, user_id=None, tenant_id=None: AgentConfig(name="reader", tool_groups=["file:read"]),
+        )
+        monkeypatch.setattr(lead_agent_module, "_build_middlewares", lambda config, model_name, agent_name=None: [])
+        monkeypatch.setattr(lead_agent_module, "apply_prompt_template", lambda **kwargs: "prompt")
+        monkeypatch.setattr(lead_agent_module, "create_chat_model", lambda **kwargs: object())
+        monkeypatch.setattr(lead_agent_module, "create_agent", lambda **kwargs: kwargs)
+        monkeypatch.setattr(tools_package, "get_available_tools", _capture)
+
+        config: dict = {"configurable": {"model_name": "m1", "agent_name": "reader", "subagent_enabled": True}}
+        lead_agent_module.make_lead_agent(config)
+
+        assert captured["groups"] == ["file:read"]
+        # The task tool reads this back to keep the subagent within the parent's set.
+        assert config["metadata"]["tool_groups"] == ["file:read"]
+
+
+class TestEmbeddedClientWhitelist:
+    @staticmethod
+    def _client(monkeypatch, agent_name):
+        from deerflow.client import DeerFlowClient
+
+        with monkeypatch.context() as m:
+            m.setattr("deerflow.client.get_app_config", lambda: None)
+            return DeerFlowClient(agent_name=agent_name)
+
+    @staticmethod
+    def _capture_groups(monkeypatch) -> dict:
+        import deerflow.tools as tools_package
+
+        captured: dict = {}
+
+        def _capture(**kwargs):
+            captured["groups"] = kwargs.get("groups")
+            return []
+
+        monkeypatch.setattr(tools_package, "get_available_tools", _capture)
+        return captured
+
+    def test_client_builds_its_tools_with_the_agents_groups(self, monkeypatch, stub_agent_lookup):
+        from deerflow.config.agents_config import AgentConfig
+
+        stub_agent_lookup(AgentConfig(name="reader", tool_groups=["file:read"]))
+        captured = self._capture_groups(monkeypatch)
+        client = self._client(monkeypatch, "reader")
+
+        client._get_tools(model_name="m1", subagent_enabled=True, user_id="user-a", tenant_id="tenant-a")
+        assert captured["groups"] == ["file:read"]
+
+        # The run config carries the agent name so the task tool can recover the groups.
+        assert client._get_runnable_config("t1")["configurable"]["agent_name"] == "reader"
+
+    def test_client_lookup_failure_fails_closed(self, monkeypatch, stub_agent_lookup):
+        from deerflow.config.tool_config import UNRESOLVED_TOOL_GROUPS
+
+        stub_agent_lookup(FileNotFoundError("agent 'reader' not found"))
+        captured = self._capture_groups(monkeypatch)
+        client = self._client(monkeypatch, "reader")
+
+        client._get_tools(model_name="m1", subagent_enabled=True)
+        assert captured["groups"] == UNRESOLVED_TOOL_GROUPS
+
+    def test_default_client_stays_unrestricted(self, monkeypatch):
+        captured = self._capture_groups(monkeypatch)
+        client = self._client(monkeypatch, None)
+
+        client._get_tools(model_name="m1", subagent_enabled=False)
+        assert captured["groups"] is None

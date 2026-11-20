@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Query, Request, UploadFile, File, 
 from pydantic import BaseModel
 
 from app.gateway.i18n import tr
+from app.gateway.authorization import require_user_context
 
 router = APIRouter(prefix="/api/templates", tags=["templates"])
 
@@ -32,7 +33,7 @@ async def list_templates(
     thread_id: str = Query(..., description="Thread ID"),
 ) -> list[TemplateInfo]:
     """List templates in the thread's workspace."""
-    user_id: str = getattr(request.state, "user_id", "anonymous")
+    user_id: str = require_user_context(request)
     tenant_id: str | None = getattr(request.state, "tenant_id", None)
 
     templates_dir = _templates_dir(user_id, thread_id, tenant_id)
@@ -65,7 +66,7 @@ async def upload_template(
     name: str = Form(""),
 ) -> TemplateInfo:
     """Upload a PPTX file as a template into the thread's workspace."""
-    user_id: str = getattr(request.state, "user_id", "anonymous")
+    user_id: str = require_user_context(request)
     tenant_id: str | None = getattr(request.state, "tenant_id", None)
 
     ext = Path(file.filename or "template.pptx").suffix.lower()
@@ -102,7 +103,7 @@ async def delete_template(
     name: str = Query(..., description="Template file name (without extension)"),
 ) -> dict:
     """Delete a template from the thread's workspace."""
-    user_id: str = getattr(request.state, "user_id", "anonymous")
+    user_id: str = require_user_context(request)
     tenant_id: str | None = getattr(request.state, "tenant_id", None)
 
     templates_dir = _templates_dir(user_id, thread_id, tenant_id)

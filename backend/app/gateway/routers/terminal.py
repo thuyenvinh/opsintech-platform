@@ -759,11 +759,11 @@ async def agent_invoke(req: AgentInvokeRequest, request: Request):
                 data_event = event.get("data", {})
 
                 step_names = {
-                    "intent": "正在分析问题",
-                    "security": "正在检查命令风险",
-                    "ask_approval": "等待用户确认",
-                    "execute": "正在执行命令",
-                    "observation": "正在整理结果",
+                    "intent": tr("正在分析问题", "Analyzing the problem", "Đang phân tích vấn đề"),
+                    "security": tr("正在检查命令风险", "Checking command risk", "Đang kiểm tra rủi ro của lệnh"),
+                    "ask_approval": tr("等待用户确认", "Waiting for your confirmation", "Đang chờ bạn xác nhận"),
+                    "execute": tr("正在执行命令", "Running the command", "Đang thực thi lệnh"),
+                    "observation": tr("正在整理结果", "Summarizing the results", "Đang tổng hợp kết quả"),
                 }
                 if kind == "on_chain_start" and name in step_names:
                     # On second+ intent_node invocation, pre-create a new bubble before steps
@@ -939,9 +939,9 @@ async def agent_approve(req: AgentApproveRequest, request: Request):
                 data_event = event.get("data", {})
 
                 step_names = {
-                    "execute": "正在执行命令",
-                    "observation": "正在整理结果",
-                    "intent": "正在分析问题",
+                    "execute": tr("正在执行命令", "Running the command", "Đang thực thi lệnh"),
+                    "observation": tr("正在整理结果", "Summarizing the results", "Đang tổng hợp kết quả"),
+                    "intent": tr("正在分析问题", "Analyzing the problem", "Đang phân tích vấn đề"),
                 }
                 if kind == "on_chain_start" and name in step_names:
                     yield f"data: {json_mod.dumps({'type': 'STEP_STARTED', 'stepName': step_names[name], 'messageId': msg_id})}\n\n"

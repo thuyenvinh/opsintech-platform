@@ -432,7 +432,12 @@ export default function WorkspaceIncidentDetailPage({ params }: PageProps) {
 
   // 拼接智能工作台诊断参数
   const diagnosisQuery = encodeURIComponent(
-    `帮我详细排查告警事件 [${incident.incident_key}]。该告警名为 "${incident.title}"，发生在服务 "${incident.service}" 的 ${incident.environment} 环境上，当前严重度为 ${incident.severity}。请帮我列出可能的排查步骤，并使用沙箱命令行终端抓取该服务的日志信息，探寻异常。`
+    tr(
+      locale,
+      `帮我详细排查告警事件 [${incident.incident_key}]。该告警名为 "${incident.title}"，发生在服务 "${incident.service}" 的 ${incident.environment} 环境上，当前严重度为 ${incident.severity}。请帮我列出可能的排查步骤，并使用沙箱命令行终端抓取该服务的日志信息，探寻异常。`,
+      `Help me investigate incident [${incident.incident_key}] in detail. The alert is "${incident.title}", raised on service "${incident.service}" in the ${incident.environment} environment, and its current severity is ${incident.severity}. List the likely troubleshooting steps, then use the sandbox terminal to collect that service's logs and look for anomalies.`,
+      `Hãy giúp tôi kiểm tra chi tiết sự cố [${incident.incident_key}]. Cảnh báo có tên "${incident.title}", phát sinh trên dịch vụ "${incident.service}" ở môi trường ${incident.environment}, mức độ hiện tại là ${incident.severity}. Hãy liệt kê các bước kiểm tra khả thi, sau đó dùng terminal sandbox để thu thập log của dịch vụ này và tìm điểm bất thường.`,
+    )
   );
 
   return (

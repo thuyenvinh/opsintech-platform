@@ -187,6 +187,15 @@ def _build_prompt(
     if raw_payload:
         payload_section = f"\n\nRaw alert payload (first signal):\n```json\n{json.dumps(raw_payload, indent=2, ensure_ascii=False)[:3000]}\n```"
 
+    # The analysis is stored on the incident and shown in the UI / pushed to IM,
+    # so the reply language must follow the caller's locale rather than be
+    # hardcoded. Background ingestion has no locale cookie and falls back to vi.
+    output_rule = tr(
+        "请用简体中文回复，仅输出 JSON 格式（不要 markdown 代码块标记）:",
+        "Reply in English. Output JSON only, with no markdown code fences:",
+        "Hãy trả lời bằng tiếng Việt. Chỉ xuất JSON, không dùng khối mã markdown:",
+    )
+
     return f"""你是一个告警解读助手，不是根因侦探。你的任务是用自然语言重新组织和归纳告警数据，帮助值班工程师快速理解当前状况。
 
 严格规则：
@@ -205,7 +214,7 @@ Incident: {incident.incident_key}
 关联信号:
 {chr(10).join(signal_summaries) or '(无)'}{payload_section}
 
-请用中文回复，仅输出 JSON 格式（不要 markdown 代码块标记）:
+{output_rule}
 {{"summary": "一句话描述告警数据说明了什么", "impact": "一句话说明影响了哪些服务或环境", "suggestion": "一句话建议值班工程师优先查看什么（引用告警中实际的实体名）"}}"""
 
 

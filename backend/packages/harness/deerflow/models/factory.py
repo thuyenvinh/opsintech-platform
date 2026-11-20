@@ -119,7 +119,8 @@ def _wrap_no_tools_model(model_instance: BaseChatModel, model_name: str) -> None
             except Exception as e:
                 if _is_tool_not_supported_error(e):
                     raise ValueError(
-                        f"模型 '{model_name}' 不支持工具/函数调用，请换用支持工具调用的模型"
+                        f"Mô hình '{model_name}' không hỗ trợ gọi công cụ/hàm. "
+                        "Vui lòng chọn mô hình có hỗ trợ tool calling."
                     ) from e
                 raise
         object.__setattr__(model_instance, "_agenerate", _wrapped_agenerate)
@@ -135,7 +136,8 @@ def _wrap_no_tools_model(model_instance: BaseChatModel, model_name: str) -> None
             except Exception as e:
                 if _is_tool_not_supported_error(e):
                     raise ValueError(
-                        f"模型 '{model_name}' 不支持工具/函数调用，请换用支持工具调用的模型"
+                        f"Mô hình '{model_name}' không hỗ trợ gọi công cụ/hàm. "
+                        "Vui lòng chọn mô hình có hỗ trợ tool calling."
                     ) from e
                 raise
         object.__setattr__(model_instance, "_astream", _wrapped_astream)

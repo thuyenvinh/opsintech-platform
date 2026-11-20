@@ -23,6 +23,7 @@ from langgraph.graph.message import add_messages
 from langgraph.types import interrupt
 
 from app.agent.terminal_tools import terminal_tools_list
+from app.gateway.i18n import tr
 from app.services.terminal.security import CommandSecurityResult, security_service
 from app.services.terminal.session import build_ssh_command, session_manager
 from deerflow.models.factory import create_chat_model
@@ -464,7 +465,11 @@ class TerminalAgentNodes:
                 if is_auto_approved:
                     tc["security"] = {
                         "action": "allow",
-                        "reason": "文件修改已配置自动批准。",
+                        "reason": tr(
+                            "文件修改已配置自动批准。",
+                            "File changes are configured for automatic approval.",
+                            "Thay đổi tệp được cấu hình tự động phê duyệt.",
+                        ),
                         "risk_level": "high",
                         "is_state_changing": True,
                         "target_assets": tc_targets,
@@ -472,7 +477,11 @@ class TerminalAgentNodes:
                 else:
                     tc["security"] = {
                         "action": "ask",
-                        "reason": "写入文件会修改远程主机状态，需要确认目标路径和内容。",
+                        "reason": tr(
+                            "写入文件会修改远程主机状态，需要确认目标路径和内容。",
+                            "Writing a file changes the remote host state; confirm the target path and content.",
+                            "Ghi tệp sẽ thay đổi trạng thái máy chủ từ xa; vui lòng xác nhận đường dẫn và nội dung.",
+                        ),
                         "risk_level": "high",
                         "is_state_changing": True,
                         "target_assets": tc_targets,
@@ -489,7 +498,11 @@ class TerminalAgentNodes:
                 if is_auto_approved:
                     tc["security"] = {
                         "action": "allow",
-                        "reason": "远程读取操作自动批准。",
+                        "reason": tr(
+                            "远程读取操作自动批准。",
+                            "Remote read operation auto-approved.",
+                            "Thao tác đọc từ xa được tự động phê duyệt.",
+                        ),
                         "risk_level": "low",
                         "is_state_changing": False,
                         "target_assets": tc_targets,
@@ -497,7 +510,11 @@ class TerminalAgentNodes:
                 else:
                     tc["security"] = {
                         "action": "ask",
-                        "reason": "远程读取操作需要手动确认。",
+                        "reason": tr(
+                            "远程读取操作需要手动确认。",
+                            "Remote read operation requires manual confirmation.",
+                            "Thao tác đọc từ xa cần xác nhận thủ công.",
+                        ),
                         "risk_level": "low",
                         "is_state_changing": False,
                         "target_assets": tc_targets,
@@ -507,7 +524,11 @@ class TerminalAgentNodes:
             elif tool_name in REMOTE_TOOLS and mode == "cmd":
                 tc["security"] = {
                     "action": "ask",
-                    "reason": "Command 模式下远程操作需要手动确认。",
+                    "reason": tr(
+                        "Command 模式下远程操作需要手动确认。",
+                        "In Command mode remote operations require manual confirmation.",
+                        "Ở chế độ Command, thao tác từ xa cần xác nhận thủ công.",
+                    ),
                     "risk_level": "low",
                     "is_state_changing": False,
                     "target_assets": tc_targets,
@@ -780,7 +801,11 @@ class TerminalAgentNodes:
             if hasattr(msg, "content") and isinstance(msg.content, str):
                 if len(msg.content) > MAX_TOOL_OUTPUT_CHARS:
                     logger.warning(f"[execute_node] Truncating output for tool message. Original size: {len(msg.content)}")
-                    msg.content = msg.content[:MAX_TOOL_OUTPUT_CHARS] + f"\n\n[输出过长已截断。总长度 {len(msg.content)} 字符，仅展示前 {MAX_TOOL_OUTPUT_CHARS} 字符。]"
+                    msg.content = msg.content[:MAX_TOOL_OUTPUT_CHARS] + "\n\n" + tr(
+                        f"[输出过长已截断。总长度 {len(msg.content)} 字符，仅展示前 {MAX_TOOL_OUTPUT_CHARS} 字符。]",
+                        f"[Output truncated: {len(msg.content)} characters total, only the first {MAX_TOOL_OUTPUT_CHARS} are shown.]",
+                        f"[Đầu ra đã bị cắt bớt: tổng cộng {len(msg.content)} ký tự, chỉ hiển thị {MAX_TOOL_OUTPUT_CHARS} ký tự đầu.]",
+                    )
 
         return {
             "messages": results,

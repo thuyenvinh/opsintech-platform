@@ -75,7 +75,7 @@ export function CreateTenantDialog({ open, onOpenChange, onSuccess }: Props) {
     locale === "zh-CN"
       ? "请输入自定义工作空间类型 (如: security)"
       : locale === "ja"
-      ? "カスタムワークスペース类型を入力してください (例: security)"
+      ? "カスタムワークスペースタイプを入力してください (例: security)"
       : locale === "ko"
       ? "사용자 정의 워크스페이스 유형을 입력하십시오 (예: security)"
       : locale === "vi"

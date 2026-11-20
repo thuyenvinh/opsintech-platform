@@ -56,7 +56,7 @@ class FileFolder(SQLModel, table=True):
     display_name: str = Field(description="User-visible folder name")
     path_cache: str | None = Field(
         default=None,
-        description="Denormalized full path for fast display (e.g. '/我的文件/需求文档')",
+        description="Denormalized full path for fast display (e.g. '/Tai-lieu/Yeu-cau')",
     )
     created_by: str = Field(index=True, description="User ID who created this folder")
     created_at: datetime = Field(

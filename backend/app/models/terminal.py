@@ -45,7 +45,10 @@ class ChatSession(SQLModel, table=True):
     tenant_id: str = Field(index=True)
     user_id: str = Field(index=True)
     terminal_session_id: str = Field(index=True, description="The associated SSH session")
-    title: str = Field(default="未命名会话")
+    # Column default only: callers go through the terminal router, which fills
+    # in a request-locale title via tr(). A module-level tr() call would freeze
+    # the language at import time, so this mirrors the default locale (vi).
+    title: str = Field(default="Phiên chưa đặt tên")
     model_name: str = Field(default="gpt-4o")
     
     # Store messages as JSON for now. A production system might normalize this.

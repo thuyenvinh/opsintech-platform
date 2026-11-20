@@ -10,6 +10,7 @@ from sqlalchemy import select as sa_select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.gateway.authorization import require_tenant_context
+from app.gateway.i18n import tr
 from app.models.assets import AssetGroup, Keychain, LocalAsset
 from app.gateway.routers.terminal import build_ssh_command
 from deerflow.database.session import get_session
@@ -290,7 +291,11 @@ async def create_local_asset(
             id=str(uuid.uuid4()),
             tenant_id=tenant_id,
             user_id=user_id,
-            name=f"{req.name} - 密码",
+            name=tr(
+                f"{req.name} - 密码",
+                f"{req.name} - password",
+                f"{req.name} - mật khẩu",
+            ),
             type="password",
             value=req.password
         )
@@ -344,7 +349,11 @@ async def update_local_asset(
             id=str(uuid.uuid4()),
             tenant_id=request.state.tenant_id,
             user_id=request.state.user_id,
-            name=f"{req.name} - 密码",
+            name=tr(
+                f"{req.name} - 密码",
+                f"{req.name} - password",
+                f"{req.name} - mật khẩu",
+            ),
             type="password",
             value=req.password
         )

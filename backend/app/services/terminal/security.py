@@ -2,6 +2,8 @@ import re
 import shlex
 from typing import Literal, Any, List, Dict
 
+from app.gateway.i18n import tr
+
 SecurityResult = Literal["allow", "ask", "block"]
 
 class CommandSecurityResult:
@@ -205,36 +207,153 @@ def resolve_effective_policy(tenant_policy: dict, user_settings: dict) -> tuple[
     return security_config, auto_approval
 
 
+# The rationale shown to the user is stored as a (zh, en, vi) triple and
+# resolved through tr() at evaluation time. Calling tr() here would freeze the
+# language at import time, when no request locale exists yet.
 DANGEROUS_COMMANDS_SEVERITY = {
     # Critical
-    "rm": {"severity": "critical", "reason": "删除文件/目录，可能导致数据丢失"},
-    "del": {"severity": "critical", "reason": "删除文件，可能导致数据丢失"},
-    "format": {"severity": "critical", "reason": "格式化磁盘，会导致数据永久丢失"},
-    "shutdown": {"severity": "critical", "reason": "关闭系统，会导致服务中断"},
-    "reboot": {"severity": "critical", "reason": "重启系统，会导致服务中断"},
-    "halt": {"severity": "critical", "reason": "停止系统，会导致服务中断"},
-    "poweroff": {"severity": "critical", "reason": "关闭电源，会导致服务中断"},
-    "dd": {"severity": "critical", "reason": "磁盘操作，误用会导致数据丢失"},
-    "mkfs": {"severity": "critical", "reason": "创建文件系统，会清空磁盘数据"},
-    "fdisk": {"severity": "critical", "reason": "磁盘分区操作，误用会导致数据丢失"},
-    "parted": {"severity": "critical", "reason": "磁盘分区工具，误操作会导致数据丢失"},
-    "init": {"severity": "critical", "reason": "改变系统运行级别，可能导致服务中断"},
+    "rm": {"severity": "critical", "reason": (
+        "删除文件/目录，可能导致数据丢失",
+        "Deletes files/directories and may cause data loss",
+        "Xóa tệp/thư mục, có thể gây mất dữ liệu",
+    )},
+    "del": {"severity": "critical", "reason": (
+        "删除文件，可能导致数据丢失",
+        "Deletes files and may cause data loss",
+        "Xóa tệp, có thể gây mất dữ liệu",
+    )},
+    "format": {"severity": "critical", "reason": (
+        "格式化磁盘，会导致数据永久丢失",
+        "Formats disk and causes permanent data loss",
+        "Định dạng ổ đĩa, sẽ gây mất dữ liệu vĩnh viễn",
+    )},
+    "shutdown": {"severity": "critical", "reason": (
+        "关闭系统，会导致服务中断",
+        "Shuts down the system and interrupts services",
+        "Tắt hệ thống, sẽ làm gián đoạn dịch vụ",
+    )},
+    "reboot": {"severity": "critical", "reason": (
+        "重启系统，会导致服务中断",
+        "Reboots the system and interrupts services",
+        "Khởi động lại hệ thống, sẽ làm gián đoạn dịch vụ",
+    )},
+    "halt": {"severity": "critical", "reason": (
+        "停止系统，会导致服务中断",
+        "Halts the system and interrupts services",
+        "Dừng hệ thống, sẽ làm gián đoạn dịch vụ",
+    )},
+    "poweroff": {"severity": "critical", "reason": (
+        "关闭电源，会导致服务中断",
+        "Powers off the system and interrupts services",
+        "Tắt nguồn hệ thống, sẽ làm gián đoạn dịch vụ",
+    )},
+    "dd": {"severity": "critical", "reason": (
+        "磁盘操作，误用会导致数据丢失",
+        "Low-level disk operation; misuse may cause data loss",
+        "Thao tác ổ đĩa cấp thấp; dùng sai có thể gây mất dữ liệu",
+    )},
+    "mkfs": {"severity": "critical", "reason": (
+        "创建文件系统，会清空磁盘数据",
+        "Creates a filesystem and erases disk data",
+        "Tạo hệ thống tệp, sẽ xóa sạch dữ liệu ổ đĩa",
+    )},
+    "fdisk": {"severity": "critical", "reason": (
+        "磁盘分区操作，误用会导致数据丢失",
+        "Disk partitioning operation; misuse may cause data loss",
+        "Thao tác phân vùng ổ đĩa; dùng sai có thể gây mất dữ liệu",
+    )},
+    "parted": {"severity": "critical", "reason": (
+        "磁盘分区工具，误操作会导致数据丢失",
+        "Disk partitioning tool; misuse may cause data loss",
+        "Công cụ phân vùng ổ đĩa; thao tác sai có thể gây mất dữ liệu",
+    )},
+    "init": {"severity": "critical", "reason": (
+        "改变系统运行级别，可能导致服务中断",
+        "Changes system runlevel and may interrupt services",
+        "Thay đổi runlevel hệ thống, có thể làm gián đoạn dịch vụ",
+    )},
     # High
-    "killall": {"severity": "high", "reason": "批量终止进程，可能影响系统稳定性"},
-    "pkill": {"severity": "high", "reason": "模式匹配终止进程，可能误杀关键进程"},
-    "systemctl": {"severity": "high", "reason": "管理系统服务，可能影响服务运行"},
-    "service": {"severity": "high", "reason": "管理系统服务，可能影响服务运行"},
-    "chmod": {"severity": "high", "reason": "修改文件权限，可能导致安全漏洞"},
-    "chown": {"severity": "high", "reason": "修改文件所有者，可能影响系统安全"},
-    "mount": {"severity": "high", "reason": "挂载文件系统，不当操作可能影响系统"},
-    "umount": {"severity": "high", "reason": "卸载文件系统，可能导致数据不一致"},
+    "killall": {"severity": "high", "reason": (
+        "批量终止进程，可能影响系统稳定性",
+        "Terminates processes in bulk; may affect system stability",
+        "Kết thúc hàng loạt tiến trình, có thể ảnh hưởng ổn định hệ thống",
+    )},
+    "pkill": {"severity": "high", "reason": (
+        "模式匹配终止进程，可能误杀关键进程",
+        "Kills processes by pattern; may terminate critical processes",
+        "Kết thúc tiến trình theo mẫu, có thể dừng nhầm tiến trình quan trọng",
+    )},
+    "systemctl": {"severity": "high", "reason": (
+        "管理系统服务，可能影响服务运行",
+        "Manages system services; may affect running services",
+        "Quản lý dịch vụ hệ thống, có thể ảnh hưởng hoạt động dịch vụ",
+    )},
+    "service": {"severity": "high", "reason": (
+        "管理系统服务，可能影响服务运行",
+        "Manages system services; may affect running services",
+        "Quản lý dịch vụ hệ thống, có thể ảnh hưởng hoạt động dịch vụ",
+    )},
+    "chmod": {"severity": "high", "reason": (
+        "修改文件权限，可能导致安全漏洞",
+        "Modifies file permissions; may introduce security risks",
+        "Thay đổi quyền tệp, có thể gây lỗ hổng bảo mật",
+    )},
+    "chown": {"severity": "high", "reason": (
+        "修改文件所有者，可能影响系统安全",
+        "Changes file ownership; may affect system security",
+        "Thay đổi chủ sở hữu tệp, có thể ảnh hưởng bảo mật hệ thống",
+    )},
+    "mount": {"severity": "high", "reason": (
+        "挂载文件系统，不当操作可能影响系统",
+        "Mounts a filesystem; improper use may affect the system",
+        "Gắn kết hệ thống tệp; thao tác sai có thể ảnh hưởng hệ thống",
+    )},
+    "umount": {"severity": "high", "reason": (
+        "卸载文件系统，可能导致数据不一致",
+        "Unmounts a filesystem; may cause data inconsistency",
+        "Tháo gắn kết hệ thống tệp, có thể gây mất nhất quán dữ liệu",
+    )},
     # Medium
-    "iptables": {"severity": "medium", "reason": "修改防火墙规则，可能影响网络访问"},
-    "ufw": {"severity": "medium", "reason": "修改防火墙设置，可能影响网络访问"},
-    "firewall-cmd": {"severity": "medium", "reason": "修改防火墙配置，可能影响网络访问"},
-    "sudo": {"severity": "medium", "reason": "以超级用户权限执行命令，请确认必要性"},
-    "su": {"severity": "medium", "reason": "切换用户身份，请确认必要性"},
+    "iptables": {"severity": "medium", "reason": (
+        "修改防火墙规则，可能影响网络访问",
+        "Modifies firewall rules; may affect network access",
+        "Thay đổi quy tắc tường lửa, có thể ảnh hưởng truy cập mạng",
+    )},
+    "ufw": {"severity": "medium", "reason": (
+        "修改防火墙设置，可能影响网络访问",
+        "Modifies firewall settings; may affect network access",
+        "Thay đổi cài đặt tường lửa, có thể ảnh hưởng truy cập mạng",
+    )},
+    "firewall-cmd": {"severity": "medium", "reason": (
+        "修改防火墙配置，可能影响网络访问",
+        "Modifies firewall configuration; may affect network access",
+        "Thay đổi cấu hình tường lửa, có thể ảnh hưởng truy cập mạng",
+    )},
+    "sudo": {"severity": "medium", "reason": (
+        "以超级用户权限执行命令，请确认必要性",
+        "Executes command with superuser privileges; please confirm necessity",
+        "Thực thi lệnh với quyền siêu người dùng, vui lòng xác nhận sự cần thiết",
+    )},
+    "su": {"severity": "medium", "reason": (
+        "切换用户身份，请确认必要性",
+        "Switches user identity; please confirm necessity",
+        "Chuyển đổi danh tính người dùng, vui lòng xác nhận sự cần thiết",
+    )},
 }
+
+_GENERIC_DANGEROUS_REASON = (
+    "高风险命令",
+    "High-risk command",
+    "Lệnh rủi ro cao",
+)
+
+
+def _dangerous_reason(reason: Any) -> str:
+    """Resolve a dangerous-command rationale for the caller's locale."""
+    if isinstance(reason, (tuple, list)) and len(reason) == 3:
+        return tr(*reason)
+    # A tenant-supplied override is already a plain string.
+    return str(reason)
 
 READONLY_COMMANDS = [
     'ls', 'pwd', 'whoami', 'date', 'uptime', 'uname',
@@ -356,18 +475,32 @@ class CommandSecurityService:
 
         command = command.strip()
         if not command:
-            return CommandSecurityResult("allow", "空命令")
+            return CommandSecurityResult(
+                "allow",
+                tr("空命令", "Empty command", "Lệnh trống"),
+            )
 
         enable_command_security = security_config.get("enableCommandSecurity", True)
         if not enable_command_security:
-            return CommandSecurityResult("allow", "安全检查已关闭")
+            return CommandSecurityResult(
+                "allow",
+                tr(
+                    "安全检查已关闭",
+                    "Security checks are disabled",
+                    "Kiểm tra an toàn đã bị tắt",
+                ),
+            )
 
         # Length check
         max_length = security_config.get("maxCommandLength", 10000)
         if len(command) > max_length:
             return CommandSecurityResult(
                 "block",
-                f"命令长度超过限制 ({max_length} 字符)",
+                tr(
+                    f"命令长度超过限制 ({max_length} 字符)",
+                    f"Command length exceeds limit ({max_length} characters)",
+                    f"Độ dài lệnh vượt quá giới hạn ({max_length} ký tự)",
+                ),
                 risk_level="medium",
                 is_state_changing=False,
             )
@@ -383,14 +516,22 @@ class CommandSecurityService:
                     if ask_for_blacklist:
                         return CommandSecurityResult(
                             "ask",
-                            f"命令命中了黑名单模式 '{pattern}'，策略已配置为人工确认。",
+                            tr(
+                                f"命令命中了黑名单模式 '{pattern}'，策略已配置为人工确认。",
+                                f"Command matches blacklist pattern '{pattern}'; the policy requires manual confirmation.",
+                                f"Lệnh khớp mẫu danh sách đen '{pattern}'; chính sách yêu cầu xác nhận thủ công.",
+                            ),
                             risk_level="critical",
                             is_state_changing=True,
                         )
                     else:
                         return CommandSecurityResult(
                             "block",
-                            f"命令命中了阻断规则 '{pattern}'，已拦截该操作。",
+                            tr(
+                                f"命令命中了阻断规则 '{pattern}'，已拦截该操作。",
+                                f"Command matches blocking rule '{pattern}'; the operation was blocked.",
+                                f"Lệnh khớp quy tắc chặn '{pattern}'; thao tác đã bị chặn.",
+                            ),
                             risk_level="critical",
                             is_state_changing=True,
                         )
@@ -411,7 +552,11 @@ class CommandSecurityService:
                 if not is_whitelisted:
                     return CommandSecurityResult(
                         "block",
-                        f"严格模式下禁止执行非白名单命令 '{exec_name}'。",
+                        tr(
+                            f"严格模式下禁止执行非白名单命令 '{exec_name}'。",
+                            f"Command '{exec_name}' is not in the whitelist (strict mode enabled).",
+                            f"Lệnh '{exec_name}' không nằm trong danh sách cho phép (đã bật chế độ nghiêm ngặt).",
+                        ),
                         risk_level="medium",
                         is_state_changing=True,
                     )
@@ -424,9 +569,12 @@ class CommandSecurityService:
             if not exec_name:
                 continue
             if exec_name in dangerous_commands or exec_name in DANGEROUS_COMMANDS_SEVERITY:
-                info = DANGEROUS_COMMANDS_SEVERITY.get(exec_name, {"severity": "medium", "reason": "高风险命令"})
+                info = DANGEROUS_COMMANDS_SEVERITY.get(
+                    exec_name,
+                    {"severity": "medium", "reason": _GENERIC_DANGEROUS_REASON},
+                )
                 severity = info["severity"]
-                reason = info["reason"]
+                reason = _dangerous_reason(info["reason"])
 
                 # Check policy
                 should_ask = True
@@ -440,7 +588,11 @@ class CommandSecurityService:
                 if not should_ask:
                     return CommandSecurityResult(
                         "block",
-                        f"命令 '{exec_name}' 属于高风险操作（{reason}），安全策略已配置为禁止执行。",
+                        tr(
+                            f"命令 '{exec_name}' 属于高风险操作（{reason}），安全策略已配置为禁止执行。",
+                            f"Command '{exec_name}' is a high-risk operation ({reason}); the security policy forbids running it.",
+                            f"Lệnh '{exec_name}' là thao tác rủi ro cao ({reason}); chính sách an toàn không cho phép thực thi.",
+                        ),
                         risk_level=severity,
                         is_state_changing=True,
                     )
@@ -452,7 +604,11 @@ class CommandSecurityService:
 
                     return CommandSecurityResult(
                         "ask",
-                        f"检测到高风险命令 '{exec_name}'（{reason}），需要人工确认。",
+                        tr(
+                            f"检测到高风险命令 '{exec_name}'（{reason}），需要人工确认。",
+                            f"High-risk command '{exec_name}' detected ({reason}); manual confirmation is required.",
+                            f"Phát hiện lệnh rủi ro cao '{exec_name}' ({reason}); cần xác nhận thủ công.",
+                        ),
                         risk_level=severity,
                         is_state_changing=True,
                     )
@@ -467,14 +623,32 @@ class CommandSecurityService:
 
             if all_readonly:
                 if auto_approval.get("actions", {}).get("executeSafeCommands", True):
-                    return CommandSecurityResult("allow", "命令属于安全只读操作，已自动批准执行。")
+                    return CommandSecurityResult(
+                        "allow",
+                        tr(
+                            "命令属于安全只读操作，已自动批准执行。",
+                            "Command is a safe read-only operation and was auto-approved.",
+                            "Lệnh là thao tác chỉ đọc an toàn và đã được tự động phê duyệt.",
+                        ),
+                    )
             else:
                 if auto_approval.get("actions", {}).get("editFiles", False):
-                    return CommandSecurityResult("allow", "自动执行写操作命令。")
+                    return CommandSecurityResult(
+                        "allow",
+                        tr(
+                            "自动执行写操作命令。",
+                            "Write command executed automatically.",
+                            "Lệnh ghi được thực thi tự động.",
+                        ),
+                    )
                 else:
                     return CommandSecurityResult(
                         "ask",
-                        "命令包含写操作或修改状态，需用户授权。",
+                        tr(
+                            "命令包含写操作或修改状态，需用户授权。",
+                            "Command writes or changes state and needs your authorization.",
+                            "Lệnh có ghi dữ liệu hoặc thay đổi trạng thái, cần bạn cho phép.",
+                        ),
                         risk_level="medium",
                         is_state_changing=True,
                     )
@@ -491,12 +665,23 @@ class CommandSecurityService:
 
             return CommandSecurityResult(
                 "ask",
-                "Command 模式下所有命令均需手动确认。",
+                tr(
+                    "Command 模式下所有命令均需手动确认。",
+                    "In Command mode every command requires manual confirmation.",
+                    "Ở chế độ Command, mọi lệnh đều cần xác nhận thủ công.",
+                ),
                 risk_level="medium" if has_state_changing else "low",
                 is_state_changing=has_state_changing,
             )
 
-        return CommandSecurityResult("allow", "命令安全，由 Agent 自动执行。")
+        return CommandSecurityResult(
+            "allow",
+            tr(
+                "命令安全，由 Agent 自动执行。",
+                "Command is safe; the Agent runs it automatically.",
+                "Lệnh an toàn; Agent tự động thực thi.",
+            ),
+        )
 
 
 security_service = CommandSecurityService()

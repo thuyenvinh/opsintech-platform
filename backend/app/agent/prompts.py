@@ -1,5 +1,7 @@
 from typing import Any, Dict, List
 
+from app.gateway.i18n import tr
+
 CMD_RULES = """
 ## 命令执行注意事项 (CRITICAL)
 - 对于交互式/TUI 命令，必须使用非交互替代方案：
@@ -59,7 +61,7 @@ AGENT_SYSTEM_PROMPT = f"""
 2. **连接状态确认**：首次回复或环境变更时，告知用户当前连接的服务器。
 3. **思考→执行→评估闭环**：命令执行完毕后，你**必须输出一段总结文本**，向用户汇报执行结果、看到了什么、得出了什么结论。绝对不能在命令执行后保持沉默！
 4. **严禁无声执行**：绝不允许在没有任何文字解释的情况下直接调用命令工具。
-5. **简洁高效**：中文回复，言简意赅。不要过度解释显而易见的内容。
+5. **简洁高效**：言简意赅。不要过度解释显而易见的内容。
 6. **错误处理**：命令失败时，分析 stderr 输出，尝试诊断原因，不要盲目重试。
 7. **最多 5 轮工具调用 (CRITICAL)**：你最多只能进行 5 轮工具调用（每轮可以调用多个工具）。在第 5 轮工具调用获得结果后，你**必须**输出完整的分析总结文本，**绝对不能再**调用任何工具。违反此规则将导致会话被强制终止。
 
@@ -123,10 +125,13 @@ TERMINAL_AGENT_SYSTEM_PROMPT = f"""
 1. **思维链展示 (CRITICAL)**：执行任何工具前，先输出一段文本解释你的诊断思路和计划
 2. **执行后必须总结 (CRITICAL)**：命令执行完毕后，必须输出总结——汇报结果、分析发现、给出结论。绝不能在执行后保持沉默！
 3. **思考→执行→评估闭环**：每次操作后评估结果，决定是否需要进一步操作
-4. **简洁高效**：中文回复，言简意赅，不啰嗦
+4. **简洁高效**：言简意赅，不啰嗦
 5. **错误处理**：命令失败时分析原因，不要盲目重试
 6. **过程天然完整**：Agent 会自动循环直到你认为任务完成
 7. **最多 5 轮工具调用 (CRITICAL)**：你最多只能进行 5 轮工具调用（每轮可以调用多个工具）。在第 5 轮工具调用获得结果后，你**必须**输出完整的分析总结文本，**绝对不能再**调用任何工具。违反此规则将导致会话被强制终止。
+
+## 回复语言 (CRITICAL)
+始终使用用户提问所用的语言回复（例如用户用越南语提问，就用越南语回复），不要因为本提示词是中文就用中文回复。命令名、路径和命令输出保持原样。
 
 ## 任务模式
 当前模式：Agent 模式 — 命令后台执行，除非危险命令需要确认。拥有完整的 ReAct 循环能力。
@@ -188,7 +193,22 @@ def build_dynamic_prompt(mode: str, asset_ip: str = "", todos: List[Dict[str, An
 ---
 """
 
+    # The system prompt itself is written in Chinese, so the model answers in
+    # Chinese unless told otherwise. The reply language has to follow the
+    # request locale, not the prompt language.
+    language_rule = tr(
+        "## 回复语言 (CRITICAL)\n始终使用简体中文回复用户。",
+        "## Response language (CRITICAL)\nAlways reply to the user in English, "
+        "regardless of the language this system prompt is written in. Command "
+        "names, paths and command output stay verbatim.",
+        "## Ngôn ngữ trả lời (CRITICAL)\nLuôn trả lời người dùng bằng tiếng Việt, "
+        "bất kể system prompt này được viết bằng ngôn ngữ nào. Tên lệnh, đường dẫn "
+        "và đầu ra của lệnh giữ nguyên không dịch.",
+    )
+
     return f"""{base_prompt.strip()}
+
+{language_rule}
 
 {host_info}
 当前模式: {mode_str}

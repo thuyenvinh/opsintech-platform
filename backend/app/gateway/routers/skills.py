@@ -1130,6 +1130,40 @@ async def summarize_diagnosis(
         if body.user_notes:
             user_notes_text = f"\n用户补充说明：{body.user_notes}"
 
+        # The generated Skill text is shown to the user and saved as the Skill's
+        # instructions, so its language must follow the caller's locale instead
+        # of being hardcoded to Chinese.
+        output_lang_rule = tr(
+            "4. **中文输出**：所有内容使用简体中文。",
+            "4. **English output**: write all content in English.",
+            "4. **Đầu ra tiếng Việt**: viết toàn bộ nội dung bằng tiếng Việt.",
+        )
+        description_hint = tr(
+            "一句话中文描述",
+            "one-sentence description in English",
+            "mô tả một câu bằng tiếng Việt",
+        )
+        md_template = tr(
+            "## 适用场景\n...\n\n"
+            "## 排查步骤\n1. ...\n\n"
+            "## 关键检查点\n- ...\n\n"
+            "## 常见根因\n- ...\n\n"
+            "## 修复建议\n- ...\n\n"
+            "## 参考命令",
+            "## When to use\n...\n\n"
+            "## Investigation steps\n1. ...\n\n"
+            "## Key checkpoints\n- ...\n\n"
+            "## Common root causes\n- ...\n\n"
+            "## Remediation\n- ...\n\n"
+            "## Reference commands",
+            "## Trường hợp áp dụng\n...\n\n"
+            "## Các bước kiểm tra\n1. ...\n\n"
+            "## Điểm kiểm tra then chốt\n- ...\n\n"
+            "## Nguyên nhân gốc thường gặp\n- ...\n\n"
+            "## Khuyến nghị khắc phục\n- ...\n\n"
+            "## Lệnh tham khảo",
+        )
+
         gen_prompt = f"""你是运维 SRE 领域的 Skill 指令编写专家。用户完成了一次诊断排查，需要将排查经验提炼为可复用的 Skill 指令。
 
 ## 告警/排查信息
@@ -1153,7 +1187,7 @@ async def summarize_diagnosis(
 1. **去实例化**：移除所有具体 IP 地址、Pod 名称、节点名、时间戳、具体数值。用 `<pod-name>` 等占位符代替。
 2. **提取通用 SOP**：从单次排查过程抽象出通用的排查流程，让其他运维人员可以复用。
 3. **保留领域知识**：保留关键的检查命令、诊断思路、根因分类、阈值建议。
-4. **中文输出**：所有内容使用简体中文。
+{output_lang_rule}
 
 ## 输出格式（严格按此结构，分两个代码块）
 
@@ -1161,7 +1195,7 @@ async def summarize_diagnosis(
 ```json
 {{
   "suggested_name": "英文小写+连字符短名称",
-  "suggested_description": "一句话中文描述",
+  "suggested_description": "{description_hint}",
   "suggested_tools": ["工具名1", "工具名2"],
   "suggested_category": "分类"
 }}
@@ -1169,22 +1203,7 @@ async def summarize_diagnosis(
 
 ### 第二个代码块（Markdown 指令）：
 ```markdown
-## 适用场景
-...
-
-## 排查步骤
-1. ...
-
-## 关键检查点
-- ...
-
-## 常见根因
-- ...
-
-## 修复建议
-- ...
-
-## 参考命令
+{md_template}
 ```
 ```
 

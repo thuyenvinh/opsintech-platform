@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import type { Message } from "@langchain/langgraph-sdk";
 
 import { Button } from "@/components/ui/button";
+import { tr } from "@/core/i18n";
 import { useI18n } from "@/core/i18n/hooks";
 import { accumulateUsage } from "@/core/messages/usage";
 import { cn } from "@/lib/utils";
@@ -36,7 +37,7 @@ export function ContextWarningBanner({
   onNewChat,
   className,
 }: ContextWarningBannerProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   const shouldWarn = useMemo(() => {
     if (!modelMaxTokens || modelMaxTokens <= 0) return false;
@@ -68,7 +69,13 @@ export function ContextWarningBanner({
         <div className="flex items-center gap-2.5 min-w-0">
           <AlertTriangle className="size-4 shrink-0 text-amber-500" />
           <span className="text-xs font-medium text-amber-800 dark:text-amber-200 truncate">
-            {t.summaryStatus?.contextWarning ?? "上下文使用率较高，建议开始新会话以保持最佳性能"}
+            {t.summaryStatus?.contextWarning ??
+              tr(
+                locale,
+                "上下文使用率较高，建议开始新会话以保持最佳性能",
+                "Context usage is high. Consider starting a new session for optimal performance.",
+                "Dung lượng ngữ cảnh đang ở mức cao. Hãy cân nhắc mở phiên mới để đạt hiệu suất tối ưu.",
+              )}
           </span>
         </div>
         {onNewChat && (
@@ -79,7 +86,7 @@ export function ContextWarningBanner({
             onClick={onNewChat}
           >
             <SquarePen className="size-3.5" />
-            <span>{t.chatHeader?.newSession ?? "新会话"}</span>
+            <span>{t.chatHeader?.newSession ?? tr(locale, "新会话", "New Session", "Phiên mới")}</span>
             <ArrowRight className="size-3" />
           </Button>
         )}

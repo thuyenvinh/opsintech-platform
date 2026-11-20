@@ -52,4 +52,4 @@ def ask_clarification_tool(
     # This is a placeholder implementation
     # The actual logic is handled by ClarificationMiddleware which intercepts this tool call
     # and interrupts execution to present the question to the user
-    return "等待用户回复"
+    return "Đang chờ người dùng phản hồi"

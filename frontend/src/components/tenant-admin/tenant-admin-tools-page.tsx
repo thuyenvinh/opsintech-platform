@@ -428,7 +428,10 @@ export function TenantAdminToolsPage() {
         type: tmpl.type,
         command: tmpl.command ?? prev.config.command,
         url: tmpl.url ?? prev.config.url,
-        description: tmpl.description,
+        // The template carries one description per locale. Copying the zh-CN
+        // field unconditionally persisted Chinese into the saved server config,
+        // where it is later rendered raw as user data rather than a UI string.
+        description: tr(locale, tmpl.description, tmpl.descriptionEn, tmpl.descriptionVi),
       },
     }));
     // Args: always use array mode for templates

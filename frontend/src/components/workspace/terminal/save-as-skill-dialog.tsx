@@ -305,7 +305,7 @@ export function SaveAsSkillDialog({
                 <TabsContent value="refined" className="mt-3 max-h-[40vh] overflow-y-auto">
                   <div className="rounded-lg border border-emerald-100 dark:border-emerald-900/50 bg-emerald-50/30 dark:bg-emerald-950/10 p-4">
                     <div className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">
-                      <MarkdownContent content={refinedInstructions} isLoading={false} rehypePlugins={null} />
+                      <MarkdownContent content={refinedInstructions} isLoading={false} rehypePlugins={[]} />
                     </div>
                   </div>
                 </TabsContent>

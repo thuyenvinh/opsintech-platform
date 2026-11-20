@@ -1,5 +1,6 @@
 import { ExternalLinkIcon } from "lucide-react";
 import type { ComponentProps } from "react";
+import type { ExtraProps } from "streamdown";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -9,11 +10,12 @@ import {
 } from "@/components/ui/hover-card";
 import { cn } from "@/lib/utils";
 
-export function CitationLink({ 
-  href, 
+export function CitationLink({
+  href,
   children,
-  ...props 
-}: ComponentProps<"a">) {
+  node: _node,
+  ...props
+}: ComponentProps<"a"> & ExtraProps) {
   const domain = extractDomain(href ?? "");
   
   // Priority: children > domain

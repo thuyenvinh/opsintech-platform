@@ -1,4 +1,5 @@
 import type { AnchorHTMLAttributes } from "react";
+import type { ExtraProps } from "streamdown";
 
 import { cn } from "@/lib/utils";
 
@@ -9,7 +10,10 @@ function isExternalUrl(href: string | undefined): boolean {
 }
 
 /** Link renderer for artifact markdown: citation: prefix → CitationLink, otherwise underlined text. */
-export function ArtifactLink(props: AnchorHTMLAttributes<HTMLAnchorElement>) {
+export function ArtifactLink({
+  node: _node,
+  ...props
+}: AnchorHTMLAttributes<HTMLAnchorElement> & ExtraProps) {
   if (typeof props.children === "string") {
     const match = /^citation:(.+)$/.exec(props.children);
     if (match) {

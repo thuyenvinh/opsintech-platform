@@ -37,7 +37,7 @@ async def test_ensure_default_tenant_for_user_creates_membership(tenant_db):
     membership = await ensure_default_tenant_for_user("user-a")
 
     assert membership.user_id == "user-a"
-    assert membership.role == "member"
+    assert membership.role == "tenant_member"
     assert membership.status == "active"
 
 
@@ -59,12 +59,12 @@ async def test_list_user_tenants_and_get_membership(tenant_db):
     tenant, resolved_membership = rows[0]
     assert isinstance(tenant, Tenant)
     assert isinstance(resolved_membership, TenantMembership)
-    assert resolved_membership.role == "admin"
+    assert resolved_membership.role == "tenant_admin"
 
     loaded = await get_membership("user-b", membership.tenant_id)
     assert loaded is not None
     assert loaded.user_id == "user-b"
-    assert loaded.role == "admin"
+    assert loaded.role == "tenant_admin"
 
 
 @pytest.mark.anyio

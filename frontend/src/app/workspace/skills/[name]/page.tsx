@@ -432,7 +432,7 @@ export default function SkillDetailPage() {
                     <div className="flex flex-col gap-2 max-w-[90%]">
                       {textContent && (
                         <div className="markdown-body text-[13px] text-zinc-800 leading-relaxed bg-muted/30 px-4 py-3 rounded-2xl rounded-tl-sm border shadow-sm">
-                          <MarkdownContent content={textContent} isLoading={false} rehypePlugins={null} />
+                          <MarkdownContent content={textContent} isLoading={false} rehypePlugins={[]} />
                         </div>
                       )}
                       {toolCalls.map((tc: any) => (

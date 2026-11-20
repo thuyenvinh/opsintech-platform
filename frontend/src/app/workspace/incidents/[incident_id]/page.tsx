@@ -886,7 +886,7 @@ export default function WorkspaceIncidentDetailPage({ params }: PageProps) {
                       {tr(locale, "诊断结论", "Diagnosis Conclusion", "Kết luận chẩn đoán")}
                     </h4>
                     <div className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed">
-                      <MarkdownContent content={conclusionText} isLoading={false} rehypePlugins={null} />
+                      <MarkdownContent content={conclusionText} isLoading={false} rehypePlugins={[]} />
                     </div>
                     {fileCount > 0 && (
                       <p className="text-[10px] text-zinc-400 dark:text-zinc-500 pt-1 border-t border-zinc-100 dark:border-zinc-800">

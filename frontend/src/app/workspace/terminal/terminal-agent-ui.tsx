@@ -640,7 +640,7 @@ export function TerminalAgentUI({ activeAsset, injectedContext }: { activeAsset:
 
                         {textContent && (
                           <div className="markdown-body text-[14px] leading-relaxed text-zinc-800 whitespace-pre-wrap mt-2">
-                            <MarkdownContent content={textContent} isLoading={false} rehypePlugins={null} />
+                            <MarkdownContent content={textContent} isLoading={false} rehypePlugins={[]} />
                           </div>
                         )}
 

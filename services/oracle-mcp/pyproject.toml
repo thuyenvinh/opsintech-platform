@@ -1,0 +1,20 @@
+[project]
+name = "oracle-mcp"
+version = "0.1.0"
+description = "Read-only MCP server over curated Oracle reporting views"
+requires-python = ">=3.12"
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+[tool.setuptools.packages.find]
+include = ["oracle_mcp*"]
+
+[tool.pytest.ini_options]
+# The tests import oracle_mcp from the repository root, so pytest needs it on
+# sys.path. The guard and config tests deliberately avoid importing db.py,
+# which needs the oracledb driver -- they are pure logic and must stay runnable
+# without it.
+pythonpath = ["."]
+testpaths = ["tests"]

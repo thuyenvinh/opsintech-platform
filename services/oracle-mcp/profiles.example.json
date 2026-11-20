@@ -1,0 +1,25 @@
+{
+  "_comment": [
+    "Copy to a location OUTSIDE the repository, fill in, and mount it as a",
+    "docker secret. Never commit the real file: it holds Oracle passwords.",
+    "One entry per tenant. Generate each token with:",
+    "  python -c \"import secrets; print(secrets.token_urlsafe(32))\"",
+    "The token is the only value from here that goes into the platform; it is",
+    "stored in tenant_mcp_servers.headers as plaintext, so treat it as",
+    "readable by anyone who can read the platform database. That is",
+    "acceptable for a token that merely selects this profile, and is why the",
+    "Oracle password never leaves this file."
+  ],
+  "profiles": {
+    "tenant-a": {
+      "description": "VNPT Dak Lak -- subscriber and billing reporting views",
+      "dsn": "oracle-db.internal.vnpt.vn:1521/ORCLPDB1",
+      "user": "TENANT_A_READER",
+      "password": "CHANGE-ME",
+      "token": "CHANGE-ME-generate-a-32-byte-urlsafe-token",
+      "allowed_objects": ["RPT.V_SUBSCRIBER", "RPT.V_INVOICE"],
+      "row_cap": 200,
+      "call_timeout_s": 30
+    }
+  }
+}

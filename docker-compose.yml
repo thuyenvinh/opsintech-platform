@@ -195,6 +195,46 @@ services:
         limits:
           memory: 2G
 
+  # Read-only Oracle access for the agents, reached as an MCP server.
+  #
+  # Behind the "oracle" profile so a deployment with no Oracle to talk to does
+  # not have to carry it:  docker compose --profile oracle up -d
+  #
+  # It is not published on a host port and nginx does not proxy it. The only
+  # thing that needs to reach it is the gateway, over the internal network, so
+  # exposing it would widen its reachable surface for no gain.
+  oracle-mcp:
+    build:
+      context: ./services/oracle-mcp
+      dockerfile: Dockerfile
+    container_name: vnpt-oracle-mcp
+    profiles:
+      - oracle
+    environment:
+      ORACLE_MCP_PROFILES_FILE: /run/secrets/oracle-mcp-profiles.json
+      ORACLE_MCP_PORT: "8900"
+      ORACLE_MCP_LOG_LEVEL: ${ORACLE_MCP_LOG_LEVEL:-INFO}
+    volumes:
+      # Oracle credentials. Mounted read-only from a path outside the
+      # repository -- see services/oracle-mcp/profiles.example.json. The
+      # container refuses to start if this is missing or malformed, rather than
+      # serving 401s that look like an authentication problem.
+      - ${ORACLE_MCP_PROFILES_FILE:-./services/oracle-mcp/profiles.json}:/run/secrets/oracle-mcp-profiles.json:ro
+    # The process reads a secret and holds connections to a production
+    # database; it never writes to disk.
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - opsintech
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
 networks:
   opsintech:
     driver: bridge

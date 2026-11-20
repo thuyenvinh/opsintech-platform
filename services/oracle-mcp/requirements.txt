@@ -1,0 +1,9 @@
+# Thin-mode Oracle driver: pure Python, no Instant Client needed.
+# 2.5 is the floor for create_pool_async in thin mode.
+oracledb>=2.5,<4
+# The SQL parser the guard depends on. Pinned with a floor because the Oracle
+# dialect and the expression classes the guard matches on are what it provides.
+sqlglot>=27,<29
+mcp>=1.30,<2
+starlette>=0.41
+uvicorn>=0.34
